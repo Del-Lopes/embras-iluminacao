@@ -1,0 +1,83 @@
+'use client'
+
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { useCallback, useTransition } from 'react'
+
+type Category = { id: string; name: string; slug: string }
+
+type Props = {
+  categories: Category[]
+  currentQ: string
+  currentCategorySlug: string
+}
+
+export function BlogSidebar({ categories, currentQ, currentCategorySlug }: Props) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [, startTransition] = useTransition()
+
+  const updateParams = useCallback(
+    (updates: Record<string, string>) => {
+      const params = new URLSearchParams(searchParams.toString())
+      for (const [key, value] of Object.entries(updates)) {
+        if (value) params.set(key, value)
+        else params.delete(key)
+      }
+      params.delete('page')
+      startTransition(() => router.push(`${pathname}?${params.toString()}`))
+    },
+    [router, pathname, searchParams]
+  )
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const q = (e.currentTarget.elements.namedItem('q') as HTMLInputElement).value.trim()
+    updateParams({ q })
+  }
+
+  const toggleCategory = (slug: string) => {
+    // Toggle: if already active, clear; otherwise set
+    updateParams({ category: currentCategorySlug === slug ? '' : slug })
+  }
+
+  return (
+    <aside className="blog-sidebar">
+      {/* Search */}
+      <form onSubmit={handleSearch} className="blog-sidebar-search">
+        <input
+          name="q"
+          type="search"
+          defaultValue={currentQ}
+          placeholder="Pesquisar posts"
+          className="blog-sidebar-search-input"
+        />
+      </form>
+
+      {/* Categories as checkboxes */}
+      {categories.length > 0 && (
+        <nav className="blog-sidebar-cats">
+          <p className="blog-sidebar-cats-label">Categorias</p>
+          <ul>
+            {categories.map((cat) => {
+              const checked = currentCategorySlug === cat.slug
+              return (
+                <li key={cat.id}>
+                  <label className="blog-cat-label">
+                    <input
+                      type="checkbox"
+                      className="blog-cat-check"
+                      checked={checked}
+                      onChange={() => toggleCategory(cat.slug)}
+                    />
+                    <span className="blog-cat-name">{cat.name}</span>
+                  </label>
+                </li>
+              )
+            })}
+          </ul>
+        </nav>
+      )}
+    </aside>
+  )
+}

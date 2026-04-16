@@ -1,0 +1,60 @@
+/* ============================================================
+   DESIGN TOKENS — Dark (default) + Light override
+   ============================================================ */
+
+:root {
+  /* --- Colors (dark default) --- */
+  --color-bg:      #050505;
+  --color-surface: #0f0f0f;
+  --color-accent:  #ffffff;
+  --color-primary: #f0f0f0;
+  --color-muted:   #474747;
+  --color-border:  rgba(255, 255, 255, 0.1);
+
+  /* --- Spacing (multiples of 4px) --- */
+  --space-1:  0.25rem;   /* 4px  */
+  --space-2:  0.5rem;    /* 8px  */
+  --space-3:  0.75rem;   /* 12px */
+  --space-4:  1rem;      /* 16px */
+  --space-6:  1.5rem;    /* 24px */
+  --space-8:  2rem;      /* 32px */
+  --space-12: 3rem;      /* 48px */
+  --space-16: 4rem;      /* 64px */
+  --space-20: 5rem;      /* 80px */
+  --space-24: 6rem;      /* 96px */
+
+  /* --- Typography --- */
+  --font-heading:  var(--font-outfit), sans-serif;
+  --font-body:     var(--font-inter), sans-serif;
+
+  --font-size-xs:   clamp(0.625rem, 0.5vw + 0.5rem, 0.75rem);
+  --font-size-sm:   clamp(0.75rem, 0.5vw + 0.625rem, 0.875rem);
+  --font-size-base: clamp(0.875rem, 0.5vw + 0.75rem, 1rem);
+  --font-size-lg:   clamp(1rem, 1vw + 0.75rem, 1.25rem);
+  --font-size-xl:   clamp(1.25rem, 2vw + 0.75rem, 1.875rem);
+  --font-size-2xl:  clamp(1.5rem, 3vw + 0.75rem, 2.5rem);
+  --font-size-3xl:  clamp(2rem, 5vw + 0.5rem, 4rem);
+  --font-size-4xl:  clamp(2.5rem, 7vw + 0.5rem, 6rem);
+
+  /* --- Transitions --- */
+  --transition-fast: 150ms ease;
+  --transition-base: 300ms ease;
+  --transition-slow: 700ms ease;
+
+  /* --- Z-Index --- */
+  --z-navbar:  100;
+  --z-overlay: 101;
+  --z-cursor:  9999;
+}
+
+/* ============================================================
+   LIGHT MODE override
+   ============================================================ */
+.light {
+  --color-bg:      #f5f5f0;
+  --color-surface: #eaeae4;
+  --color-accent:  #0a0a0a;
+  --color-primary: #1a1a1a;
+  --color-muted:   #6b6b6b;
+  --color-border:  rgba(0, 0, 0, 0.1);
+}
