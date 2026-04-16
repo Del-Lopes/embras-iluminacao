@@ -157,6 +157,24 @@ export type Database = {
         Update: Partial<InsertAiLog>
         Relationships: []
       }
+      automation_settings: {
+        Row: AutomationSettings
+        Insert: Omit<AutomationSettings, 'id' | 'updated_at'>
+        Update: Partial<Omit<AutomationSettings, 'id'>>
+        Relationships: []
+      }
+      automation_daily_runs: {
+        Row: AutomationDailyRun
+        Insert: Omit<AutomationDailyRun, 'id' | 'created_at'>
+        Update: Partial<Omit<AutomationDailyRun, 'id' | 'created_at'>>
+        Relationships: []
+      }
+      automation_city_history: {
+        Row: AutomationCityHistory
+        Insert: Omit<AutomationCityHistory, 'id'>
+        Update: Partial<Omit<AutomationCityHistory, 'id'>>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
