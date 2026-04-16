@@ -165,7 +165,8 @@ export type Database = {
       }
       automation_daily_runs: {
         Row: AutomationDailyRun
-        Insert: Omit<AutomationDailyRun, 'id' | 'created_at'>
+        Insert: Pick<AutomationDailyRun, 'run_date' | 'run_type' | 'posts_target'> &
+          Partial<Pick<AutomationDailyRun, 'posts_created' | 'completed' | 'last_attempt_at'>>
         Update: Partial<Omit<AutomationDailyRun, 'id' | 'created_at'>>
         Relationships: []
       }
