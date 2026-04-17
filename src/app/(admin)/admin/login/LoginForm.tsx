@@ -43,7 +43,7 @@ export const LoginForm = () => {
           id="email"
           type="email"
           autoComplete="email"
-          placeholder="admin@embras.com.br"
+          placeholder="seu@email.com"
           aria-invalid={!!errors.email}
           {...register('email')}
         />

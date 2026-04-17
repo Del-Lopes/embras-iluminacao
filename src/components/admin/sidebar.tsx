@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, FileText, Sparkles, Tag, LogOut, Zap, ShoppingBag, Bot, Settings } from 'lucide-react'
+import { LayoutDashboard, FileText, Sparkles, Tag, LogOut, Zap, ShoppingBag, Bot, Settings, HardDrive } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { logoutAction } from '@/server/auth.actions'
 import type { UserRole } from '@/lib/db/schema'
@@ -31,6 +31,10 @@ const CREATE_NAV: NavItem[] = [
 
 const AUTOMATION_NAV: NavItem[] = [
   { label: 'Configurações', href: '/admin/automation/settings', icon: Settings },
+]
+
+const STORAGE_NAV: NavItem[] = [
+  { label: 'Arquivos', href: '/admin/storage', icon: HardDrive },
 ]
 
 const ROLE_LABEL: Record<UserRole, string> = {
@@ -69,6 +73,14 @@ export const Sidebar = ({ userName, userRole }: SidebarProps) => {
 
         <span className="sidebar-section-label">Criação</span>
         {CREATE_NAV.map(renderLink)}
+
+        {userRole !== 'ai_bot' && (
+          <>
+            <div className="sidebar-divider" />
+            <span className="sidebar-section-label">Storage</span>
+            {STORAGE_NAV.map(renderLink)}
+          </>
+        )}
 
         {userRole === 'admin' && (
           <>
