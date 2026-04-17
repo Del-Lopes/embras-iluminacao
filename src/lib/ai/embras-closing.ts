@@ -10,7 +10,7 @@
 //   5. Fallback para templates fixos se a IA falhar ou exceder timeout
 // ============================================================
 
-import { gemini } from '@/lib/ai/google-ai-client'
+import { gemini, gemma } from '@/lib/ai/google-ai-client'
 
 const BASE_URL = 'https://www.embrasiluminacao.com.br'
 
@@ -148,6 +148,28 @@ REGRAS
 Formato do link: <a href="${categoryUrl}">texto da âncora</a>`.trim()
 
 // ----------------------------------------------------------------
+// Helpers internos
+// ----------------------------------------------------------------
+const tryModel = async (
+  model: typeof gemini,
+  prompt: string,
+  url: string,
+  timeoutMs = 8_000,
+): Promise<string> => {
+  const result = await Promise.race([
+    model.generateContent({ contents: [{ role: 'user', parts: [{ text: prompt }] }] }),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('embras-closing timeout')), timeoutMs),
+    ),
+  ])
+
+  const raw = result.response.text().trim()
+  const cleaned = raw.replace(/^```(?:html)?\s*/i, '').replace(/\s*```$/i, '').trim()
+  const wrapped = cleaned.startsWith('<p') ? cleaned : `<p class="embras-closing">${cleaned}</p>`
+  return enforceUrl(wrapped, url)
+}
+
+// ----------------------------------------------------------------
 // Ponto de entrada público
 // ----------------------------------------------------------------
 export const generateEmbrasClosing = async (
@@ -159,31 +181,26 @@ export const generateEmbrasClosing = async (
   const category = detectCategory(combined)
   const url = CATEGORY_URLS[category]
   const label = CATEGORY_LABELS[category]
+  const prompt = buildPrompt(title, `${excerpt} ${sourceDescription}`.slice(0, 500), label, url)
 
+  // 1ª tentativa — Gemini Flash Lite (conta 1)
   try {
-    const prompt = buildPrompt(title, `${excerpt} ${sourceDescription}`.slice(0, 500), label, url)
-
-    const result = await Promise.race([
-      gemini.generateContent({ contents: [{ role: 'user', parts: [{ text: prompt }] }] }),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('embras-closing timeout')), 8_000),
-      ),
-    ])
-
-    const raw = result.response.text().trim()
-
-    // Remove eventuais blocos de markdown que o modelo possa retornar
-    const cleaned = raw.replace(/^```(?:html)?\s*/i, '').replace(/\s*```$/i, '').trim()
-
-    // Garante que o parágrafo esteja em <p> e que a URL correta esteja presente
-    const wrapped = cleaned.startsWith('<p') ? cleaned : `<p class="embras-closing">${cleaned}</p>`
-    const safe = enforceUrl(wrapped, url)
-
-    console.info(`[embras-closing] IA gerou texto | categoria: ${category}`)
-    return safe
+    const text = await tryModel(gemini, prompt, url)
+    console.info('[embras-closing] gemini gerou texto | categoria:', category)
+    return text
   } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err)
-    console.warn(`[embras-closing] fallback para template | motivo: ${reason}`)
-    return `<p class="embras-closing">${FALLBACKS[category](url)}</p>`
+    console.warn('[embras-closing] gemini falhou, tentando gemma |', (err as Error).message)
   }
+
+  // 2ª tentativa — Gemma 3 27B (conta 1)
+  try {
+    const text = await tryModel(gemma, prompt, url)
+    console.info('[embras-closing] gemma gerou texto | categoria:', category)
+    return text
+  } catch (err) {
+    console.warn('[embras-closing] gemma falhou, usando template |', (err as Error).message)
+  }
+
+  // Template fixo
+  return `<p class="embras-closing">${FALLBACKS[category](url)}</p>`
 }

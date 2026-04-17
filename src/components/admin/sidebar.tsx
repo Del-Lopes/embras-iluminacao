@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, FileText, Sparkles, Tag, LogOut, Zap, ShoppingBag, Bot, Settings, HardDrive } from 'lucide-react'
+import { LayoutDashboard, FileText, Sparkles, Tag, LogOut, Zap, ShoppingBag, Bot, Settings, HardDrive, ScrollText } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { logoutAction } from '@/server/auth.actions'
 import type { UserRole } from '@/lib/db/schema'
@@ -35,6 +35,10 @@ const AUTOMATION_NAV: NavItem[] = [
 
 const STORAGE_NAV: NavItem[] = [
   { label: 'Arquivos', href: '/admin/storage', icon: HardDrive },
+]
+
+const LOGS_NAV: NavItem[] = [
+  { label: 'Todos', href: '/admin/logs', icon: ScrollText },
 ]
 
 const ROLE_LABEL: Record<UserRole, string> = {
@@ -79,6 +83,10 @@ export const Sidebar = ({ userName, userRole }: SidebarProps) => {
             <div className="sidebar-divider" />
             <span className="sidebar-section-label">Storage</span>
             {STORAGE_NAV.map(renderLink)}
+
+            <div className="sidebar-divider" />
+            <span className="sidebar-section-label">Logs</span>
+            {LOGS_NAV.map(renderLink)}
           </>
         )}
 

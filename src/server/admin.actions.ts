@@ -122,6 +122,33 @@ export const deletePostAction = async (formData: FormData): Promise<void> => {
 }
 
 // ================================================================
+// bulkDeletePostsAction
+// ================================================================
+export const bulkDeletePostsAction = async (ids: string[]): Promise<void> => {
+  if (!ids.length) return
+
+  const supabase = await createSupabaseServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile) return
+
+  if (profile.role === 'admin') {
+    await supabase.from('posts').delete().in('id', ids)
+  } else {
+    await supabase.from('posts').delete().in('id', ids).eq('author_id', user.id)
+  }
+
+  revalidatePath('/admin/dashboard')
+}
+
+// ================================================================
 // Post schema (create + update share the same shape)
 // ================================================================
 const postSchema = z.object({
