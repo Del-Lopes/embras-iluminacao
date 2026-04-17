@@ -43,7 +43,6 @@ export const LoginForm = () => {
           id="email"
           type="email"
           autoComplete="email"
-          placeholder="seu@email.com"
           aria-invalid={!!errors.email}
           {...register('email')}
         />
@@ -58,7 +57,6 @@ export const LoginForm = () => {
           id="password"
           type="password"
           autoComplete="current-password"
-          placeholder="••••••••"
           aria-invalid={!!errors.password}
           {...register('password')}
         />
