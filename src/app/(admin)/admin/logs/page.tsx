@@ -19,14 +19,23 @@ const formatDate = (iso: string) =>
     timeZone: 'America/Sao_Paulo',
   }).format(new Date(iso))
 
+type LogRow = {
+  id: string
+  post_id: string | null
+  model_version: string | null
+  token_usage: number | null
+  generation_date: string
+  posts: { id: string; title: string; slug: string } | { id: string; title: string; slug: string }[] | null
+}
+
 export default async function LogsPage() {
   const supabase = await createSupabaseServerClient()
 
-  const { data: logs } = await supabase
+  const { data: logs } = await (supabase
     .from('ai_automation_logs')
     .select('id, post_id, model_version, token_usage, generation_date, posts(id, title, slug)')
     .order('generation_date', { ascending: false })
-    .limit(200)
+    .limit(200) as unknown as Promise<{ data: LogRow[] | null }>)
 
   return (
     <div className="dashboard-page">
