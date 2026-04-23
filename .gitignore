@@ -34,6 +34,7 @@
 /RULES.md
 /SPEC.md
 /PENTEST-REPORT.md
+/white-label
 
 # debug
 npm-debug.log*

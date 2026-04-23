@@ -1,0 +1,25 @@
+import type { Metadata } from 'next'
+import { JetBrains_Mono } from 'next/font/google'
+import './lp.css'
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: '--font-jetbrains',
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  display: 'swap',
+})
+
+export const metadata: Metadata = {
+  title: 'Embras · Postes de Aço e Alumínio — Direto da Fábrica',
+  description:
+    'Fabricamos postes de aço galvanizado e alumínio em escala industrial. Sem intermediário, sem atraso e sem desculpa quando o prazo aperta.',
+  robots: { index: false, follow: false },
+}
+
+export default function LPLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className={`lp-page ${jetbrainsMono.variable}`}>
+      {children}
+    </div>
+  )
+}
