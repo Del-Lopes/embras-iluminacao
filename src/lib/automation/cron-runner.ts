@@ -218,6 +218,12 @@ type PipelineResult = {
 // ──────────────────────────────────────────────────────────────
 const NEWS_TOPICS = ['Iluminação', 'Arquitetura', 'Design de Interiores']
 
+const TOPIC_CATEGORY: Record<string, { name: string; slug: string; description: string }> = {
+  'Iluminação':           { name: 'Iluminação',          slug: 'iluminacao',          description: 'Notícias e tendências sobre iluminação' },
+  'Arquitetura':          { name: 'Arquitetura',          slug: 'arquitetura',          description: 'Notícias e tendências sobre arquitetura' },
+  'Design de Interiores': { name: 'Design de Interiores', slug: 'design-de-interiores', description: 'Notícias e tendências sobre design de interiores' },
+}
+
 async function runNewsPipeline(
   run: AutomationDailyRun,
   date: string,
@@ -228,9 +234,15 @@ async function runNewsPipeline(
   const botId = process.env.AI_BOT_PROFILE_ID
   if (!botId) throw new Error('AI_BOT_PROFILE_ID env var not set')
 
-  const categoryId = await resolveCategory(
-    'Notícias', 'noticias',
-    'Notícias sobre iluminação, arquitetura e design de interiores',
+  // Pre-resolve all topic categories to avoid per-slot DB round-trips
+  const topicCategoryIds = Object.fromEntries(
+    await Promise.all(
+      NEWS_TOPICS.map(async (topic) => {
+        const cat = TOPIC_CATEGORY[topic]
+        const id = await resolveCategory(cat.name, cat.slug, cat.description)
+        return [topic, id] as [string, string]
+      }),
+    ),
   )
 
   // Collect all source_urls already in DB to deduplicate
@@ -247,6 +259,7 @@ async function runNewsPipeline(
 
   for (let slot = run.posts_created; slot < run.posts_target; slot++) {
     let article: NewsArticle | null = null
+    let foundTopic = NEWS_TOPICS[slot % NEWS_TOPICS.length]
 
     // Try each topic in rotation starting from this slot's primary
     for (let t = 0; t < NEWS_TOPICS.length; t++) {
@@ -256,6 +269,7 @@ async function runNewsPipeline(
         const fresh = articles.filter((a) => a.url && !knownUrls.has(a.url))
         if (fresh.length > 0) {
           article = fresh[0]
+          foundTopic = topic
           break
         }
         console.warn(`[news-pipeline] no fresh articles for topic "${topic}" (slot ${slot})`)
@@ -301,7 +315,7 @@ async function runNewsPipeline(
           excerpt: generated.excerpt,
           status,
           author_id: botId,
-          category_id: categoryId,
+          category_id: topicCategoryIds[foundTopic],
           source_url: article.url,
           image_prompt: generated.image_prompt,
           cover_image: coverImage,
