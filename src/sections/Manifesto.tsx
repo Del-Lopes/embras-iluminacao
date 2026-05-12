@@ -2,6 +2,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { gsap, ScrollTrigger, SplitText } from '@/lib/gsap'
 import { useGSAP } from '@gsap/react'
+import { useTheme } from '@/components/common/ThemeProvider'
 
 const slides = [
 	{
@@ -22,6 +23,9 @@ const slides = [
 ]
 
 export default function Manifesto() {
+	const { theme } = useTheme()
+	const isDark = theme === 'dark'
+
 	const sectionRef = useRef<HTMLElement>(null)
 	const leftContainerRef = useRef<HTMLDivElement>(null)
 	const rightContainerRef = useRef<HTMLDivElement>(null)
@@ -38,7 +42,7 @@ export default function Manifesto() {
 		() => {
 			if (!mounted || !sectionRef.current) return
 
-			// 1. Entrance animations - section coming into view
+// 1. Entrance animations - section coming into view
 			const entranceTl = gsap.timeline({
 				scrollTrigger: {
 					trigger: sectionRef.current,
@@ -117,8 +121,7 @@ export default function Manifesto() {
 					})
 			)
 
-			// Ensure words start at 0.2 opacity and are white
-			gsap.set('.word', { opacity: 0.2, color: 'white' })
+			gsap.set('.word', { opacity: 0.2, color: 'var(--color-accent)' })
 
 			// Dedicated non-scrubbed behavior for the Background Glow
 			// This guarantees instant disappearance to avoid trailing when scrolling back up.
@@ -141,12 +144,7 @@ export default function Manifesto() {
 			if (splits[0]) {
 				tl.to(
 					splits[0].words,
-					{
-						opacity: 1,
-						color: 'white',
-						stagger: 0.1,
-						duration: 0.1,
-					},
+					{ opacity: 1, color: 'var(--color-accent)', stagger: 0.1, duration: 0.1 },
 					'+=0.1'
 				)
 			}
@@ -179,12 +177,7 @@ export default function Manifesto() {
 
 			// Slide 1: reveal words
 			if (splits[1]) {
-				tl.to(splits[1].words, {
-					opacity: 1,
-					color: 'white',
-					stagger: 0.1,
-					duration: 0.1,
-				})
+				tl.to(splits[1].words, { opacity: 1, color: 'var(--color-accent)', stagger: 0.1, duration: 0.1 })
 			}
 
 			// Transition Slide 1 -> 2
@@ -215,12 +208,7 @@ export default function Manifesto() {
 
 			// Slide 2: reveal words
 			if (splits[2]) {
-				tl.to(splits[2].words, {
-					opacity: 1,
-					color: 'white',
-					stagger: 0.1,
-					duration: 0.1,
-				})
+				tl.to(splits[2].words, { opacity: 1, color: 'var(--color-accent)', stagger: 0.1, duration: 0.1 })
 			}
 
 			// Stay at slide 2 for a bit
@@ -234,15 +222,16 @@ export default function Manifesto() {
 	return (
 		<section
 			ref={sectionRef}
-			className="h-screen w-full bg-[#050505] flex overflow-hidden relative"
+			className="h-screen w-full bg-(--color-bg) flex overflow-hidden relative"
 		>
 			{/* BACKGROUND GLOW */}
 			<div
 				ref={bgRef}
 				className="absolute inset-0 pointer-events-none opacity-0"
 				style={{
-					background:
-						'radial-gradient(36% 50% at 10% 4.5%, #373737 22.973%, #050505 100%)',
+					background: isDark
+						? 'radial-gradient(65% 75% at 8% 5%, #6b6b6b 0%, #2a2a2a 45%, #050505 100%)'
+						: 'radial-gradient(65% 75% at 8% 5%, #9e9b93 0%, #c4c1b9 45%, #f5f5f0 100%)',
 				}}
 			/>
 
@@ -257,7 +246,7 @@ export default function Manifesto() {
 								className="manifesto-left-text absolute inset-0 flex items-center"
 							>
 								<p
-									className="manifesto-p font-(--font-heading) text-white uppercase max-w-5xl"
+									className="manifesto-p font-(--font-heading) text-(--color-accent) uppercase max-w-5xl"
 									style={{
 										fontSize: '36px',
 										lineHeight: '46px',
@@ -273,11 +262,11 @@ export default function Manifesto() {
 					{/* Elemento Decorativo Inferior */}
 					<div className="flex items-center gap-4 w-full mt-12 pb-12">
 						<div className="flex gap-2">
-							<div className="w-2 h-2 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
-							<div className="w-2 h-2 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
+							<div className="w-2 h-2 rounded-full bg-(--color-accent)" style={{ boxShadow: isDark ? '0 0 10px rgba(255,255,255,0.5)' : '0 0 10px rgba(0,0,0,0.2)' }} />
+							<div className="w-2 h-2 rounded-full bg-(--color-accent)" style={{ boxShadow: isDark ? '0 0 10px rgba(255,255,255,0.5)' : '0 0 10px rgba(0,0,0,0.2)' }} />
 						</div>
 						<div
-							className="flex-1 h-px bg-[#474747]"
+							className="flex-1 h-px bg-(--color-muted)"
 							ref={lineHRef}
 						/>
 					</div>
@@ -288,13 +277,12 @@ export default function Manifesto() {
 					ref={lineVRef}
 					className="w-px h-[75vh] shrink-0"
 					style={{
-						background:
-							'linear-gradient(to bottom, #474747 0%, #474747 60%, transparent 100%)',
+						background: `linear-gradient(to bottom, var(--color-muted) 0%, var(--color-muted) 60%, transparent 100%)`,
 					}}
 				/>
 
 				{/* RIGHT COLUMN (30%) */}
-				<div className="w-[30%] h-full relative overflow-hidden flex items-center justify-center bg-[#050505]">
+				<div className="w-[30%] h-full relative overflow-hidden flex items-center justify-center bg-(--color-bg)">
 					{slides.map((slide, i) => (
 						<div
 							key={slide.id}

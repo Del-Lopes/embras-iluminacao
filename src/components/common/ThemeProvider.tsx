@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
 
 type Theme = 'dark' | 'light'
 
@@ -21,11 +21,7 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
 	const [theme, setTheme] = useState<Theme>('dark')
 
 	useEffect(() => {
-		const stored = localStorage.getItem('theme') as Theme | null
-		if (stored === 'light') {
-			setTheme('light')
-			document.documentElement.classList.add('light')
-		}
+		setTheme(document.documentElement.classList.contains('light') ? 'light' : 'dark')
 	}, [])
 
 	const toggleTheme = useCallback(() => {

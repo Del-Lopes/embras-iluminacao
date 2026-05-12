@@ -132,7 +132,7 @@ export default function SuccessCases() {
 							ref={(el) => { cardsRef.current[index] = el }}
 							className="group cursor-pointer"
 						>
-							<div className="aspect-square bg-(--color-surface) border border-(--color-border) relative overflow-hidden transition-all duration-700 group-hover:border-(--color-accent)/30">
+							<div className="aspect-square bg-[#0f0f0f] border border-white/10 relative overflow-hidden transition-all duration-700 group-hover:border-white/30">
 								<Image
 									src={project.image}
 									alt={project.title}
@@ -140,7 +140,7 @@ export default function SuccessCases() {
 									sizes="(max-width: 768px) 50vw, 33vw"
 									className="object-cover opacity-60 grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-1000"
 								/>
-								<div className="absolute inset-0 bg-linear-to-br from-transparent via-(--color-accent)/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
+								<div className="absolute inset-0 bg-linear-to-br from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
 								<div className="absolute top-4 md:top-8 left-4 md:left-8 text-[11px] uppercase tracking-[2px] font-semibold text-white opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none">
 									{project.location}
 								</div>

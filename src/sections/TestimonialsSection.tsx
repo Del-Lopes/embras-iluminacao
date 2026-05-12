@@ -51,9 +51,9 @@ export default function TestimonialsSection() {
 			gsap.set(quoteIconRef.current, { opacity: 0.4 })
 			gsap.set(glowRef.current, { opacity: 0 })
 
-			// Todos os textos começam cinza
+			// Todos os textos começam na cor muted do tema
 			textRefs.current.forEach((el) => {
-				if (el) gsap.set(el, { color: '#474747' })
+				if (el) gsap.set(el, { color: 'var(--color-muted)' })
 			})
 
 			// Todos os dots escondidos
@@ -64,7 +64,7 @@ export default function TestimonialsSection() {
 			// Paginação: primeiro ativo
 			testimonials.forEach((_, i) => {
 				gsap.set(`.pagination-line-${i}`, {
-					backgroundColor: i === 0 ? '#ffffff' : '#474747',
+					backgroundColor: i === 0 ? 'var(--color-accent)' : 'var(--color-muted)',
 				})
 			})
 
@@ -98,7 +98,7 @@ export default function TestimonialsSection() {
 			if (textRefs.current[0]) {
 				entranceTl.to(
 					textRefs.current[0],
-					{ color: '#ffffff', duration: 1, ease: 'power2.out' },
+					{ color: 'var(--color-accent)', duration: 1, ease: 'power2.out' },
 					0.4
 				)
 			}
@@ -173,7 +173,7 @@ export default function TestimonialsSection() {
 				if (textRefs.current[i - 1]) {
 					scrollTl.to(
 						textRefs.current[i - 1]!,
-						{ color: '#474747', ease: 'none', duration: dur },
+						{ color: 'var(--color-muted)', ease: 'none', duration: dur },
 						stepStart
 					)
 				}
@@ -189,7 +189,7 @@ export default function TestimonialsSection() {
 				if (textRefs.current[i]) {
 					scrollTl.to(
 						textRefs.current[i]!,
-						{ color: '#ffffff', ease: 'none', duration: dur },
+						{ color: 'var(--color-accent)', ease: 'none', duration: dur },
 						stepStart
 					)
 				}
@@ -205,7 +205,7 @@ export default function TestimonialsSection() {
 				scrollTl.to(
 					`.pagination-line-${i - 1}`,
 					{
-						backgroundColor: '#474747',
+						backgroundColor: 'var(--color-muted)',
 						ease: 'none',
 						duration: dur * 0.5,
 					},
@@ -214,7 +214,7 @@ export default function TestimonialsSection() {
 				scrollTl.to(
 					`.pagination-line-${i}`,
 					{
-						backgroundColor: '#ffffff',
+						backgroundColor: 'var(--color-accent)',
 						ease: 'none',
 						duration: dur * 0.5,
 					},
@@ -232,7 +232,7 @@ export default function TestimonialsSection() {
 	return (
 		<section
 			ref={sectionRef}
-			className="h-screen w-full bg-[#050505] relative flex flex-row z-10"
+			className="h-screen w-full bg-(--color-bg) relative flex flex-row z-10"
 		>
 			{/* Background Glow Effect */}
 			<div
@@ -260,8 +260,8 @@ export default function TestimonialsSection() {
 								x2="100%"
 								y2="0%"
 							>
-								<stop offset="10%" stopColor="#414141" />
-								<stop offset="90%" stopColor="#ffffff" />
+								<stop offset="10%" style={{ stopColor: 'var(--color-muted)' }} />
+								<stop offset="90%" style={{ stopColor: 'var(--color-accent)' }} />
 							</linearGradient>
 						</defs>
 						<path d="M3.5 17.5V13.844C3.5 11.517 4.136 9.533 5.408 7.892C6.697 6.233 8.356 5.167 10.385 4.692V6.623C8.674 7.218 7.42 8.361 6.622 10.05C7.03 9.949 7.45 9.898 7.882 9.898C8.955 9.898 9.854 10.275 10.578 11.028C11.302 11.782 11.664 12.693 11.664 13.763C11.664 14.836 11.285 15.748 10.528 16.5C9.782 17.252 8.878 17.628 7.818 17.628H3.5V17.5ZM15 17.5V13.844C15 11.517 15.636 9.533 16.908 7.892C18.197 6.233 19.856 5.167 21.885 4.692V6.623C20.174 7.218 18.92 8.361 18.122 10.05C18.53 9.949 18.95 9.898 19.382 9.898C20.455 9.898 21.354 10.275 22.078 11.028C22.802 11.782 23.164 12.693 23.164 13.763C23.164 14.836 22.785 15.748 22.028 16.5C21.282 17.252 20.378 17.628 19.318 17.628H15V17.5Z" />
@@ -279,7 +279,7 @@ export default function TestimonialsSection() {
 							className={`pagination-line-${idx} w-px h-6`}
 							style={{
 								backgroundColor:
-									idx === 0 ? '#ffffff' : '#474747',
+									idx === 0 ? 'var(--color-accent)' : 'var(--color-muted)',
 							}}
 						/>
 					))}
@@ -318,8 +318,8 @@ export default function TestimonialsSection() {
 									className="flex gap-[6px] mb-5"
 									style={{ opacity: 0 }}
 								>
-									<div className="w-2.5 h-2.5 rounded-full bg-white" />
-									<div className="w-2.5 h-2.5 rounded-full bg-white" />
+									<div className="w-2.5 h-2.5 rounded-full bg-(--color-accent)" />
+									<div className="w-2.5 h-2.5 rounded-full bg-(--color-accent)" />
 								</div>
 
 								{/* Texto do depoimento: cor controlada por GSAP inline */}
@@ -328,7 +328,7 @@ export default function TestimonialsSection() {
 										textRefs.current[idx] = el
 									}}
 									className="text-lg md:text-2xl lg:text-[32px] leading-[1.2] md:leading-[1.15] tracking-tight font-medium"
-									style={{ color: '#474747' }}
+									style={{ color: 'var(--color-muted)' }}
 								>
 									{t.quote}
 								</p>

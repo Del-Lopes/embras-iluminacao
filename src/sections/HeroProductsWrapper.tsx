@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from 'react'
 import Image from 'next/image'
 import { gsap, ScrollTrigger } from '@/lib/gsap'
 import { useGSAP } from '@gsap/react'
+import ThemeToggle from '@/components/common/ThemeToggle'
 
 const products = [
 	{
@@ -214,7 +215,6 @@ export default function HeroProductsWrapper() {
 								'Projetos',
 								'Produtos',
 								'Manifesto',
-								'Contato',
 							].map((item) => (
 								<a
 									key={item}
@@ -225,9 +225,7 @@ export default function HeroProductsWrapper() {
 								</a>
 							))}
 						</nav>
-						<button className="rounded-none border border-white px-8 py-3 bg-transparent text-white hover:bg-white hover:text-black transition-all uppercase tracking-[2px] text-[11px] font-semibold">
-							Contato
-						</button>
+						<ThemeToggle />
 					</div>
 				</header>
 

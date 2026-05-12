@@ -1974,6 +1974,10 @@ tr[data-selected='true'] td {
   height: 32px;
 }
 
+.light .blog-header-logo-wrap {
+  filter: invert(1);
+}
+
 .blog-header-nav {
   display: flex;
   align-items: center;

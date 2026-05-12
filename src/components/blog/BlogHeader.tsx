@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { cn } from '@/lib/utils/cn'
+import ThemeToggle from '@/components/common/ThemeToggle'
 
 const NAV = [
   { label: 'Projetos', href: '/#projetos' },
@@ -39,6 +40,7 @@ export function BlogHeader() {
               {item.label}
             </Link>
           ))}
+          <ThemeToggle themed />
         </nav>
 
         {/* Hamburger — mobile only */}
@@ -71,6 +73,7 @@ export function BlogHeader() {
             {item.label}
           </Link>
         ))}
+        <ThemeToggle themed />
       </div>
     </header>
   )

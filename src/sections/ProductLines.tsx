@@ -70,13 +70,13 @@ export default function ProductLines() {
 	}, [activeTab])
 
 	return (
-		<section className="py-36 px-8 bg-[#050505] w-full relative">
+		<section className="py-36 px-8 bg-(--color-bg) w-full relative">
 			<div className="max-w-7xl mx-auto flex flex-col items-center">
 				<div className="flex flex-col items-center gap-4 mb-20 text-center">
 					<AnimatedPill className="text-(--color-muted) uppercase w-fit items-center">
 						Linha de Produtos
 					</AnimatedPill>
-					<AnimatedHeading className="text-5xl md:text-7xl font-(--font-heading) uppercase leading-tight md:leading-[82px] tracking-tighter text-white">
+					<AnimatedHeading className="text-5xl md:text-7xl font-(--font-heading) uppercase leading-tight md:leading-[82px] tracking-tighter text-(--color-primary)">
 						O design <br className="md:hidden" />{' '}
 						<span className="text-(--color-muted)">vira arte</span>
 					</AnimatedHeading>
@@ -91,8 +91,8 @@ export default function ProductLines() {
 							className={cn(
 								'px-10 py-6 text-[11px] uppercase tracking-[2px] font-semibold transition-all duration-300 cursor-pointer border-b-2',
 								activeTab === line.id
-									? 'bg-white text-black border-white'
-									: 'bg-transparent text-white border-transparent hover:text-white/70'
+									? 'bg-(--color-accent) text-(--color-bg) border-(--color-accent)'
+									: 'bg-transparent text-(--color-accent) border-transparent hover:text-(--color-accent)/70'
 							)}
 						>
 							{line.label}
@@ -107,7 +107,7 @@ export default function ProductLines() {
 					>
 						{currentLine.products.map((product) => (
 							<div key={product.id} className="product-card flex flex-col group/card">
-								<div className="aspect-3/4 bg-(--color-surface) border border-(--color-border) mb-8 relative overflow-hidden transition-all duration-500 hover:border-(--color-accent)/30">
+								<div className="aspect-3/4 bg-[#0f0f0f] border border-white/10 mb-8 relative overflow-hidden transition-all duration-500 hover:border-white/30">
 									<Image
 										src={product.image}
 										alt={product.name}
@@ -115,14 +115,14 @@ export default function ProductLines() {
 										sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
 										className="object-cover opacity-60 group-hover/card:scale-110 group-hover/card:opacity-100 transition-all duration-700"
 									/>
-									<div className="absolute inset-0 bg-linear-to-tr from-transparent to-(--color-accent)/5 opacity-0 group-hover/card:opacity-100 transition-opacity" />
+									<div className="absolute inset-0 bg-linear-to-tr from-transparent to-white/5 opacity-0 group-hover/card:opacity-100 transition-opacity" />
 								</div>
-								<span className="product-category mb-3 block">{product.category}</span>
-								<h3 className="text-xl font-(--font-heading) uppercase text-white tracking-widest leading-none mb-6">
+								<span className="product-category mb-3 block text-(--color-accent)/60">{product.category}</span>
+								<h3 className="text-xl font-(--font-heading) uppercase text-(--color-accent) tracking-widest leading-none mb-6">
 									{product.name}
 								</h3>
 								<button
-									className="flex items-center gap-3 w-fit px-6 py-3 border border-white/20 text-[11px] uppercase tracking-[2px] font-semibold text-white hover:bg-white hover:text-black transition-all group/btn"
+									className="flex items-center gap-3 w-fit px-6 py-3 border border-(--color-accent)/20 text-[11px] uppercase tracking-[2px] font-semibold text-(--color-accent) hover:bg-(--color-accent) hover:text-(--color-bg) transition-all group/btn"
 									style={{ borderRadius: 0 }}
 								>
 									Ver em 3D
@@ -138,12 +138,12 @@ export default function ProductLines() {
 					</div>
 
 					<div className="hidden md:flex justify-between absolute top-1/2 -translate-y-1/2 -left-16 -right-16 pointer-events-none">
-						<button className="p-4 text-white/40 hover:text-white transition-colors pointer-events-auto cursor-pointer">
+						<button className="p-4 text-(--color-accent)/40 hover:text-(--color-accent) transition-colors pointer-events-auto cursor-pointer">
 							<svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="currentColor" strokeWidth="1">
 								<path d="M15 18l-6-6 6-6" />
 							</svg>
 						</button>
-						<button className="p-4 text-white/40 hover:text-white transition-colors pointer-events-auto cursor-pointer">
+						<button className="p-4 text-(--color-accent)/40 hover:text-(--color-accent) transition-colors pointer-events-auto cursor-pointer">
 							<svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="currentColor" strokeWidth="1">
 								<path d="M9 18l6-6-6-6" />
 							</svg>
@@ -157,7 +157,7 @@ export default function ProductLines() {
 							key={idx}
 							className={cn(
 								'h-[2px] w-8 transition-colors duration-500',
-								idx === currentPage ? 'bg-white' : 'bg-(--color-muted)'
+								idx === currentPage ? 'bg-(--color-accent)' : 'bg-(--color-muted)'
 							)}
 						/>
 					))}
@@ -165,7 +165,7 @@ export default function ProductLines() {
 
 				<div className="mt-20">
 					<button
-						className="px-12 py-5 border border-white text-[11px] uppercase tracking-[2px] font-semibold text-white hover:bg-white hover:text-black transition-all duration-700 cursor-pointer"
+						className="px-12 py-5 border border-(--color-accent) text-[11px] uppercase tracking-[2px] font-semibold text-(--color-accent) hover:bg-(--color-accent) hover:text-(--color-bg) transition-all duration-700 cursor-pointer"
 						style={{ borderRadius: 0 }}
 					>
 						Ver linha completa
