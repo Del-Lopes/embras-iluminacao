@@ -705,9 +705,20 @@ html.light .lp-page .hero-embras-bleed { -webkit-text-stroke: 1px rgba(0,0,0,0.0
 .lp-page .proof-project {
   position: relative;
   overflow: hidden;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: #0f0f0f;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
+/* Keep the project cards visually identical in light mode (dark imagery + overlay design) */
+html.light .lp-page .proof-project {
+  background: #0f0f0f;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+html.light .lp-page .proof-project-overlay {
+  background: linear-gradient(to top, rgba(5,5,5,0.85) 0%, rgba(5,5,5,0.1) 50%, rgba(5,5,5,0.5) 100%);
+}
+html.light .lp-page .proof-project-tag { color: #c9a86a; }
+html.light .lp-page .proof-project-name { color: #ffffff; }
+html.light .lp-page .proof-project-sub { color: #f0f0f0; }
 .lp-page .proof-project:nth-child(1) { grid-row: 1 / 3; }
 .lp-page .proof-project-img {
   position: absolute;
