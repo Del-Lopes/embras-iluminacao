@@ -258,6 +258,15 @@ html.light .lp-page .nav-logo { filter: invert(1); }
   opacity: 0.85;
   z-index: 0;
 }
+/* Light theme: dark brown radial reads as a dirty smudge on a light bg.
+   Replace it with a soft golden "sunbeam" — same warm accent, but as light. */
+html.light .lp-page .hero-radial {
+  background:
+    radial-gradient(ellipse at 70% 40%, rgba(201, 168, 106, 0.32) 0%, rgba(201, 168, 106, 0.12) 35%, transparent 70%),
+    radial-gradient(ellipse at 78% 28%, rgba(255, 240, 200, 0.45) 0%, transparent 50%);
+  opacity: 1;
+  mix-blend-mode: multiply;
+}
 .lp-page .hero-grid-bg {
   position: absolute;
   inset: 0;
