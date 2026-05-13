@@ -230,6 +230,7 @@ html.light .lp-page {
   width: auto;
   display: block;
 }
+html.light .lp-page .nav-logo { filter: invert(1); }
 .lp-page .nav-links { display: flex; gap: 32px; }
 .lp-page .nav-cta { display: flex; gap: 12px; align-items: center; }
 @media (max-width: 900px) {

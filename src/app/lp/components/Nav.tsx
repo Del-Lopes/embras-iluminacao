@@ -1,3 +1,5 @@
+import ThemeToggle from '@/components/common/ThemeToggle'
+
 interface NavProps {
   openForm: () => void
 }
@@ -16,6 +18,7 @@ export default function Nav({ openForm }: NavProps) {
         <a className="m-link" href="#contato">Contato</a>
       </div>
       <div className="nav-cta">
+        <ThemeToggle themed />
         <button className="btn btn-sm" onClick={openForm}>Orçamento</button>
       </div>
     </nav>
