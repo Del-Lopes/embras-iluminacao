@@ -1,5 +1,22 @@
 import type { NextConfig } from "next";
 
+// R2 origins for CSP — derived from env so a future custom read domain works.
+// Public read base (images) and the S3 endpoint (browser presigned PUT).
+const r2PublicOrigin = (() => {
+  try {
+    return process.env.R2_PUBLIC_BASE_URL
+      ? new URL(process.env.R2_PUBLIC_BASE_URL).origin
+      : "https://*.r2.dev";
+  } catch {
+    return "https://*.r2.dev";
+  }
+})();
+
+// The AWS SDK uses virtual-hosted-style URLs for presigned PUT, i.e.
+// https://<bucket>.<account>.r2.cloudflarestorage.com — so a wildcard host
+// is required (the bucket name is prepended as a subdomain).
+const r2S3Origin = "https://*.r2.cloudflarestorage.com";
+
 const securityHeaders = [
   {
     key: "X-DNS-Prefetch-Control",
@@ -30,13 +47,15 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       // VULN-008/009: removed 'unsafe-eval'. Kept 'unsafe-inline' as Next.js
-      // injects inline scripts for hydration. In production, consider using
-      // nonce-based CSP via middleware for stricter policy.
-      "script-src 'self' 'unsafe-inline'",
+      // injects inline scripts for hydration. 'wasm-unsafe-eval' allows the
+      // <model-viewer> WebAssembly decoders (Draco/meshopt) WITHOUT permitting
+      // general eval(). In production, consider nonce-based CSP via middleware.
+      "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com",
+      `img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com ${r2PublicOrigin}`,
       "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+      // r2PublicOrigin added so <model-viewer> can fetch the .glb over the public domain
+      `connect-src 'self' https://*.supabase.co wss://*.supabase.co ${r2S3Origin} ${r2PublicOrigin}`,
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

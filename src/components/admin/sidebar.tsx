@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, FileText, Sparkles, Tag, LogOut, Zap, ShoppingBag, Bot, Settings, HardDrive, ScrollText } from 'lucide-react'
+import { LayoutDashboard, FileText, Sparkles, Tag, LogOut, Zap, ShoppingBag, Bot, Settings, HardDrive, ScrollText, Package, PackagePlus } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { logoutAction } from '@/server/auth.actions'
+import { AreaSwitcher } from '@/components/admin/area-switcher'
 import type { UserRole } from '@/lib/db/schema'
 
 type SidebarProps = {
@@ -16,6 +17,7 @@ type NavItem = {
   label: string
   href: string
   icon: React.ComponentType<{ size?: number; strokeWidth?: number }>
+  exact?: boolean
 }
 
 const MAIN_NAV: NavItem[] = [
@@ -41,6 +43,16 @@ const LOGS_NAV: NavItem[] = [
   { label: 'Todos', href: '/admin/logs', icon: ScrollText },
 ]
 
+// ---- Produtos area nav (isolated from blog) ----
+const PRODUCT_MAIN_NAV: NavItem[] = [
+  { label: 'Produtos', href: '/admin/products', icon: Package, exact: true },
+  { label: 'Categorias', href: '/admin/products/product-categories', icon: Tag },
+]
+
+const PRODUCT_CREATE_NAV: NavItem[] = [
+  { label: 'Novo Produto', href: '/admin/products/new', icon: PackagePlus },
+]
+
 const ROLE_LABEL: Record<UserRole, string> = {
   admin: 'Administrador',
   editor: 'Editor',
@@ -49,17 +61,23 @@ const ROLE_LABEL: Record<UserRole, string> = {
 
 export const Sidebar = ({ userName, userRole }: SidebarProps) => {
   const pathname = usePathname()
+  const area: 'blog' | 'products' = pathname.startsWith('/admin/products')
+    ? 'products'
+    : 'blog'
 
-  const renderLink = ({ label, href, icon: Icon }: NavItem) => (
-    <Link
-      key={href}
-      href={href}
-      className={cn('sidebar-link', pathname.startsWith(href) && 'sidebar-link--active')}
-    >
-      <Icon size={16} strokeWidth={1.5} />
-      <span>{label}</span>
-    </Link>
-  )
+  const renderLink = ({ label, href, icon: Icon, exact }: NavItem) => {
+    const isActive = exact ? pathname === href : pathname.startsWith(href)
+    return (
+      <Link
+        key={href}
+        href={href}
+        className={cn('sidebar-link', isActive && 'sidebar-link--active')}
+      >
+        <Icon size={16} strokeWidth={1.5} />
+        <span>{label}</span>
+      </Link>
+    )
+  }
 
   return (
     <aside className="admin-sidebar">
@@ -69,35 +87,51 @@ export const Sidebar = ({ userName, userRole }: SidebarProps) => {
         <span>Embras Admin</span>
       </div>
 
-      {/* Navigation */}
+      {/* Area switcher — Blog ↔ Produtos */}
+      <AreaSwitcher area={area} />
+
+      {/* Navigation — isolated per area */}
       <nav className="sidebar-nav">
-        {MAIN_NAV.map(renderLink)}
-
-        <div className="sidebar-divider" />
-
-        <span className="sidebar-section-label">Criação</span>
-        {CREATE_NAV.map(renderLink)}
-
-        {userRole !== 'ai_bot' && (
+        {area === 'products' ? (
           <>
-            <div className="sidebar-divider" />
-            <span className="sidebar-section-label">Storage</span>
-            {STORAGE_NAV.map(renderLink)}
+            {PRODUCT_MAIN_NAV.map(renderLink)}
 
             <div className="sidebar-divider" />
-            <span className="sidebar-section-label">Logs</span>
-            {LOGS_NAV.map(renderLink)}
+
+            <span className="sidebar-section-label">Criação</span>
+            {PRODUCT_CREATE_NAV.map(renderLink)}
           </>
-        )}
-
-        {userRole === 'admin' && (
+        ) : (
           <>
+            {MAIN_NAV.map(renderLink)}
+
             <div className="sidebar-divider" />
-            <span className="sidebar-section-label">
-              <Bot size={13} strokeWidth={1.5} className="inline-block mr-1 opacity-70" />
-              Automação
-            </span>
-            {AUTOMATION_NAV.map(renderLink)}
+
+            <span className="sidebar-section-label">Criação</span>
+            {CREATE_NAV.map(renderLink)}
+
+            {userRole !== 'ai_bot' && (
+              <>
+                <div className="sidebar-divider" />
+                <span className="sidebar-section-label">Storage</span>
+                {STORAGE_NAV.map(renderLink)}
+
+                <div className="sidebar-divider" />
+                <span className="sidebar-section-label">Logs</span>
+                {LOGS_NAV.map(renderLink)}
+              </>
+            )}
+
+            {userRole === 'admin' && (
+              <>
+                <div className="sidebar-divider" />
+                <span className="sidebar-section-label">
+                  <Bot size={13} strokeWidth={1.5} className="inline-block mr-1 opacity-70" />
+                  Automação
+                </span>
+                {AUTOMATION_NAV.map(renderLink)}
+              </>
+            )}
           </>
         )}
       </nav>

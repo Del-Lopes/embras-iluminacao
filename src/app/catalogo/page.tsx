@@ -1,0 +1,180 @@
+import { Suspense } from 'react'
+import type { Metadata } from 'next'
+import Link from 'next/link'
+import { BlogHeader } from '@/components/blog/BlogHeader'
+import Footer from '@/components/layout/Footer'
+import { CatalogSidebar } from '@/components/catalog/CatalogSidebar'
+import { CatalogControls } from '@/components/catalog/CatalogControls'
+import { ProductCard } from '@/components/catalog/ProductCard'
+import { flattenCategoryTree } from '@/lib/utils/category-tree'
+import { createSupabaseServerClient } from '@/lib/db/supabase-server'
+import type { ProductCardData } from '@/components/catalog/ProductCard'
+import type { ProductCategory } from '@/lib/db/schema'
+
+export const metadata: Metadata = {
+  title: 'Catálogo',
+  description:
+    'Catálogo de amostra Embras — luminárias e soluções de iluminação para áreas internas e externas.',
+}
+
+const PAGE_SIZE = 9
+
+type SearchParams = Promise<{
+  page?: string
+  environment?: string
+  tipo?: string
+  material?: string
+  sort?: string
+  view?: string
+}>
+
+export default async function CatalogPage({ searchParams }: { searchParams: SearchParams }) {
+  const params = await searchParams
+  const page = Math.max(1, parseInt(params.page ?? '1', 10))
+  const environment = params.environment?.trim() ?? ''
+  const tipo = params.tipo?.trim() ?? ''
+  const material = params.material?.trim() ?? ''
+  const sort = params.sort?.trim() || 'recentes'
+  const view: 'grid' | 'list' = params.view === 'list' ? 'list' : 'grid'
+
+  const supabase = await createSupabaseServerClient()
+
+  // Filter sources: category tree + distinct materials (published only)
+  const [{ data: catData }, { data: matData }] = await Promise.all([
+    supabase
+      .from('product_categories')
+      .select('id, name, slug, parent_id, description, sort_order, created_at')
+      .order('sort_order')
+      .order('name'),
+    supabase
+      .from('products')
+      .select('primary_material')
+      .eq('status', 'published')
+      .not('primary_material', 'is', null),
+  ])
+
+  const categories = flattenCategoryTree((catData ?? []) as ProductCategory[])
+  const materials = Array.from(
+    new Set((matData ?? []).map((m) => m.primary_material as string).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b, 'pt-BR'))
+
+  // Resolve "tipo" (category slug) → product ids via the m2m map
+  let tipoProductIds: string[] | null = null
+  if (tipo) {
+    const category = categories.find((c) => c.slug === tipo)
+    if (!category) {
+      tipoProductIds = []
+    } else {
+      const { data: maps } = await supabase
+        .from('product_category_map')
+        .select('product_id')
+        .eq('category_id', category.id)
+      tipoProductIds = (maps ?? []).map((m) => m.product_id)
+    }
+  }
+
+  const from = (page - 1) * PAGE_SIZE
+  const to = from + PAGE_SIZE - 1
+
+  let products: ProductCardData[] = []
+  let total = 0
+
+  // Short-circuit: a tipo filter that matches no products → empty
+  if (!(tipoProductIds && tipoProductIds.length === 0)) {
+    let query = supabase
+      .from('products')
+      .select('id, name, slug, sku, cover_image, environment, primary_material', {
+        count: 'exact',
+      })
+      .eq('status', 'published')
+      .range(from, to)
+
+    if (sort === 'az') query = query.order('name', { ascending: true })
+    else if (sort === 'za') query = query.order('name', { ascending: false })
+    else query = query.order('published_at', { ascending: false })
+
+    if (environment) query = query.eq('environment', environment as 'interno' | 'externo')
+    if (material) query = query.eq('primary_material', material)
+    if (tipoProductIds) query = query.in('id', tipoProductIds)
+
+    const { data, count } = await query
+    products = (data ?? []) as ProductCardData[]
+    total = count ?? 0
+  }
+
+  const pageCount = Math.ceil(total / PAGE_SIZE)
+
+  const buildHref = (p: number) => {
+    const urlParams = new URLSearchParams()
+    if (environment) urlParams.set('environment', environment)
+    if (tipo) urlParams.set('tipo', tipo)
+    if (material) urlParams.set('material', material)
+    if (sort !== 'recentes') urlParams.set('sort', sort)
+    if (view !== 'grid') urlParams.set('view', view)
+    if (p > 1) urlParams.set('page', String(p))
+    const qs = urlParams.toString()
+    return qs ? `/catalogo?${qs}` : '/catalogo'
+  }
+
+  return (
+    <main className="min-h-screen bg-(--color-bg)">
+      <BlogHeader />
+
+      {/* ── Hero ── */}
+      <div className="blog-index-hero">
+        <div className="blog-index-hero-inner">
+          <h1 className="blog-index-title">Catálogo</h1>
+          <p className="blog-index-desc">
+            Soluções de iluminação Embras para áreas internas e externas — amostras do nosso portfólio.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Body: sidebar + grid ── */}
+      <div className="blog-index-body">
+        <Suspense fallback={<aside className="blog-sidebar catalog-sidebar" />}>
+          <CatalogSidebar
+            categories={categories}
+            materials={materials}
+            currentEnvironment={environment}
+            currentTipo={tipo}
+            currentMaterial={material}
+          />
+        </Suspense>
+
+        <section className="blog-grid-section">
+          <Suspense fallback={<div className="catalog-controls" />}>
+            <CatalogControls total={total} currentSort={sort} currentView={view} />
+          </Suspense>
+
+          {products.length === 0 ? (
+            <p className="blog-grid-empty">Nenhum produto encontrado.</p>
+          ) : (
+            <div className={view === 'list' ? 'catalog-list' : 'catalog-grid'}>
+              {products.map((product) => (
+                <ProductCard key={product.id} {...product} />
+              ))}
+            </div>
+          )}
+
+          {pageCount > 1 && (
+            <nav className="blog-pagination" aria-label="Paginação">
+              {Array.from({ length: pageCount }, (_, i) => i + 1).map((p) => (
+                <Link
+                  key={p}
+                  href={buildHref(p)}
+                  className={`blog-pagination-page${p === page ? ' blog-pagination-page--active' : ''}`}
+                  aria-current={p === page ? 'page' : undefined}
+                >
+                  {p}
+                </Link>
+              ))}
+            </nav>
+          )}
+        </section>
+      </div>
+
+      <Footer />
+    </main>
+  )
+}
