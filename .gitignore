@@ -35,6 +35,8 @@
 /SPEC.md
 /PENTEST-REPORT.md
 /white-label
+/R2-SETUP.md
+/CATALOG-PLAN.md
 
 # debug
 npm-debug.log*
@@ -54,3 +56,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+/scripts/
