@@ -14,8 +14,8 @@
 // ================================================================
 
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
-import { r2Client, R2_BUCKET, r2PublicUrl } from '@/lib/storage/r2-client'
-import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { r2Client, R2_BUCKET, r2PublicUrl, deleteR2Objects } from '@/lib/storage/r2-client'
+import { PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { randomUUID } from 'node:crypto'
 
@@ -141,16 +141,18 @@ export const getProductUploadUrl = async (
 // ================================================================
 export type DeleteObjectResult = { error: string } | { ok: true }
 
+// A deletable key is any real object (non-empty, not a "folder" marker).
+// Auth (admin/editor) is the real gate; this just blocks nonsense input.
+const isDeletableKey = (k: string) =>
+  k.length > 0 && !k.startsWith('/') && !k.endsWith('/')
+
 export const deleteProductObject = async (
   key: string
 ): Promise<DeleteObjectResult> => {
   const user = await requireStaff()
   if (!user) return { error: 'Não autorizado' }
 
-  // Only allow deleting within our managed prefixes.
-  if (!/^(products|models)\/[a-f0-9-]+\.[a-z0-9]+$/.test(key)) {
-    return { error: 'Chave inválida' }
-  }
+  if (!isDeletableKey(key)) return { error: 'Chave inválida' }
 
   try {
     await r2Client.send(
@@ -160,5 +162,91 @@ export const deleteProductObject = async (
   } catch (err) {
     console.error('[deleteProductObject]', (err as Error).message)
     return { error: 'Erro ao excluir arquivo' }
+  }
+}
+
+// ================================================================
+// deleteProductObjects — gated bulk delete (R2 storage manager)
+// ================================================================
+export const deleteProductObjects = async (
+  keys: string[]
+): Promise<DeleteObjectResult> => {
+  const user = await requireStaff()
+  if (!user) return { error: 'Não autorizado' }
+
+  const valid = keys.filter(isDeletableKey)
+  if (!valid.length) return { error: 'Nenhuma chave válida' }
+
+  try {
+    await deleteR2Objects(valid)
+    return { ok: true }
+  } catch (err) {
+    console.error('[deleteProductObjects]', (err as Error).message)
+    return { error: 'Erro ao excluir arquivos' }
+  }
+}
+
+// ================================================================
+// listR2Objects — gated, folder-aware listing for the storage manager
+// Uses Delimiter='/' so the bucket is browsed one level at a time:
+// CommonPrefixes are folders, Contents are the files at this level.
+// ================================================================
+export type R2Object = {
+  key: string
+  size: number
+  lastModified: string | null
+  url: string
+}
+
+export type R2Listing = { folders: string[]; files: R2Object[] }
+export type ListR2Result = { error: string } | R2Listing
+
+export const listR2Objects = async (prefix = ''): Promise<ListR2Result> => {
+  const user = await requireStaff()
+  if (!user) return { error: 'Não autorizado' }
+
+  // Normalize: strip leading slashes; ensure a trailing slash when non-empty
+  // so the prefix lines up with R2's folder semantics.
+  let safePrefix = prefix.replace(/^\/+/, '')
+  if (safePrefix && !safePrefix.endsWith('/')) safePrefix += '/'
+
+  try {
+    const folders: string[] = []
+    const files: R2Object[] = []
+    let token: string | undefined
+
+    // ListObjectsV2 caps at 1000 keys per call — page through all of them.
+    do {
+      const res = await r2Client.send(
+        new ListObjectsV2Command({
+          Bucket: R2_BUCKET,
+          Prefix: safePrefix,
+          Delimiter: '/',
+          ContinuationToken: token,
+          MaxKeys: 1000,
+        })
+      )
+      for (const p of res.CommonPrefixes ?? []) {
+        if (p.Prefix) folders.push(p.Prefix)
+      }
+      for (const o of res.Contents ?? []) {
+        if (!o.Key || o.Key === safePrefix || o.Key.endsWith('/')) continue
+        files.push({
+          key: o.Key,
+          size: o.Size ?? 0,
+          lastModified: o.LastModified ? o.LastModified.toISOString() : null,
+          url: r2PublicUrl(o.Key),
+        })
+      }
+      token = res.IsTruncated ? res.NextContinuationToken : undefined
+    } while (token)
+
+    folders.sort((a, b) => a.localeCompare(b))
+    // Newest first (lexicographic on ISO timestamps == chronological).
+    files.sort((a, b) => (b.lastModified ?? '').localeCompare(a.lastModified ?? ''))
+    return { folders, files }
+  } catch (err) {
+    console.error('[listR2Objects]', (err as Error).message)
+    return { error: 'Erro ao carregar arquivos' }
   }
 }

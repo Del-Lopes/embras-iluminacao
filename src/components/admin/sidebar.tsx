@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, FileText, Sparkles, Tag, LogOut, Zap, ShoppingBag, Bot, Settings, HardDrive, ScrollText, Package, PackagePlus } from 'lucide-react'
+import { LayoutDashboard, FileText, Sparkles, Tag, LogOut, Zap, ShoppingBag, Bot, Settings, HardDrive, ScrollText, PackagePlus } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { logoutAction } from '@/server/auth.actions'
 import { AreaSwitcher } from '@/components/admin/area-switcher'
@@ -45,12 +45,16 @@ const LOGS_NAV: NavItem[] = [
 
 // ---- Produtos area nav (isolated from blog) ----
 const PRODUCT_MAIN_NAV: NavItem[] = [
-  { label: 'Produtos', href: '/admin/products', icon: Package, exact: true },
+  { label: 'Dashboard', href: '/admin/products', icon: LayoutDashboard, exact: true },
   { label: 'Categorias', href: '/admin/products/product-categories', icon: Tag },
 ]
 
 const PRODUCT_CREATE_NAV: NavItem[] = [
   { label: 'Novo Produto', href: '/admin/products/new', icon: PackagePlus },
+]
+
+const PRODUCT_STORAGE_NAV: NavItem[] = [
+  { label: 'Arquivos (R2)', href: '/admin/products/storage', icon: HardDrive },
 ]
 
 const ROLE_LABEL: Record<UserRole, string> = {
@@ -100,6 +104,14 @@ export const Sidebar = ({ userName, userRole }: SidebarProps) => {
 
             <span className="sidebar-section-label">Criação</span>
             {PRODUCT_CREATE_NAV.map(renderLink)}
+
+            {userRole !== 'ai_bot' && (
+              <>
+                <div className="sidebar-divider" />
+                <span className="sidebar-section-label">Storage</span>
+                {PRODUCT_STORAGE_NAV.map(renderLink)}
+              </>
+            )}
           </>
         ) : (
           <>
