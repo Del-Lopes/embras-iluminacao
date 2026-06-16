@@ -89,6 +89,53 @@ export const getPosts = async ({
 }
 
 // ================================================================
+// cleanupCoverImages — remove orphaned cover images from the bucket
+// ================================================================
+type ServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>
+
+// Public URLs look like:
+// {SUPABASE_URL}/storage/v1/object/public/cover-images/<path>
+const BUCKET_PUBLIC_MARKER = '/storage/v1/object/public/cover-images/'
+
+// Returns the in-bucket storage path for a cover image URL, or null when the
+// URL is external (e.g. an Unsplash image) and therefore not ours to delete.
+const extractBucketPath = (url: string | null): string | null => {
+  if (!url) return null
+  const idx = url.indexOf(BUCKET_PUBLIC_MARKER)
+  if (idx === -1) return null
+  const path = url.slice(idx + BUCKET_PUBLIC_MARKER.length).split('?')[0]
+  return path ? decodeURIComponent(path) : null
+}
+
+// Deletes bucket-hosted cover images for already-deleted posts, but only when
+// no remaining post still references the same image (avoids breaking shared
+// images). External URLs are left untouched.
+const cleanupCoverImages = async (
+  supabase: ServerClient,
+  coverImages: (string | null)[]
+): Promise<void> => {
+  const urls = Array.from(new Set(coverImages.filter((u): u is string => !!u)))
+  const toRemove: string[] = []
+
+  for (const url of urls) {
+    const path = extractBucketPath(url)
+    if (!path) continue
+
+    const { count } = await supabase
+      .from('posts')
+      .select('id', { count: 'exact', head: true })
+      .eq('cover_image', url)
+
+    if (count && count > 0) continue
+    toRemove.push(path)
+  }
+
+  if (toRemove.length) {
+    await supabase.storage.from('cover-images').remove(toRemove)
+  }
+}
+
+// ================================================================
 // deletePostAction
 // ================================================================
 export const deletePostAction = async (formData: FormData): Promise<void> => {
@@ -112,10 +159,14 @@ export const deletePostAction = async (formData: FormData): Promise<void> => {
 
   const isAdmin = profile.role === 'admin'
 
-  if (isAdmin) {
-    await supabase.from('posts').delete().eq('id', postId)
-  } else {
-    await supabase.from('posts').delete().eq('id', postId).eq('author_id', user.id)
+  const query = supabase.from('posts').delete().eq('id', postId)
+  const { data: deleted } = await (isAdmin
+    ? query
+    : query.eq('author_id', user.id)
+  ).select('cover_image')
+
+  if (deleted?.length) {
+    await cleanupCoverImages(supabase, deleted.map((r) => r.cover_image))
   }
 
   revalidatePath('/admin/dashboard')
@@ -139,10 +190,14 @@ export const bulkDeletePostsAction = async (ids: string[]): Promise<void> => {
 
   if (!profile) return
 
-  if (profile.role === 'admin') {
-    await supabase.from('posts').delete().in('id', ids)
-  } else {
-    await supabase.from('posts').delete().in('id', ids).eq('author_id', user.id)
+  const query = supabase.from('posts').delete().in('id', ids)
+  const { data: deleted } = await (profile.role === 'admin'
+    ? query
+    : query.eq('author_id', user.id)
+  ).select('cover_image')
+
+  if (deleted?.length) {
+    await cleanupCoverImages(supabase, deleted.map((r) => r.cover_image))
   }
 
   revalidatePath('/admin/dashboard')
