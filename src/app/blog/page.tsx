@@ -90,6 +90,16 @@ export default async function BlogPage({ searchParams }: { searchParams: SearchP
     return qs ? `/blog?${qs}` : '/blog'
   }
 
+  // Janela deslizante de paginação — no máximo 8 números no desktop.
+  // A página atual fica centralizada; perto das bordas a janela "encosta".
+  const PAGE_WINDOW = 8
+  let winStart = Math.max(1, page - 4)
+  let winEnd = Math.min(pageCount, winStart + PAGE_WINDOW - 1)
+  winStart = Math.max(1, winEnd - PAGE_WINDOW + 1)
+  const windowPages = Array.from({ length: winEnd - winStart + 1 }, (_, i) => winStart + i)
+  const atFirst = page <= 1
+  const atLast = page >= pageCount
+
   return (
     <main className="min-h-screen bg-(--color-bg)">
       <BlogHeader />
@@ -129,16 +139,46 @@ export default async function BlogPage({ searchParams }: { searchParams: SearchP
 
           {pageCount > 1 && (
             <nav className="blog-pagination" aria-label="Paginação">
-              {Array.from({ length: pageCount }, (_, i) => i + 1).map((p) => (
+              {/* Primeira página */}
+              {atFirst ? (
+                <span className="blog-pagination-page blog-pagination-arrow blog-pagination-page--disabled" aria-hidden="true">«</span>
+              ) : (
+                <Link href={buildHref(1)} className="blog-pagination-page blog-pagination-arrow" aria-label="Primeira página">«</Link>
+              )}
+
+              {/* Página anterior */}
+              {atFirst ? (
+                <span className="blog-pagination-page blog-pagination-arrow blog-pagination-page--disabled" aria-hidden="true">‹</span>
+              ) : (
+                <Link href={buildHref(page - 1)} className="blog-pagination-page blog-pagination-arrow" aria-label="Página anterior">‹</Link>
+              )}
+
+              {/* Janela de números */}
+              {windowPages.map((p) => (
                 <Link
                   key={p}
                   href={buildHref(p)}
-                  className={`blog-pagination-page${p === page ? ' blog-pagination-page--active' : ''}`}
+                  data-far={Math.abs(p - page) > 2 ? 'true' : undefined}
+                  className={`blog-pagination-page blog-pagination-num${p === page ? ' blog-pagination-page--active' : ''}`}
                   aria-current={p === page ? 'page' : undefined}
                 >
                   {p}
                 </Link>
               ))}
+
+              {/* Próxima página */}
+              {atLast ? (
+                <span className="blog-pagination-page blog-pagination-arrow blog-pagination-page--disabled" aria-hidden="true">›</span>
+              ) : (
+                <Link href={buildHref(page + 1)} className="blog-pagination-page blog-pagination-arrow" aria-label="Próxima página">›</Link>
+              )}
+
+              {/* Última página */}
+              {atLast ? (
+                <span className="blog-pagination-page blog-pagination-arrow blog-pagination-page--disabled" aria-hidden="true">»</span>
+              ) : (
+                <Link href={buildHref(pageCount)} className="blog-pagination-page blog-pagination-arrow" aria-label="Última página">»</Link>
+              )}
             </nav>
           )}
         </section>

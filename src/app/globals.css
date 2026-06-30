@@ -2928,6 +2928,31 @@ tr[data-selected='true'] td {
   border-color: var(--color-accent);
 }
 
+/* Setas de navegação (« ‹ › ») — sempre como caixas visíveis */
+.blog-pagination-arrow {
+  border-color: var(--color-border);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.blog-pagination-arrow:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/* Setas inativas nas extremidades (primeira/última página) */
+.blog-pagination-page--disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* No mobile, exibe apenas a página atual ± 2 (mantém as setas) */
+@media (max-width: 640px) {
+  .blog-pagination-num[data-far='true'] {
+    display: none;
+  }
+}
+
 /* ================================================================
    POST CARD
    ================================================================ */
