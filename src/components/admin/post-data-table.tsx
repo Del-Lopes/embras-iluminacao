@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { DeletePostButton } from '@/components/admin/delete-post-button'
+import { AdminPagination } from '@/components/admin/admin-pagination'
 import { bulkDeletePostsAction } from '@/server/admin.actions'
 import type { PostStatus, PostWithRelations } from '@/lib/db/schema'
 import type { VariantProps } from 'class-variance-authority'
@@ -16,82 +17,6 @@ const STATUS_VARIANT: Partial<Record<PostStatus, BadgeVariant>> = {
   published: 'published',
   draft: 'draft',
   scheduled: 'scheduled',
-}
-
-// ----------------------------------------------------------------
-// Pagination
-// ----------------------------------------------------------------
-type PaginationProps = {
-  page: number
-  pageCount: number
-  searchParams: Record<string, string>
-}
-
-const buildPageList = (page: number, pageCount: number): (number | '…')[] => {
-  if (pageCount <= 7) return Array.from({ length: pageCount }, (_, i) => i + 1)
-
-  const pages: (number | '…')[] = [1]
-
-  const left = Math.max(2, page - 2)
-  const right = Math.min(pageCount - 1, page + 2)
-
-  if (left > 2) pages.push('…')
-  for (let i = left; i <= right; i++) pages.push(i)
-  if (right < pageCount - 1) pages.push('…')
-
-  pages.push(pageCount)
-  return pages
-}
-
-const Pagination = ({ page, pageCount, searchParams }: PaginationProps) => {
-  if (pageCount <= 1) return null
-
-  const buildHref = (p: number) => {
-    const params = new URLSearchParams(searchParams)
-    params.set('page', String(p))
-    return `?${params.toString()}`
-  }
-
-  const pages = buildPageList(page, pageCount)
-
-  return (
-    <div className="pagination">
-      <Link
-        href={buildHref(page - 1)}
-        className={`pagination-btn${page <= 1 ? ' pagination-btn--disabled' : ''}`}
-        aria-disabled={page <= 1}
-        tabIndex={page <= 1 ? -1 : undefined}
-      >
-        ← Anterior
-      </Link>
-
-      <div className="pagination-pages">
-        {pages.map((p, i) =>
-          p === '…' ? (
-            <span key={`ellipsis-${i}`} className="pagination-ellipsis">…</span>
-          ) : (
-            <Link
-              key={p}
-              href={buildHref(p)}
-              className={`pagination-page${p === page ? ' pagination-page--active' : ''}`}
-              aria-current={p === page ? 'page' : undefined}
-            >
-              {p}
-            </Link>
-          )
-        )}
-      </div>
-
-      <Link
-        href={buildHref(page + 1)}
-        className={`pagination-btn${page >= pageCount ? ' pagination-btn--disabled' : ''}`}
-        aria-disabled={page >= pageCount}
-        tabIndex={page >= pageCount ? -1 : undefined}
-      >
-        Próxima →
-      </Link>
-    </div>
-  )
 }
 
 // ----------------------------------------------------------------
@@ -280,7 +205,7 @@ export const PostDataTable = ({ posts, total, page, pageCount, searchParams }: P
         </div>
       )}
 
-      <Pagination page={page} pageCount={pageCount} searchParams={searchParams} />
+      <AdminPagination page={page} pageCount={pageCount} searchParams={searchParams} />
     </div>
   )
 }

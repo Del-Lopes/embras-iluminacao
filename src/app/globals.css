@@ -1442,6 +1442,25 @@ tr[data-selected='true'] td {
   user-select: none;
 }
 
+/* Setas « ‹ › » — reaproveitam o box de .pagination-page */
+.pagination-arrow {
+  font-weight: 600;
+  line-height: 1;
+}
+
+.pagination-page--disabled {
+  opacity: 0.3;
+  pointer-events: none;
+  cursor: default;
+}
+
+/* No mobile, exibe apenas a página atual ± 2 (mantém as setas) */
+@media (max-width: 640px) {
+  .pagination-num[data-far='true'] {
+    display: none;
+  }
+}
+
 /* ---- Dashboard header with action ---- */
 .dashboard-header {
   display: flex;
