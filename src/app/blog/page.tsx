@@ -90,9 +90,9 @@ export default async function BlogPage({ searchParams }: { searchParams: SearchP
     return qs ? `/blog?${qs}` : '/blog'
   }
 
-  // Janela deslizante de paginação — no máximo 8 números no desktop.
+  // Janela deslizante de paginação — no máximo 9 números no desktop.
   // A página atual fica centralizada; perto das bordas a janela "encosta".
-  const PAGE_WINDOW = 8
+  const PAGE_WINDOW = 9
   let winStart = Math.max(1, page - 4)
   let winEnd = Math.min(pageCount, winStart + PAGE_WINDOW - 1)
   winStart = Math.max(1, winEnd - PAGE_WINDOW + 1)
