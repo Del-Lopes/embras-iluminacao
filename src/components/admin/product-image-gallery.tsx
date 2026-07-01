@@ -2,21 +2,25 @@
 
 import { useRef, useState } from 'react'
 import { getProductUploadUrl } from '@/server/upload.actions'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AlertTriangle } from 'lucide-react'
 
 export type GalleryImage = { url: string; alt: string }
 
-const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp']
+const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp', 'image/tiff', 'image/tif']
 const MAX_BYTES = 5 * 1024 * 1024 // 5 MB
 
 type Props = {
   value: GalleryImage[]
   onChange: (images: GalleryImage[]) => void
+  // Subpasta no R2 (nome do produto). Vazio = upload bloqueado.
+  folder?: string
 }
 
 // Carousel image manager. Each file is uploaded straight to R2 via a
 // presigned PUT (same secure flow as r2-upload.tsx). Order is the carousel
 // order (persisted as sort_order on save).
-export const ProductImageGallery = ({ value, onChange }: Props) => {
+export const ProductImageGallery = ({ value, onChange, folder = '' }: Props) => {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -32,6 +36,8 @@ export const ProductImageGallery = ({ value, onChange }: Props) => {
     }
     const result = await getProductUploadUrl({
       kind: 'image',
+      group: 'product',
+      folder,
       contentType: file.type,
       contentLength: file.size,
     })
@@ -86,17 +92,25 @@ export const ProductImageGallery = ({ value, onChange }: Props) => {
 
   return (
     <div className="gallery">
-      <label className="image-upload-label">
+      {!folder && (
+        <Alert variant="warning">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Informe o nome do produto antes de enviar imagens.
+          </AlertDescription>
+        </Alert>
+      )}
+      <label className={`image-upload-label${!folder ? ' image-upload-label--disabled' : ''}`}>
         <input
           ref={inputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/jpeg,image/png,image/webp,image/tiff,.tif,.tiff"
           multiple
           className="sr-only"
           onChange={handleFiles}
-          disabled={uploading}
+          disabled={uploading || !folder}
         />
-        {uploading ? 'Enviando...' : '+ Adicionar imagens ao carrossel'}
+        {uploading ? 'Enviando...' : '+ Selecionar imagens'}
       </label>
 
       {error && <span className="field-error">{error}</span>}

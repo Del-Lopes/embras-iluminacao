@@ -2,6 +2,8 @@
 
 import { useState, useRef } from 'react'
 import { getProductUploadUrl } from '@/server/upload.actions'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AlertTriangle } from 'lucide-react'
 
 // Single-image uploader for product cover / carousel images.
 // Mirrors the UX + validation of image-upload.tsx, but the bytes go
@@ -14,15 +16,19 @@ import { getProductUploadUrl } from '@/server/upload.actions'
 //   3. Browser PUTs the file directly to R2 with the pinned Content-Type.
 //   4. The public read URL is handed back to the form.
 
-const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp']
+const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp', 'image/tiff', 'image/tif']
 const MAX_BYTES = 5 * 1024 * 1024 // 5 MB
 
 type Props = {
   value: string
   onChange: (url: string) => void
+  // Destino no R2: 'product' → produtos/<folder>, 'model' → modelos_3d/<folder>
+  group?: 'product' | 'model'
+  // Subpasta (nome do produto). Vazio = upload bloqueado até nomear o produto.
+  folder?: string
 }
 
-export const R2Upload = ({ value, onChange }: Props) => {
+export const R2Upload = ({ value, onChange, group = 'product', folder = '' }: Props) => {
   const [tab, setTab] = useState<'upload' | 'url'>('upload')
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -35,7 +41,7 @@ export const R2Upload = ({ value, onChange }: Props) => {
 
     // 1. Client-side guard (server re-validates authoritatively)
     if (!ACCEPTED.includes(file.type)) {
-      setError('Apenas JPG, PNG ou WebP são permitidos')
+      setError('Apenas JPG, PNG, WebP ou TIFF são permitidos')
       return
     }
     if (file.size > MAX_BYTES) {
@@ -50,6 +56,8 @@ export const R2Upload = ({ value, onChange }: Props) => {
       // 2. Ask the server for a presigned PUT URL (auth-gated)
       const result = await getProductUploadUrl({
         kind: 'image',
+        group,
+        folder,
         contentType: file.type,
         contentLength: file.size,
       })
@@ -124,17 +132,27 @@ export const R2Upload = ({ value, onChange }: Props) => {
 
       {/* ---- Input area (only shown when no image selected) ---- */}
       {!value && tab === 'upload' && (
-        <label className="image-upload-label">
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="sr-only"
-            onChange={handleFile}
-            disabled={uploading}
-          />
-          {uploading ? 'Enviando...' : '+ Selecionar imagem'}
-        </label>
+        <>
+          {!folder && (
+            <Alert variant="warning" className="mb-3">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Informe o nome do produto antes de enviar imagens.
+              </AlertDescription>
+            </Alert>
+          )}
+          <label className={`image-upload-label${!folder ? ' image-upload-label--disabled' : ''}`}>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/tiff,.tif,.tiff"
+              className="sr-only"
+              onChange={handleFile}
+              disabled={uploading || !folder}
+            />
+            {uploading ? 'Enviando...' : '+ Selecionar imagem'}
+          </label>
+        </>
       )}
 
       {!value && tab === 'url' && (

@@ -9,7 +9,7 @@ import { ProductSpecs } from '@/components/catalog/ProductSpecs'
 import { RelatedProducts } from '@/components/catalog/RelatedProducts'
 import { ProductModelViewer } from '@/components/catalog/ProductModelViewer'
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
-import type { Product } from '@/lib/db/schema'
+import type { Product, ProductCharacteristic } from '@/lib/db/schema'
 import type { ProductCardData } from '@/components/catalog/ProductCard'
 
 type Props = { params: Promise<{ slug: string }> }
@@ -49,8 +49,8 @@ export default async function ProductDetailPage({ params }: Props) {
   const product = data as Product | null
   if (!product) notFound()
 
-  // Images + categories (parallel)
-  const [{ data: imgData }, { data: mapData }] = await Promise.all([
+  // Images + categories + características (parallel)
+  const [{ data: imgData }, { data: mapData }, { data: charMapData }] = await Promise.all([
     supabase
       .from('product_images')
       .select('url, alt, sort_order')
@@ -60,7 +60,20 @@ export default async function ProductDetailPage({ params }: Props) {
       .from('product_category_map')
       .select('product_categories(id, name, slug)')
       .eq('product_id', product.id),
+    supabase
+      .from('product_characteristic_map')
+      .select('product_characteristics(type, name, sort_order)')
+      .eq('product_id', product.id),
   ])
+
+  const characteristics = (
+    (charMapData ?? []) as unknown as {
+      product_characteristics: { type: ProductCharacteristic['type']; name: string; sort_order: number } | null
+    }[]
+  )
+    .map((m) => m.product_characteristics)
+    .filter((c): c is { type: ProductCharacteristic['type']; name: string; sort_order: number } => !!c)
+    .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name, 'pt-BR'))
 
   const images = (imgData ?? []).map((i) => ({ url: i.url, alt: i.alt ?? '' }))
   const categories = (
@@ -173,7 +186,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
         {/* Technical specs */}
         <div className="product-section">
-          <ProductSpecs product={product} />
+          <ProductSpecs product={product} characteristics={characteristics} />
         </div>
 
         {/* 3D model (model-viewer) */}

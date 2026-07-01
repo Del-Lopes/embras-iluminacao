@@ -96,7 +96,7 @@ export default async function ProductsDashboardPage({
       <header className="dashboard-header">
         <div>
           <h1 className="dashboard-title">Produtos</h1>
-          <p className="dashboard-subtitle">Catálogo de amostra Embras</p>
+          <p className="dashboard-subtitle">Gerenciar produtos do catálogo</p>
         </div>
         <div className="dashboard-header-actions">
           <Link href="/admin/products/new" className="action-btn action-btn--edit">

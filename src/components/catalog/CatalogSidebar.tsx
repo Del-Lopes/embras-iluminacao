@@ -5,9 +5,11 @@ import { useCallback, useTransition } from 'react'
 
 type CategoryOption = { id: string; name: string; slug: string; depth: number }
 
+type MaterialOption = { slug: string; name: string }
+
 type Props = {
   categories: CategoryOption[]
-  materials: string[]
+  materials: MaterialOption[]
   currentEnvironment: string
   currentTipo: string
   currentMaterial: string
@@ -99,15 +101,15 @@ export function CatalogSidebar({
           <p className="blog-sidebar-cats-label">Material</p>
           <ul>
             {materials.map((mat) => (
-              <li key={mat}>
+              <li key={mat.slug}>
                 <label className="blog-cat-label">
                   <input
                     type="checkbox"
                     className="blog-cat-check"
-                    checked={currentMaterial === mat}
-                    onChange={() => toggle('material', currentMaterial, mat)}
+                    checked={currentMaterial === mat.slug}
+                    onChange={() => toggle('material', currentMaterial, mat.slug)}
                   />
-                  <span className="blog-cat-name">{mat}</span>
+                  <span className="blog-cat-name">{mat.name}</span>
                 </label>
               </li>
             ))}

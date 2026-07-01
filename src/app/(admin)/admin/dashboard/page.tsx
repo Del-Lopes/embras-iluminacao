@@ -69,8 +69,8 @@ export default async function DashboardPage({
     <div className="dashboard-page">
       <header className="dashboard-header">
         <div>
-          <h1 className="dashboard-title">Dashboard</h1>
-          <p className="dashboard-subtitle">Gerenciar publicações</p>
+          <h1 className="dashboard-title">Publicações</h1>
+          <p className="dashboard-subtitle">Gerenciar posts do blog</p>
         </div>
         <div className="dashboard-header-actions">
           <Link href="/admin/posts/new" className="action-btn action-btn--edit">

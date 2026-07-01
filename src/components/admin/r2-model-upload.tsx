@@ -2,6 +2,8 @@
 
 import { useRef, useState } from 'react'
 import { getProductUploadUrl } from '@/server/upload.actions'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AlertTriangle } from 'lucide-react'
 
 // .glb uploader for the 3D model field. Reuses the same secure presigned-PUT
 // flow as image uploads, but with kind='model'. Browsers often report an empty
@@ -13,9 +15,11 @@ const MODEL_CONTENT_TYPE = 'model/gltf-binary'
 type Props = {
   value: string
   onChange: (url: string) => void
+  // Subpasta no R2 dentro de modelos_3d/ (nome do produto). Vazio = bloqueado.
+  folder?: string
 }
 
-export const R2ModelUpload = ({ value, onChange }: Props) => {
+export const R2ModelUpload = ({ value, onChange, folder = '' }: Props) => {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [urlInput, setUrlInput] = useState('')
@@ -39,6 +43,8 @@ export const R2ModelUpload = ({ value, onChange }: Props) => {
     try {
       const result = await getProductUploadUrl({
         kind: 'model',
+        group: 'model',
+        folder,
         contentType: MODEL_CONTENT_TYPE,
         contentLength: file.size,
       })
@@ -91,14 +97,22 @@ export const R2ModelUpload = ({ value, onChange }: Props) => {
 
   return (
     <div className="model-upload">
-      <label className="image-upload-label">
+      {!folder && (
+        <Alert variant="warning" className="mb-3">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Informe o nome do produto antes de enviar o modelo.
+          </AlertDescription>
+        </Alert>
+      )}
+      <label className={`image-upload-label${!folder ? ' image-upload-label--disabled' : ''}`}>
         <input
           ref={inputRef}
           type="file"
           accept=".glb,model/gltf-binary"
           className="sr-only"
           onChange={handleFile}
-          disabled={uploading}
+          disabled={uploading || !folder}
         />
         {uploading ? 'Enviando...' : '+ Enviar modelo .glb'}
       </label>

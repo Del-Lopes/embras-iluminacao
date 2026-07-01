@@ -21,6 +21,7 @@ import type {
 } from '@/lib/db/schema'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { generateProductSeo } from '@/lib/ai/product-seo-generator'
 
 const PAGE_SIZE = 20
 
@@ -279,6 +280,17 @@ export const bulkDeleteProductsAction = async (ids: string[]): Promise<void> => 
 // ================================================================
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
+const toSlug = (text: string): string =>
+  text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 100)
+
 const imageInputSchema = z.object({
   url: z.string().url(),
   alt: z.string().optional().default(''),
@@ -286,31 +298,33 @@ const imageInputSchema = z.object({
 
 const productSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
+  // Slug opcional — quando vazio é gerado automaticamente a partir do nome.
   slug: z
     .string()
-    .min(1, 'Slug é obrigatório')
-    .regex(SLUG_RE, 'Slug deve conter apenas letras minúsculas, números e hífens'),
+    .optional()
+    .default('')
+    .refine(
+      (s) => !s || SLUG_RE.test(s),
+      'Slug deve conter apenas letras minúsculas, números e hífens'
+    ),
   sku: z.string().min(1, 'SKU é obrigatório'),
   description: z.string().optional().default(''),
   cover_image: z.string().optional().default(''),
   status: z.enum(['draft', 'published']),
   environment: z.enum(['interno', 'externo']),
-  primary_material: z.string().optional().default(''),
   height_cm: z.string().optional().default(''),
   width_cm: z.string().optional().default(''),
   depth_cm: z.string().optional().default(''),
   weight_kg: z.string().optional().default(''),
-  materials: z.string().optional().default(''),
-  socket_type: z.string().optional().default(''),
   category_ids: z.array(z.string().uuid()).optional().default([]),
+  // Material principal / secundário / soquete agora são características (N:N)
+  characteristic_ids: z.array(z.string().uuid()).optional().default([]),
   images: z.array(imageInputSchema).optional().default([]),
   has_3d_model: z.boolean().optional().default(false),
   model_3d_url: z.string().optional().default(''),
   model_3d_poster: z.string().optional().default(''),
   model_3d_alt: z.string().optional().default(''),
-  seo_title: z.string().optional().default(''),
-  seo_description: z.string().optional().default(''),
-  seo_keywords: z.string().optional().default(''),
+  // SEO não vem mais do formulário — é gerado por IA (fallback determinístico) no save.
 })
 
 export type ProductFormInput = z.input<typeof productSchema> & { id?: string }
@@ -322,39 +336,47 @@ const numOrNull = (v: string): number | null => {
   return Number.isFinite(n) ? n : null
 }
 
-const csvOrNull = (v: string): string[] | null => {
-  const arr = v.split(',').map((s) => s.trim()).filter(Boolean)
-  return arr.length ? arr : null
-}
-
 // Map validated form data → products row columns (shared create/update).
+// SEO (seo_title/description/keywords) é resolvido à parte (IA) no create/update.
 const toProductColumns = (
   d: z.infer<typeof productSchema>
-): Omit<InsertProduct, 'author_id'> => ({
+): Omit<InsertProduct, 'author_id' | 'seo_title' | 'seo_description' | 'seo_keywords'> => ({
   name: d.name.trim(),
-  slug: d.slug.trim(),
+  // Fallback: slug derivado do nome quando não informado.
+  slug: d.slug.trim() || toSlug(d.name),
   sku: d.sku.trim(),
   description: d.description.trim() || null,
   cover_image: d.cover_image.trim() || null,
   status: d.status,
   environment: d.environment as ProductEnvironment,
-  primary_material: d.primary_material.trim() || null,
+  // Colunas legadas — substituídas pelas características (tabela à parte).
+  primary_material: null,
   height_cm: numOrNull(d.height_cm),
   width_cm: numOrNull(d.width_cm),
   depth_cm: numOrNull(d.depth_cm),
   weight_kg: numOrNull(d.weight_kg),
-  materials: csvOrNull(d.materials),
-  socket_type: d.socket_type.trim() || null,
+  materials: null,
+  socket_type: null,
   has_3d_model: d.has_3d_model,
   // 3D fields only persist while the switcher is on
   model_3d_url: d.has_3d_model ? d.model_3d_url.trim() || null : null,
   model_3d_poster: d.has_3d_model ? d.model_3d_poster.trim() || null : null,
   model_3d_alt: d.has_3d_model ? d.model_3d_alt.trim() || null : null,
-  seo_title: d.seo_title.trim() || null,
-  seo_description: d.seo_description.trim() || null,
-  seo_keywords: csvOrNull(d.seo_keywords),
   published_at: null, // resolved per create/update below
 })
+
+// Resolve os nomes das categorias selecionadas (contexto para o SEO por IA).
+const resolveCategoryNames = async (
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  categoryIds: string[]
+): Promise<string[]> => {
+  if (!categoryIds.length) return []
+  const { data } = await supabase
+    .from('product_categories')
+    .select('name')
+    .in('id', categoryIds)
+  return (data ?? []).map((c) => c.name)
+}
 
 const uniqueViolationMessage = (msg: string): string =>
   msg.includes('sku')
@@ -372,6 +394,20 @@ const syncCategories = async (
     await supabase
       .from('product_category_map')
       .insert(categoryIds.map((category_id) => ({ product_id: productId, category_id })))
+  }
+}
+
+// Replace the product's characteristic mappings (material/soquete) with the given ids.
+const syncCharacteristics = async (
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  productId: string,
+  characteristicIds: string[]
+) => {
+  await supabase.from('product_characteristic_map').delete().eq('product_id', productId)
+  if (characteristicIds.length) {
+    await supabase
+      .from('product_characteristic_map')
+      .insert(characteristicIds.map((characteristic_id) => ({ product_id: productId, characteristic_id })))
   }
 }
 
@@ -417,6 +453,30 @@ const cleanupUrls = async (urls: string[]) => {
 }
 
 // ================================================================
+// isProductSlugTaken — checagem ao vivo de slug duplicado no formulário.
+// Aceita o slug informado OU o derivado do nome; ignora o próprio produto
+// na edição (excludeId).
+// ================================================================
+export const isProductSlugTaken = async (
+  rawSlug: string,
+  excludeId?: string
+): Promise<boolean> => {
+  const slug = (rawSlug || '').trim()
+  if (!slug || !SLUG_RE.test(slug)) return false
+
+  const supabase = await createSupabaseServerClient()
+  let query = supabase.from('products').select('id').eq('slug', slug).limit(1)
+  if (excludeId) query = query.neq('id', excludeId)
+
+  const { data, error } = await query
+  if (error) {
+    console.error('[isProductSlugTaken]', error.message)
+    return false
+  }
+  return (data?.length ?? 0) > 0
+}
+
+// ================================================================
 // createProductAction
 // ================================================================
 export const createProductAction = async (
@@ -435,10 +495,23 @@ export const createProductAction = async (
   const d = parsed.data
 
   const columns = toProductColumns(d)
+
+  // SEO por IA (2 tentativas) com fallback determinístico automático.
+  const categoryNames = await resolveCategoryNames(supabase, d.category_ids)
+  const seo = await generateProductSeo({
+    name: d.name,
+    description: d.description,
+    categories: categoryNames,
+    environment: d.environment,
+  })
+
   const { data: created, error } = await supabase
     .from('products')
     .insert({
       ...columns,
+      seo_title: seo.seo_title,
+      seo_description: seo.seo_description,
+      seo_keywords: seo.seo_keywords,
       author_id: user.id, // server-side only — never from input
       published_at: d.status === 'published' ? new Date().toISOString() : null,
     })
@@ -452,6 +525,7 @@ export const createProductAction = async (
   }
 
   await syncCategories(supabase, created.id, d.category_ids)
+  await syncCharacteristics(supabase, created.id, d.characteristic_ids)
   await syncImages(supabase, created.id, d.images)
 
   revalidatePath('/admin/products')
@@ -499,7 +573,22 @@ export const updateProductAction = async (
       ? existing?.published_at ?? new Date().toISOString()
       : existing?.published_at ?? null
 
-  const updateData = { ...columns, published_at: publishedAt }
+  // SEO por IA (2 tentativas) com fallback determinístico automático.
+  const categoryNames = await resolveCategoryNames(supabase, d.category_ids)
+  const seo = await generateProductSeo({
+    name: d.name,
+    description: d.description,
+    categories: categoryNames,
+    environment: d.environment,
+  })
+
+  const updateData = {
+    ...columns,
+    seo_title: seo.seo_title,
+    seo_description: seo.seo_description,
+    seo_keywords: seo.seo_keywords,
+    published_at: publishedAt,
+  }
 
   const { error } = isAdmin
     ? await supabase.from('products').update(updateData).eq('id', productId)
@@ -512,6 +601,7 @@ export const updateProductAction = async (
   }
 
   await syncCategories(supabase, productId, d.category_ids)
+  await syncCharacteristics(supabase, productId, d.characteristic_ids)
   const removedImageUrls = await syncImages(supabase, productId, d.images)
 
   // R2 cleanup: removed gallery images + any replaced single-asset (cover, 3D model, poster)

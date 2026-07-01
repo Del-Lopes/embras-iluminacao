@@ -26,6 +26,8 @@ const IMAGE_MIME: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
   'image/webp': 'webp',
+  'image/tiff': 'tiff',
+  'image/tif': 'tiff',
 }
 
 // 3D models (Wave C7) — gated behind the same flow, larger size cap.
@@ -39,9 +41,32 @@ const MAX_MODEL_BYTES = 50 * 1024 * 1024 // 50 MB — .glb
 const PRESIGN_TTL_SECONDS = 60
 
 export type UploadKind = 'image' | 'model'
+// Destino no R2: 'product' → produtos/, 'model' → modelos_3d/
+export type UploadGroup = 'product' | 'model'
+
+// Pasta-base por grupo. Cada produto ganha uma subpasta com o nome (slug).
+const GROUP_BASE: Record<UploadGroup, string> = {
+  product: 'produtos',
+  model: 'modelos_3d',
+}
+
+// Sanitiza o nome do produto em um segmento de pasta seguro (nunca confiar no
+// caminho vindo do cliente). Vazio → 'sem-nome' para não gravar na raiz.
+const sanitizeFolder = (raw: string): string => {
+  const s = (raw || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80)
+  return s || 'sem-nome'
+}
 
 export type GetUploadUrlInput = {
   kind: UploadKind
+  group?: UploadGroup
+  folder?: string
   contentType: string
   contentLength: number
 }
@@ -84,7 +109,11 @@ export const getProductUploadUrl = async (
   const isImage = input.kind === 'image'
   const mimeMap = isImage ? IMAGE_MIME : MODEL_MIME
   const maxBytes = isImage ? MAX_IMAGE_BYTES : MAX_MODEL_BYTES
-  const prefix = isImage ? 'products' : 'models'
+  // Destino: imagens do produto → produtos/, qualquer asset 3D → modelos_3d/.
+  // O grupo é explícito (o poster 3D é uma imagem que vai em modelos_3d/).
+  const group: UploadGroup = input.group ?? (input.kind === 'model' ? 'model' : 'product')
+  const base = GROUP_BASE[group]
+  const folder = sanitizeFolder(input.folder ?? '')
 
   // 3. Validate MIME (server-authoritative)
   const ext = mimeMap[input.contentType]
@@ -105,8 +134,9 @@ export const getProductUploadUrl = async (
     return { error: `Arquivo muito grande (máx. ${mb} MB)` }
   }
 
-  // 5. Server-generated key — never client-controlled
-  const key = `${prefix}/${randomUUID()}.${ext}`
+  // 5. Server-generated key — never client-controlled.
+  //    Ex.: produtos/luminaria-led/<uuid>.jpg | modelos_3d/luminaria-led/<uuid>.glb
+  const key = `${base}/${folder}/${randomUUID()}.${ext}`
 
   // 6. Pin Content-Type + Content-Length into the signed request so the
   //    eventual PUT cannot upload a different type or oversize payload.

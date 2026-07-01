@@ -213,8 +213,17 @@ p {
 
 .admin-main {
   flex: 1;
-  padding: 32px;
+  min-width: 0;
+  /* Respiro vertical aqui; o padding lateral fica nos containers de seção
+     (.dashboard-page / .editor-page) junto do max-width de 1366px. */
+  padding: 32px 0;
   overflow-y: auto;
+}
+
+@media (max-width: 640px) {
+  .admin-main {
+    padding: 24px 0;
+  }
 }
 
 /* ---- Sidebar ---- */
@@ -335,14 +344,97 @@ p {
 }
 
 /* Product editor — categories, gallery, 3D switcher */
-.editor-row--4 {
+/* Seletores compostos para vencer o `.editor-row` (3 colunas) definido depois */
+.editor-row.editor-row--4 {
   grid-template-columns: repeat(4, 1fr);
+}
+
+.editor-row.editor-row--2 {
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+}
+
+/* Duas colunas: dados principais (esquerda) + categorias (direita, estreita) */
+.editor-two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 16px;
+  align-items: start;
+}
+
+/* Layout do editor em pares: cada linha = esquerda (1fr) + direita (320px fixa).
+   A coluna da direita é uma faixa fixa na página toda; os containers da
+   esquerda ficam todos com a mesma largura (1ª coluna do grid). Pares
+   específicos (carrossel↔capa, dimensões↔especificações) ficam na mesma linha. */
+.editor-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.editor-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+.editor-pair > .editor-section {
+  min-width: 0;
+}
+
+/* Cabeçalho clicável de seção recolhível (ex.: SEO) */
+.section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
+
+.section-toggle-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+/* Campo a meia largura — mesma célula de um grid 2-col (desconta metade do gap)
+   para ficar idêntico ao campo "Área de uso" */
+.field-group--half {
+  width: calc(50% - 8px);
+}
+
+@media (max-width: 900px) {
+  .editor-two-col,
+  .editor-pair {
+    grid-template-columns: 1fr;
+  }
+  .editor-pair-spacer {
+    display: none;
+  }
+  .editor-row.editor-row--2 {
+    grid-template-columns: 1fr;
+  }
+  .field-group--half {
+    width: 100%;
+  }
 }
 
 .field-hint {
   font-size: var(--font-size-sm);
   color: var(--color-muted);
   margin: 0 0 8px;
+}
+
+.field-hint--xs {
+  font-size: var(--font-size-xs);
+  margin: 0;
 }
 
 .field-label-row {
@@ -374,8 +466,84 @@ p {
   align-items: center;
   gap: 8px;
   font-size: var(--font-size-sm);
-  color: var(--color-foreground);
+  /* --color-foreground não existe → texto ficava invisível no admin claro */
+  color: var(--color-primary);
   cursor: pointer;
+}
+
+/* ---- Características: página de gestão (3 colunas) ---- */
+.characteristics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.characteristic-col {
+  gap: 14px;
+}
+
+.characteristic-col-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.characteristic-add {
+  display: flex;
+  gap: 8px;
+}
+
+.characteristic-add .toolbar-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.characteristic-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.characteristic-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+}
+
+@media (max-width: 900px) {
+  .characteristics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- Editor: coluna direita (categorias + características) ---- */
+.editor-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.char-group + .char-group {
+  margin-top: 12px;
+}
+
+.char-group-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-muted);
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .switcher-row {
@@ -1050,6 +1218,77 @@ a.product-info-category:hover {
   color: #f87171;
 }
 
+/* Aviso (não-bloqueante) — ex.: slug duplicado */
+.field-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-xs);
+  color: #d97706;
+}
+
+.field-warning code {
+  font-family: var(--font-mono, monospace);
+  background-color: rgba(217, 119, 6, 0.12);
+  padding: 0 4px;
+  border-radius: 4px;
+}
+
+/* Slug recolhível ("Slug personalizado") */
+.slug-collapsible {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.slug-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+  transition: color var(--transition-fast);
+}
+
+.slug-toggle:hover {
+  color: var(--color-accent);
+}
+
+.slug-toggle-arrow {
+  display: inline-block;
+  transition: transform var(--transition-fast);
+}
+
+.slug-toggle-arrow--open {
+  transform: rotate(90deg);
+}
+
+.slug-toggle-preview {
+  font-family: var(--font-mono, monospace);
+  font-size: var(--font-size-xs);
+  opacity: 0.8;
+}
+
+.slug-toggle-text {
+  font-family: var(--font-mono, monospace);
+  font-size: var(--font-size-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Botão de upload desabilitado (enquanto o produto não tem nome) */
+.image-upload-label--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .form-error {
   font-size: var(--font-size-sm);
   color: #f87171;
@@ -1062,7 +1301,10 @@ a.product-info-category:hover {
 
 /* ---- Dashboard ---- */
 .dashboard-page {
-  max-width: 1200px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1366px;
+  padding: 0 50px;
 }
 
 .dashboard-header {
@@ -1506,7 +1748,18 @@ tr[data-selected='true'] td {
 
 /* ---- Editor layout ---- */
 .editor-page {
-  max-width: 900px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1366px;
+  padding: 0 50px;
+}
+
+/* Padding lateral reduzido no mobile para as seções do admin */
+@media (max-width: 640px) {
+  .dashboard-page,
+  .editor-page {
+    padding: 0 16px;
+  }
 }
 
 .editor-header {
@@ -1649,14 +1902,14 @@ tr[data-selected='true'] td {
 .image-upload-v2 {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  /* Mais respiro entre título → abas → botão */
+  gap: 16px;
+  margin-top: 6px;
 }
 
 .img-tabs {
   display: flex;
   gap: 4px;
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: 4px;
 }
 
 .img-tab {
@@ -3255,3 +3508,4 @@ tr[data-selected='true'] td {
     grid-template-columns: 1fr;
   }
 }
+

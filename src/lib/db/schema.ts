@@ -129,6 +129,28 @@ export type ProductImage = {
   created_at: string
 }
 
+// Características cadastráveis (igual categorias) nos três tipos.
+// material_principal vira filtro do catálogo; os demais só aparecem
+// nas informações técnicas do produto.
+export type ProductCharacteristicType =
+  | 'material_principal'
+  | 'material_secundario'
+  | 'soquete'
+
+export type ProductCharacteristic = {
+  id: string
+  type: ProductCharacteristicType
+  name: string
+  slug: string
+  sort_order: number
+  created_at: string
+}
+
+export type ProductCharacteristicMap = {
+  product_id: string
+  characteristic_id: string
+}
+
 // ----------------------------------------------------------------
 // INSERT PAYLOADS (omit DB-generated fields)
 // ----------------------------------------------------------------
@@ -159,6 +181,14 @@ export type InsertProductCategory = Omit<
 // sort_order has a DB default → optional on insert.
 export type InsertProductImage = Omit<
   ProductImage,
+  'id' | 'created_at' | 'sort_order'
+> & {
+  sort_order?: number
+}
+
+// sort_order has a DB default → optional on insert.
+export type InsertProductCharacteristic = Omit<
+  ProductCharacteristic,
   'id' | 'created_at' | 'sort_order'
 > & {
   sort_order?: number
@@ -299,6 +329,18 @@ export type Database = {
         Update: Partial<InsertProductImage>
         Relationships: []
       }
+      product_characteristics: {
+        Row: ProductCharacteristic
+        Insert: InsertProductCharacteristic
+        Update: Partial<InsertProductCharacteristic>
+        Relationships: []
+      }
+      product_characteristic_map: {
+        Row: ProductCharacteristicMap
+        Insert: ProductCharacteristicMap
+        Update: Partial<ProductCharacteristicMap>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -308,6 +350,7 @@ export type Database = {
       post_status: PostStatus
       product_status: ProductStatus
       product_environment: ProductEnvironment
+      product_characteristic_type: ProductCharacteristicType
     }
   }
 }

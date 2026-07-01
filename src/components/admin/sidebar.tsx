@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, FileText, Sparkles, Tag, LogOut, Zap, ShoppingBag, Bot, Settings, HardDrive, ScrollText, PackagePlus } from 'lucide-react'
+import { LayoutDashboard, FileText, Sparkles, Tag, LogOut, Zap, ShoppingBag, Bot, Settings, HardDrive, ScrollText, PackagePlus, SlidersHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { logoutAction } from '@/server/auth.actions'
 import { AreaSwitcher } from '@/components/admin/area-switcher'
@@ -47,6 +47,7 @@ const LOGS_NAV: NavItem[] = [
 const PRODUCT_MAIN_NAV: NavItem[] = [
   { label: 'Dashboard', href: '/admin/products', icon: LayoutDashboard, exact: true },
   { label: 'Categorias', href: '/admin/products/product-categories', icon: Tag },
+  { label: 'Especificações', href: '/admin/products/characteristics', icon: SlidersHorizontal },
 ]
 
 const PRODUCT_CREATE_NAV: NavItem[] = [

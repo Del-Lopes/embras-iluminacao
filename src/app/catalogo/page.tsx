@@ -39,7 +39,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
 
   const supabase = await createSupabaseServerClient()
 
-  // Filter sources: category tree + distinct materials (published only)
+  // Filter sources: category tree + valores de Material Principal (características)
   const [{ data: catData }, { data: matData }] = await Promise.all([
     supabase
       .from('product_categories')
@@ -47,16 +47,16 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
       .order('sort_order')
       .order('name'),
     supabase
-      .from('products')
-      .select('primary_material')
-      .eq('status', 'published')
-      .not('primary_material', 'is', null),
+      .from('product_characteristics')
+      .select('id, name, slug')
+      .eq('type', 'material_principal')
+      .order('sort_order')
+      .order('name'),
   ])
 
   const categories = flattenCategoryTree((catData ?? []) as ProductCategory[])
-  const materials = Array.from(
-    new Set((matData ?? []).map((m) => m.primary_material as string).filter(Boolean))
-  ).sort((a, b) => a.localeCompare(b, 'pt-BR'))
+  const materialChars = (matData ?? []) as { id: string; name: string; slug: string }[]
+  const materials = materialChars.map((c) => ({ slug: c.slug, name: c.name }))
 
   // Resolve "tipo" (category slug) → product ids via the m2m map
   let tipoProductIds: string[] | null = null
@@ -73,14 +73,39 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
     }
   }
 
+  // Resolve "material" (slug da característica Material Principal) → product ids
+  let materialProductIds: string[] | null = null
+  if (material) {
+    const mc = materialChars.find((c) => c.slug === material)
+    if (!mc) {
+      materialProductIds = []
+    } else {
+      const { data: maps } = await supabase
+        .from('product_characteristic_map')
+        .select('product_id')
+        .eq('characteristic_id', mc.id)
+      materialProductIds = (maps ?? []).map((m) => m.product_id)
+    }
+  }
+
+  // Interseção das restrições por id (tipo ∩ material)
+  const idConstraints = [tipoProductIds, materialProductIds].filter(
+    (l): l is string[] => l !== null
+  )
+  const combinedIds: string[] | null =
+    idConstraints.length === 0
+      ? null
+      : idConstraints.reduce((acc, list) => acc.filter((id) => list.includes(id)))
+  const noResults = combinedIds !== null && combinedIds.length === 0
+
   const from = (page - 1) * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
 
   let products: ProductCardData[] = []
   let total = 0
 
-  // Short-circuit: a tipo filter that matches no products → empty
-  if (!(tipoProductIds && tipoProductIds.length === 0)) {
+  // Short-circuit: filtro de id que não casa com nenhum produto → vazio
+  if (!noResults) {
     let query = supabase
       .from('products')
       .select('id, name, slug, sku, cover_image, environment, primary_material', {
@@ -94,8 +119,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
     else query = query.order('published_at', { ascending: false })
 
     if (environment) query = query.eq('environment', environment as 'interno' | 'externo')
-    if (material) query = query.eq('primary_material', material)
-    if (tipoProductIds) query = query.in('id', tipoProductIds)
+    if (combinedIds) query = query.in('id', combinedIds)
 
     const { data, count } = await query
     products = (data ?? []) as ProductCardData[]
