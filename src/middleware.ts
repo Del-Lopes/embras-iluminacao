@@ -39,14 +39,14 @@ export const middleware = async (request: NextRequest) => {
   const { pathname } = request.nextUrl
   const isLoginPage = pathname === '/admin/login'
 
-  // Redirect authenticated users away from login
+  // Redirect authenticated users away from login → área padrão (Produtos)
   if (user && isLoginPage) {
-    return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+    return NextResponse.redirect(new URL('/admin/products', request.url))
   }
 
-  // Redirect /admin (exact) to /admin/dashboard
+  // Redirect /admin (exact) → área padrão (Produtos) quando autenticado
   if (pathname === '/admin' || pathname === '/admin/') {
-    const target = user ? '/admin/dashboard' : '/admin/login'
+    const target = user ? '/admin/products' : '/admin/login'
     return NextResponse.redirect(new URL(target, request.url))
   }
 

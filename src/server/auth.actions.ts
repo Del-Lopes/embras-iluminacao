@@ -81,7 +81,7 @@ export const loginAction = async (
   // Successful login — reset rate limiter
   resetLoginAttempts(parsed.data.email)
 
-  redirect('/admin/dashboard')
+  redirect('/admin/products')
 }
 
 // VULN-010 fix: ensure cookies are cleared on logout

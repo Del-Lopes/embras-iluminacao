@@ -15,15 +15,6 @@ type Props = {
 export const AreaSwitcher = ({ area }: Props) => (
   <div className="area-switcher" role="tablist" aria-label="Área do painel">
     <Link
-      href="/admin/dashboard"
-      role="tab"
-      aria-selected={area === 'blog'}
-      className={cn('area-switcher-btn', area === 'blog' && 'area-switcher-btn--active')}
-    >
-      <FileText size={14} strokeWidth={1.5} />
-      <span>Blog</span>
-    </Link>
-    <Link
       href="/admin/products"
       role="tab"
       aria-selected={area === 'products'}
@@ -31,6 +22,15 @@ export const AreaSwitcher = ({ area }: Props) => (
     >
       <Package size={14} strokeWidth={1.5} />
       <span>Produtos</span>
+    </Link>
+    <Link
+      href="/admin/dashboard"
+      role="tab"
+      aria-selected={area === 'blog'}
+      className={cn('area-switcher-btn', area === 'blog' && 'area-switcher-btn--active')}
+    >
+      <FileText size={14} strokeWidth={1.5} />
+      <span>Blog</span>
     </Link>
   </div>
 )
