@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { toast } from 'sonner'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { ChevronDown } from 'lucide-react'
 import {
   createProductAction,
   updateProductAction,
@@ -15,11 +17,28 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { RichTextField } from '@/components/admin/rich-text-field'
 import { R2Upload } from '@/components/admin/r2-upload'
 import { R2ModelUpload } from '@/components/admin/r2-model-upload'
 import { ProductImageGallery, type GalleryImage } from '@/components/admin/product-image-gallery'
-import type { Product, ProductCharacteristic, ProductCharacteristicType } from '@/lib/db/schema'
+import type {
+  Model3dArScale,
+  Model3dMaterialLabels,
+  Model3dObjectType,
+  Model3dVariation,
+  Product,
+  ProductCharacteristic,
+  ProductCharacteristicType,
+} from '@/lib/db/schema'
+
+// The variations panel pulls in @google/model-viewer to read materials, so it's
+// loaded on demand — only when the 3D switcher is on. Products without a 3D model
+// never download the library in the editor.
+const Model3dVariations = dynamic(
+  () => import('@/components/admin/Model3dVariations').then((m) => m.Model3dVariations),
+  { ssr: false, loading: () => <p className="field-hint">Carregando editor 3D…</p> }
+)
 
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
@@ -46,6 +65,21 @@ const schema = z.object({
   model_3d_url: z.string().optional(),
   model_3d_poster: z.string().optional(),
   model_3d_alt: z.string().optional(),
+  model_3d_filename: z.string().optional(),
+  model_3d_object_type: z.enum(['floor', 'wall']).optional(),
+  model_3d_ar_scale: z.enum(['fixed', 'auto']).optional(),
+  model_3d_material_labels: z.record(z.string(), z.string()).optional(),
+  model_3d_variations: z
+    .array(
+      z.object({
+        material: z.string(),
+        name: z.string(),
+        type: z.enum(['color', 'texture']),
+        color: z.string().optional().nullable(),
+        texture_url: z.string().optional().nullable(),
+      })
+    )
+    .optional(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -127,6 +161,11 @@ export const ProductEditor = ({
       model_3d_url: product?.model_3d_url ?? '',
       model_3d_poster: product?.model_3d_poster ?? '',
       model_3d_alt: product?.model_3d_alt ?? '',
+      model_3d_filename: product?.model_3d_filename ?? '',
+      model_3d_object_type: product?.model_3d_object_type ?? 'floor',
+      model_3d_ar_scale: product?.model_3d_ar_scale ?? 'fixed',
+      model_3d_material_labels: product?.model_3d_material_labels ?? {},
+      model_3d_variations: product?.model_3d_variations ?? [],
     },
   })
 
@@ -160,7 +199,11 @@ export const ProductEditor = ({
   const coverImage = watch('cover_image')
   const has3d = watch('has_3d_model')
   const model3dUrl = watch('model_3d_url')
-  const model3dPoster = watch('model_3d_poster')
+  const model3dFilename = watch('model_3d_filename')
+  const model3dObjectType = watch('model_3d_object_type') ?? 'floor'
+  const model3dArScale = watch('model_3d_ar_scale') ?? 'fixed'
+  const model3dMaterialLabels = watch('model_3d_material_labels') ?? {}
+  const model3dVariations = watch('model_3d_variations') ?? []
 
   const toggleCategory = (id: string) =>
     setCategoryIds((prev) =>
@@ -206,10 +249,11 @@ export const ProductEditor = ({
     <form onSubmit={onSubmit} className="post-editor" noValidate>
       {serverError && <p className="form-error" role="alert">{serverError}</p>}
 
-      {/* ---- Layout em pares (cada linha: esquerda 1fr + direita 320px fixa) ---- */}
-      <div className="editor-stack">
-        {/* Linha 1 — Nome | Status + Criar produto */}
-        <div className="editor-pair">
+      {/* ---- Layout em duas colunas: esquerda 1fr + direita 320px fixa ---- */}
+      <div className="editor-columns">
+        {/* ===================== Coluna esquerda (principal) ===================== */}
+        <div className="editor-col editor-col--main">
+          {/* Nome + SKU + Slug */}
           <div className="editor-section">
             {/* Nome + SKU na mesma linha (50/50) */}
             <div className="editor-row editor-row--2">
@@ -230,18 +274,23 @@ export const ProductEditor = ({
               </div>
             </div>
 
-            {/* Slug — opcional e recolhido */}
+            {/* Slug — o título é o link que aciona o toggle; abaixo o preview */}
             <div className="field-group">
-              <Label htmlFor="slug">Slug</Label>
               <button
                 type="button"
                 className="slug-toggle"
                 onClick={() => setShowSlug((v) => !v)}
                 aria-expanded={showSlug}
               >
-                <span className={`slug-toggle-arrow${showSlug ? ' slug-toggle-arrow--open' : ''}`} aria-hidden="true">›</span>
-                <span className="slug-toggle-text">{effectiveSlug ? `/${effectiveSlug}` : 'definir manualmente'}</span>
+                <span className="slug-toggle-label">Slug</span>
+                <ChevronDown
+                  size={14}
+                  strokeWidth={2}
+                  aria-hidden="true"
+                  className={`slug-toggle-chevron${showSlug ? ' slug-toggle-chevron--open' : ''}`}
+                />
               </button>
+              <span className="slug-toggle-text">/{effectiveSlug}</span>
               {showSlug && (
                 <>
                   <Input
@@ -258,23 +307,16 @@ export const ProductEditor = ({
             </div>
           </div>
 
-          {/* Status + botão Criar produto — primeiro container da direita */}
+          {/* Imagens do produto (invertido com Descrição) */}
           <div className="editor-section">
             <div className="field-group">
-              <Label htmlFor="status">Status *</Label>
-              <select id="status" className="editor-select" {...register('status')}>
-                <option value="draft">Rascunho</option>
-                <option value="published">Publicado</option>
-              </select>
+              <Label>Imagens do produto</Label>
+              <ProductImageGallery value={images} onChange={setImages} folder={effectiveSlug} />
+              <span className="field-hint field-hint--xs">{IMAGE_UPLOAD_HINT}</span>
             </div>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Salvando...' : isEdit ? 'Salvar alterações' : 'Criar produto'}
-            </Button>
           </div>
-        </div>
 
-        {/* Linha 2 — Descrição | Área de uso + Categorias */}
-        <div className="editor-pair">
+          {/* Descrição */}
           <div className="editor-section">
             <div className="field-group">
               <div className="field-label-row">
@@ -293,8 +335,156 @@ export const ProductEditor = ({
             </div>
           </div>
 
+          {/* Dimensões e Peso */}
           <div className="editor-section">
-            {/* Área de uso — no topo do bloco de categorias */}
+            <p className="editor-section-title">Dimensões e Peso</p>
+            <div className="editor-row editor-row--4">
+              <div className="field-group">
+                <Label htmlFor="height_cm">Altura (cm)</Label>
+                <Input id="height_cm" type="number" step="0.01" {...register('height_cm')} />
+              </div>
+              <div className="field-group">
+                <Label htmlFor="width_cm">Largura (cm)</Label>
+                <Input id="width_cm" type="number" step="0.01" {...register('width_cm')} />
+              </div>
+              <div className="field-group">
+                <Label htmlFor="depth_cm">Profundidade (cm)</Label>
+                <Input id="depth_cm" type="number" step="0.01" {...register('depth_cm')} />
+              </div>
+              <div className="field-group">
+                <Label htmlFor="weight_kg">Peso (kg)</Label>
+                <Input id="weight_kg" type="number" step="0.001" {...register('weight_kg')} />
+              </div>
+            </div>
+          </div>
+
+          {/* Especificações (3 colunas) */}
+          <div className="editor-section">
+            <p className="editor-section-title">Especificações</p>
+            {characteristics.length === 0 ? (
+              <p className="field-hint" style={{ margin: 0 }}>
+                Nenhuma especificação cadastrada. Crie em “Especificações”.
+              </p>
+            ) : (
+              <div className="char-groups-grid">
+                {CHARACTERISTIC_GROUPS.map((group) => {
+                  const opts = characteristics.filter((c) => c.type === group.type)
+                  return (
+                    <div key={group.type} className="char-group">
+                      <p className="char-group-label">{group.label}</p>
+                      {opts.length === 0 ? (
+                        <p className="field-hint" style={{ margin: 0 }}>—</p>
+                      ) : (
+                        <div className="category-checklist">
+                          {opts.map((c) => (
+                            <label key={c.id} className="category-check">
+                              <input
+                                type="checkbox"
+                                checked={characteristicIds.includes(c.id)}
+                                onChange={() => toggleCharacteristic(c.id)}
+                              />
+                              <span>{c.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Modelo 3D */}
+          <div className="editor-section">
+            <div className="switcher-row">
+              <Controller
+                control={control}
+                name="has_3d_model"
+                render={({ field }) => (
+                  <Switch
+                    id="has_3d_model"
+                    checked={!!field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                )}
+              />
+              <Label htmlFor="has_3d_model" className="editor-section-title" style={{ margin: 0 }}>
+                Modelo 3D
+              </Label>
+            </div>
+            {has3d && (
+              <div className="editor-3d-fields">
+                <div className="field-group">
+                  <Label>Modelo 3D (.glb)</Label>
+                  <input type="hidden" {...register('model_3d_url')} />
+                  <R2ModelUpload
+                    value={model3dUrl ?? ''}
+                    filename={model3dFilename ?? ''}
+                    onChange={(url, filename) => {
+                      setValue('model_3d_url', url)
+                      setValue('model_3d_filename', filename ?? '')
+                    }}
+                    folder={effectiveSlug}
+                  />
+                  {!model3dUrl && (
+                    <span className="field-hint field-hint--xs">
+                      Envie um arquivo <strong>.glb</strong> acima para ler os materiais e configurar as variações de cor/textura.
+                    </span>
+                  )}
+                </div>
+
+                {/* Variações (cor/textura) + config de AR — carregado sob demanda */}
+                <Model3dVariations
+                  slug={effectiveSlug}
+                  modelUrl={model3dUrl ?? ''}
+                  objectType={model3dObjectType as Model3dObjectType}
+                  arScale={model3dArScale as Model3dArScale}
+                  materialLabels={model3dMaterialLabels as Model3dMaterialLabels}
+                  variations={model3dVariations as Model3dVariation[]}
+                  onObjectTypeChange={(v) => setValue('model_3d_object_type', v)}
+                  onArScaleChange={(v) => setValue('model_3d_ar_scale', v)}
+                  onMaterialLabelsChange={(v) => setValue('model_3d_material_labels', v)}
+                  onVariationsChange={(v) => setValue('model_3d_variations', v)}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ===================== Coluna direita (lateral) ===================== */}
+        <div className="editor-col editor-col--side">
+          {/* Status + botão Criar/Salvar */}
+          <div className="editor-section">
+            <div className="field-group">
+              <Label htmlFor="status">Status *</Label>
+              <select id="status" className="editor-select" {...register('status')}>
+                <option value="draft">Rascunho</option>
+                <option value="published">Publicado</option>
+              </select>
+            </div>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Salvando...' : isEdit ? 'Salvar alterações' : 'Criar produto'}
+            </Button>
+          </div>
+
+          {/* Imagem de capa (invertido com Área de uso) */}
+          <div className="editor-section">
+            <div className="field-group">
+              <Label>Imagem de capa</Label>
+              <input type="hidden" {...register('cover_image')} />
+              <R2Upload
+                value={coverImage ?? ''}
+                onChange={(url) => setValue('cover_image', url)}
+                group="product"
+                folder={effectiveSlug}
+              />
+              <span className="field-hint field-hint--xs">{IMAGE_UPLOAD_HINT}</span>
+            </div>
+          </div>
+
+          {/* Área de uso + Categorias */}
+          <div className="editor-section">
             <div className="field-group">
               <Label htmlFor="environment">Área de uso *</Label>
               <select id="environment" className="editor-select" {...register('environment')}>
@@ -324,128 +514,6 @@ export const ProductEditor = ({
             )}
           </div>
         </div>
-
-        {/* Linha 3 — Imagens do produto | Imagem de capa */}
-        <div className="editor-pair">
-          <div className="editor-section">
-            <div className="field-group">
-              <Label>Imagens do produto</Label>
-              <ProductImageGallery value={images} onChange={setImages} folder={effectiveSlug} />
-              <span className="field-hint field-hint--xs">{IMAGE_UPLOAD_HINT}</span>
-            </div>
-          </div>
-          <div className="editor-section">
-            <div className="field-group">
-              <Label>Imagem de capa</Label>
-              <input type="hidden" {...register('cover_image')} />
-              <R2Upload
-                value={coverImage ?? ''}
-                onChange={(url) => setValue('cover_image', url)}
-                group="product"
-                folder={effectiveSlug}
-              />
-              <span className="field-hint field-hint--xs">{IMAGE_UPLOAD_HINT}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Linha 4 — Dimensões e Peso | Especificações */}
-        <div className="editor-pair">
-          <div className="editor-section">
-            <p className="editor-section-title">Dimensões e Peso</p>
-            <div className="editor-row editor-row--4">
-              <div className="field-group">
-                <Label htmlFor="height_cm">Altura (cm)</Label>
-                <Input id="height_cm" type="number" step="0.01" {...register('height_cm')} />
-              </div>
-              <div className="field-group">
-                <Label htmlFor="width_cm">Largura (cm)</Label>
-                <Input id="width_cm" type="number" step="0.01" {...register('width_cm')} />
-              </div>
-              <div className="field-group">
-                <Label htmlFor="depth_cm">Profundidade (cm)</Label>
-                <Input id="depth_cm" type="number" step="0.01" {...register('depth_cm')} />
-              </div>
-              <div className="field-group">
-                <Label htmlFor="weight_kg">Peso (kg)</Label>
-                <Input id="weight_kg" type="number" step="0.001" {...register('weight_kg')} />
-              </div>
-            </div>
-          </div>
-          <div className="editor-section">
-            <p className="editor-section-title">Especificações</p>
-            {characteristics.length === 0 ? (
-              <p className="field-hint" style={{ margin: 0 }}>
-                Nenhuma especificação cadastrada. Crie em “Especificações”.
-              </p>
-            ) : (
-              CHARACTERISTIC_GROUPS.map((group) => {
-                const opts = characteristics.filter((c) => c.type === group.type)
-                return (
-                  <div key={group.type} className="char-group">
-                    <p className="char-group-label">{group.label}</p>
-                    {opts.length === 0 ? (
-                      <p className="field-hint" style={{ margin: 0 }}>—</p>
-                    ) : (
-                      <div className="category-checklist">
-                        {opts.map((c) => (
-                          <label key={c.id} className="category-check">
-                            <input
-                              type="checkbox"
-                              checked={characteristicIds.includes(c.id)}
-                              onChange={() => toggleCharacteristic(c.id)}
-                            />
-                            <span>{c.name}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )
-              })
-            )}
-          </div>
-        </div>
-
-        {/* Linha 5 — Modelo 3D | (direita vazia) */}
-        <div className="editor-pair">
-          <div className="editor-section">
-            <label className="switcher-row">
-              <input type="checkbox" {...register('has_3d_model')} />
-              <span className="editor-section-title" style={{ margin: 0 }}>Modelo 3D</span>
-            </label>
-            {has3d && (
-              <div className="editor-3d-fields">
-                <p className="field-hint">
-                  Envie um arquivo <strong>.glb</strong> (ou cole uma URL). O poster é a imagem exibida enquanto o modelo carrega.
-                </p>
-                <div className="field-group">
-                  <Label>Modelo 3D (.glb)</Label>
-                  <input type="hidden" {...register('model_3d_url')} />
-                  <R2ModelUpload value={model3dUrl ?? ''} onChange={(url) => setValue('model_3d_url', url)} folder={effectiveSlug} />
-                </div>
-                <div className="editor-row">
-                  <div className="field-group">
-                    <Label>Poster (imagem de carregamento)</Label>
-                    <input type="hidden" {...register('model_3d_poster')} />
-                    <R2Upload
-                      value={model3dPoster ?? ''}
-                      onChange={(url) => setValue('model_3d_poster', url)}
-                      group="model"
-                      folder={effectiveSlug}
-                    />
-                  </div>
-                  <div className="field-group">
-                    <Label htmlFor="model_3d_alt">Texto alternativo</Label>
-                    <Input id="model_3d_alt" placeholder="Descrição do modelo" {...register('model_3d_alt')} />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="editor-pair-spacer" />
-        </div>
-
       </div>
     </form>
   )

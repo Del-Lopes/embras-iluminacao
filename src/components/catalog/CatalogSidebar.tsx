@@ -10,6 +10,7 @@ type MaterialOption = { slug: string; name: string }
 type Props = {
   categories: CategoryOption[]
   materials: MaterialOption[]
+  currentQ: string
   currentEnvironment: string
   currentTipo: string
   currentMaterial: string
@@ -23,6 +24,7 @@ const ENVIRONMENTS = [
 export function CatalogSidebar({
   categories,
   materials,
+  currentQ,
   currentEnvironment,
   currentTipo,
   currentMaterial,
@@ -49,10 +51,27 @@ export function CatalogSidebar({
   const toggle = (key: string, current: string, value: string) =>
     updateParams({ [key]: current === value ? '' : value })
 
-  const hasFilters = currentEnvironment || currentTipo || currentMaterial
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const q = (e.currentTarget.elements.namedItem('q') as HTMLInputElement).value.trim()
+    updateParams({ q })
+  }
+
+  const hasFilters = currentQ || currentEnvironment || currentTipo || currentMaterial
 
   return (
     <aside className="blog-sidebar catalog-sidebar">
+      {/* Busca */}
+      <form onSubmit={handleSearch} className="blog-sidebar-search">
+        <input
+          name="q"
+          type="search"
+          defaultValue={currentQ}
+          placeholder="Buscar produtos"
+          className="blog-sidebar-search-input"
+        />
+      </form>
+
       {/* Área de uso */}
       <nav className="blog-sidebar-cats">
         <p className="blog-sidebar-cats-label">Área de uso</p>
@@ -121,7 +140,7 @@ export function CatalogSidebar({
         <button
           type="button"
           className="catalog-clear-filters"
-          onClick={() => updateParams({ environment: '', tipo: '', material: '' })}
+          onClick={() => updateParams({ q: '', environment: '', tipo: '', material: '' })}
         >
           Limpar filtros
         </button>

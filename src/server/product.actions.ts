@@ -13,6 +13,7 @@
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
 import type {
   InsertProduct,
+  Model3dVariation,
   Product,
   ProductCategory,
   ProductEnvironment,
@@ -324,6 +325,23 @@ const productSchema = z.object({
   model_3d_url: z.string().optional().default(''),
   model_3d_poster: z.string().optional().default(''),
   model_3d_alt: z.string().optional().default(''),
+  model_3d_filename: z.string().optional().default(''),
+  // 3D AR config + variações de material (cor/textura)
+  model_3d_object_type: z.enum(['floor', 'wall']).optional().default('floor'),
+  model_3d_ar_scale: z.enum(['fixed', 'auto']).optional().default('fixed'),
+  model_3d_material_labels: z.record(z.string(), z.string()).optional().default({}),
+  model_3d_variations: z
+    .array(
+      z.object({
+        material: z.string().min(1),
+        name: z.string().min(1),
+        type: z.enum(['color', 'texture']),
+        color: z.string().optional().nullable(),
+        texture_url: z.string().optional().nullable(),
+      })
+    )
+    .optional()
+    .default([]),
   // SEO não vem mais do formulário — é gerado por IA (fallback determinístico) no save.
 })
 
@@ -360,8 +378,20 @@ const toProductColumns = (
   has_3d_model: d.has_3d_model,
   // 3D fields only persist while the switcher is on
   model_3d_url: d.has_3d_model ? d.model_3d_url.trim() || null : null,
-  model_3d_poster: d.has_3d_model ? d.model_3d_poster.trim() || null : null,
-  model_3d_alt: d.has_3d_model ? d.model_3d_alt.trim() || null : null,
+  // O poster de carregamento é sempre a imagem de capa do produto.
+  model_3d_poster: d.has_3d_model ? d.cover_image.trim() || null : null,
+  // O texto alternativo é sempre o nome do produto.
+  model_3d_alt: d.has_3d_model ? d.name.trim() : null,
+  model_3d_filename: d.has_3d_model ? d.model_3d_filename.trim() || null : null,
+  model_3d_object_type: d.has_3d_model ? d.model_3d_object_type : null,
+  model_3d_ar_scale: d.has_3d_model ? d.model_3d_ar_scale : null,
+  model_3d_material_labels: d.has_3d_model ? d.model_3d_material_labels : null,
+  // Keep only complete variations (a color needs a HEX, a texture needs a URL).
+  model_3d_variations: d.has_3d_model
+    ? d.model_3d_variations.filter((v) =>
+        v.type === 'color' ? !!v.color : !!v.texture_url
+      )
+    : null,
   published_at: null, // resolved per create/update below
 })
 
@@ -437,6 +467,48 @@ const syncImages = async (
     )
   }
   return removed
+}
+
+// Reconcile a product's 3D folder (modelos_3d/<slug>/): delete every stored
+// object no longer referenced by the product — a replaced model/poster, textures
+// of removed variations, and files uploaded then abandoned before saving. This is
+// the single point where 3D storage is pruned: nothing is deleted while editing.
+// `keepUrls` are the URLs the saved product still references; `folderHintUrls`
+// (e.g. the previously stored URLs) only help locate the folder — useful when 3D
+// is being turned off and no new URL remains to derive the prefix from.
+// Best-effort: failures are logged, never block the save.
+const reconcileModelFolder = async (
+  keepUrls: (string | null | undefined)[],
+  folderHintUrls: (string | null | undefined)[] = []
+) => {
+  try {
+    const { listR2Keys, deleteR2Objects, r2KeyFromPublicUrl } = await import(
+      '@/lib/storage/r2-client'
+    )
+
+    // Derive modelos_3d/<slug>/ from any known key (new or previously stored).
+    let prefix: string | null = null
+    for (const u of [...keepUrls, ...folderHintUrls]) {
+      if (!u) continue
+      const m = r2KeyFromPublicUrl(u)?.match(/^(modelos_3d\/[^/]+)\//)
+      if (m) {
+        prefix = `${m[1]}/`
+        break
+      }
+    }
+    if (!prefix) return // product has no assets in our R2 model namespace
+
+    const keep = new Set(
+      keepUrls
+        .map((u) => (u ? r2KeyFromPublicUrl(u) : null))
+        .filter((k): k is string => !!k)
+    )
+    const stored = await listR2Keys(prefix)
+    const toDelete = stored.filter((k) => !keep.has(k))
+    if (toDelete.length) await deleteR2Objects(toDelete)
+  } catch (err) {
+    console.error('[reconcileModelFolder]', (err as Error).message)
+  }
 }
 
 // Best-effort R2 deletion for a set of public URLs (dynamic import → no coupling).
@@ -528,6 +600,13 @@ export const createProductAction = async (
   await syncCharacteristics(supabase, created.id, d.characteristic_ids)
   await syncImages(supabase, created.id, d.images)
 
+  // Prune any 3D assets uploaded then abandoned before this first save.
+  await reconcileModelFolder([
+    columns.model_3d_url,
+    columns.model_3d_poster,
+    ...(columns.model_3d_variations ?? []).map((v) => v.texture_url),
+  ])
+
   revalidatePath('/admin/products')
   return { success: true, id: created.id }
 }
@@ -563,7 +642,7 @@ export const updateProductAction = async (
   // Existing row — for ownership, old asset cleanup and published_at carry-over.
   const { data: existing } = await supabase
     .from('products')
-    .select('cover_image, model_3d_url, model_3d_poster, published_at')
+    .select('cover_image, model_3d_url, model_3d_poster, model_3d_variations, published_at')
     .eq('id', productId)
     .single()
 
@@ -604,15 +683,30 @@ export const updateProductAction = async (
   await syncCharacteristics(supabase, productId, d.characteristic_ids)
   const removedImageUrls = await syncImages(supabase, productId, d.images)
 
-  // R2 cleanup: removed gallery images + any replaced single-asset (cover, 3D model, poster)
+  // R2 cleanup (produtos/ namespace): removed gallery images + a replaced cover.
   const replaced = (old: string | null | undefined, next: string | null) =>
     old && old !== next ? [old] : []
   await cleanupUrls([
     ...removedImageUrls,
     ...replaced(existing?.cover_image, columns.cover_image),
-    ...replaced(existing?.model_3d_url, columns.model_3d_url),
-    ...replaced(existing?.model_3d_poster, columns.model_3d_poster),
   ])
+
+  // R2 reconcile (modelos_3d/<slug>/): prune the old model, replaced poster,
+  // textures of removed variations and any abandoned upload — in one pass.
+  const existingVariations =
+    (existing?.model_3d_variations as Model3dVariation[] | null) ?? []
+  await reconcileModelFolder(
+    [
+      columns.model_3d_url,
+      columns.model_3d_poster,
+      ...(columns.model_3d_variations ?? []).map((v) => v.texture_url),
+    ],
+    [
+      existing?.model_3d_url,
+      existing?.model_3d_poster,
+      ...existingVariations.map((v) => v.texture_url),
+    ]
+  )
 
   revalidatePath('/admin/products')
   revalidatePath(`/admin/products/${productId}/edit`)

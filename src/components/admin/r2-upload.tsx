@@ -134,7 +134,7 @@ export const R2Upload = ({ value, onChange, group = 'product', folder = '' }: Pr
       {!value && tab === 'upload' && (
         <>
           {!folder && (
-            <Alert variant="warning" className="mb-3">
+            <Alert variant="warning">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
                 Informe o nome do produto antes de enviar imagens.

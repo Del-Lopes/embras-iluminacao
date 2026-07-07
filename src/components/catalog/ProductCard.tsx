@@ -7,7 +7,10 @@ export type ProductCardData = {
   sku: string
   cover_image: string | null
   environment: 'interno' | 'externo'
-  primary_material: string | null
+  // Tipo (categoria) — clicável, aciona o filtro do catálogo
+  category?: { name: string; slug: string } | null
+  // Material Principal — apenas exibição (não clicável)
+  material?: string | null
 }
 
 const ENV_LABEL: Record<string, string> = {
@@ -21,7 +24,8 @@ export function ProductCard({
   sku,
   cover_image,
   environment,
-  primary_material,
+  category,
+  material,
 }: ProductCardData) {
   const href = `/catalogo/${slug}`
 
@@ -39,15 +43,35 @@ export function ProductCard({
       </Link>
 
       <div className="catalog-card-body">
-        <span className="catalog-card-tag">{ENV_LABEL[environment] ?? environment}</span>
+        {/* Área de uso / Tipo — ambos clicáveis, acionam o filtro */}
+        <div className="catalog-card-tags">
+          <Link
+            href={`/catalogo?environment=${environment}`}
+            className="catalog-card-tag catalog-card-tag--link"
+          >
+            {ENV_LABEL[environment] ?? environment}
+          </Link>
+          {category && (
+            <>
+              <span className="catalog-card-tag-sep" aria-hidden="true">/</span>
+              <Link
+                href={`/catalogo?tipo=${category.slug}`}
+                className="catalog-card-tag catalog-card-tag--link"
+              >
+                {category.name}
+              </Link>
+            </>
+          )}
+        </div>
 
-        <Link href={href}>
+        <Link href={href} className="catalog-card-title-link">
           <h2 className="catalog-card-title">{name}</h2>
         </Link>
 
+        {/* SKU e, abaixo, o material (não clicável) */}
         <div className="catalog-card-meta">
           <span className="catalog-card-sku">SKU: {sku}</span>
-          {primary_material && <span className="catalog-card-material">{primary_material}</span>}
+          {material && <span className="catalog-card-material">Material: {material}</span>}
         </div>
 
         <Link href={href} className="catalog-card-cta">

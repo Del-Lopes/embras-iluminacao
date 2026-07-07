@@ -21,6 +21,7 @@ const PAGE_SIZE = 9
 
 type SearchParams = Promise<{
   page?: string
+  q?: string
   environment?: string
   tipo?: string
   material?: string
@@ -31,6 +32,7 @@ type SearchParams = Promise<{
 export default async function CatalogPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams
   const page = Math.max(1, parseInt(params.page ?? '1', 10))
+  const q = params.q?.trim() ?? ''
   const environment = params.environment?.trim() ?? ''
   const tipo = params.tipo?.trim() ?? ''
   const material = params.material?.trim() ?? ''
@@ -108,7 +110,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
   if (!noResults) {
     let query = supabase
       .from('products')
-      .select('id, name, slug, sku, cover_image, environment, primary_material', {
+      .select('id, name, slug, sku, cover_image, environment', {
         count: 'exact',
       })
       .eq('status', 'published')
@@ -120,16 +122,62 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
 
     if (environment) query = query.eq('environment', environment as 'interno' | 'externo')
     if (combinedIds) query = query.in('id', combinedIds)
+    // Sanitiza vírgulas/parênteses que quebram o parser do .or() do PostgREST
+    const safeQ = q.replace(/[,()]/g, ' ').trim()
+    if (safeQ) query = query.or(`name.ilike.%${safeQ}%,sku.ilike.%${safeQ}%`)
 
     const { data, count } = await query
     products = (data ?? []) as ProductCardData[]
     total = count ?? 0
+
+    // Enriquece os cards com o tipo (categoria) e o Material Principal.
+    if (products.length) {
+      const ids = products.map((p) => p.id)
+      const [{ data: catMap }, { data: charMap }] = await Promise.all([
+        supabase
+          .from('product_category_map')
+          .select('product_id, product_categories(name, slug)')
+          .in('product_id', ids),
+        supabase
+          .from('product_characteristic_map')
+          .select('product_id, product_characteristics(name, type)')
+          .in('product_id', ids),
+      ])
+
+      const catByProduct = new Map<string, { name: string; slug: string }>()
+      for (const row of (catMap ?? []) as unknown as {
+        product_id: string
+        product_categories: { name: string; slug: string } | null
+      }[]) {
+        if (row.product_categories && !catByProduct.has(row.product_id)) {
+          catByProduct.set(row.product_id, row.product_categories)
+        }
+      }
+
+      const matByProduct = new Map<string, string>()
+      for (const row of (charMap ?? []) as unknown as {
+        product_id: string
+        product_characteristics: { name: string; type: string } | null
+      }[]) {
+        const c = row.product_characteristics
+        if (c && c.type === 'material_principal' && !matByProduct.has(row.product_id)) {
+          matByProduct.set(row.product_id, c.name)
+        }
+      }
+
+      products = products.map((p) => ({
+        ...p,
+        category: catByProduct.get(p.id) ?? null,
+        material: matByProduct.get(p.id) ?? null,
+      }))
+    }
   }
 
   const pageCount = Math.ceil(total / PAGE_SIZE)
 
   const buildHref = (p: number) => {
     const urlParams = new URLSearchParams()
+    if (q) urlParams.set('q', q)
     if (environment) urlParams.set('environment', environment)
     if (tipo) urlParams.set('tipo', tipo)
     if (material) urlParams.set('material', material)
@@ -160,6 +208,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
           <CatalogSidebar
             categories={categories}
             materials={materials}
+            currentQ={q}
             currentEnvironment={environment}
             currentTipo={tipo}
             currentMaterial={material}

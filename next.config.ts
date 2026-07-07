@@ -54,8 +54,13 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       `img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com ${r2PublicOrigin}`,
       "font-src 'self' https://fonts.gstatic.com",
-      // r2PublicOrigin added so <model-viewer> can fetch the .glb over the public domain
-      `connect-src 'self' https://*.supabase.co wss://*.supabase.co ${r2S3Origin} ${r2PublicOrigin}`,
+      // <model-viewer> runs the Draco/KTX2 decoders in a Web Worker created from
+      // a blob: URL — without this the worker is blocked (default-src 'self').
+      "worker-src 'self' blob:",
+      // connect-src:
+      //  - r2PublicOrigin → fetch the .glb / textures over the public domain
+      //  - www.gstatic.com → model-viewer fetches the Draco/KTX2 decoder libs from here
+      `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.gstatic.com ${r2S3Origin} ${r2PublicOrigin}`,
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

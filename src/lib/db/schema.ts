@@ -20,6 +20,25 @@ export type ProductStatus = 'draft' | 'published'
 export type ProductEnvironment = 'interno' | 'externo'
 
 // ----------------------------------------------------------------
+// 3D model — AR config + material variations (color/texture)
+// ----------------------------------------------------------------
+export type Model3dObjectType = 'floor' | 'wall' // ar-placement
+export type Model3dArScale = 'fixed' | 'auto' // ar-scale
+export type Model3dVariationType = 'color' | 'texture'
+
+// One selectable variation bound to a technical material of the GLB.
+export type Model3dVariation = {
+  material: string // technical material name (exact, from the GLB)
+  name: string // label shown in the selector (e.g. "Azul")
+  type: Model3dVariationType
+  color?: string | null // HEX when type === 'color'
+  texture_url?: string | null // R2 URL when type === 'texture'
+}
+
+// Map of technical material name -> friendly group name (e.g. "Metal").
+export type Model3dMaterialLabels = Record<string, string>
+
+// ----------------------------------------------------------------
 // TABLE ROW TYPES (shape returned by Supabase SELECT)
 // ----------------------------------------------------------------
 export type Profile = {
@@ -105,6 +124,12 @@ export type Product = {
   model_3d_url: string | null
   model_3d_poster: string | null
   model_3d_alt: string | null
+  model_3d_filename: string | null // original uploaded file name (migration 009)
+  // 3D AR config + material variations (migration 008)
+  model_3d_object_type: Model3dObjectType | null
+  model_3d_ar_scale: Model3dArScale | null
+  model_3d_material_labels: Model3dMaterialLabels | null
+  model_3d_variations: Model3dVariation[] | null
   // seo + audit
   seo_title: string | null
   seo_description: string | null

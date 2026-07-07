@@ -5,6 +5,7 @@ import {
   createProductCategoryAction,
   deleteProductCategoryAction,
 } from '@/server/product-category.actions'
+import { Input } from '@/components/ui/input'
 import type { ProductCategory } from '@/lib/db/schema'
 
 type Props = {
@@ -92,11 +93,10 @@ export function ProductCategoriesManager({ categories }: Props) {
             <label htmlFor="pcat-name" className="cat-label">
               Nome <span className="cat-required">*</span>
             </label>
-            <input
+            <Input
               id="pcat-name"
               ref={nameRef}
               type="text"
-              className="toolbar-input"
               placeholder="Ex: Luminárias"
               maxLength={80}
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
@@ -126,11 +126,10 @@ export function ProductCategoriesManager({ categories }: Props) {
             <label htmlFor="pcat-desc" className="cat-label">
               Descrição <span className="cat-optional">(opcional)</span>
             </label>
-            <input
+            <Input
               id="pcat-desc"
               ref={descRef}
               type="text"
-              className="toolbar-input"
               placeholder="Breve descrição"
               maxLength={255}
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}

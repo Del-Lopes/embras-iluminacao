@@ -8,13 +8,15 @@ export default function CustomCursor() {
 	const pathname = usePathname()
 	const isAdmin = pathname.startsWith('/admin')
 	const isBlog = pathname.startsWith('/blog')
+	// Catálogo + página de produto (slug) — sem cursor customizado
+	const isCatalog = pathname.startsWith('/catalogo')
 	const { theme } = useTheme()
 	const isDark = theme === 'dark'
 	const cursorRef = useRef<HTMLDivElement>(null)
 	const glowRef = useRef<HTMLDivElement>(null)
 
 	useEffect(() => {
-		if (isAdmin || isBlog) return
+		if (isAdmin || isBlog || isCatalog) return
 		const cursor = cursorRef.current
 		const glow = glowRef.current
 		if (!cursor || !glow) return
@@ -72,9 +74,9 @@ export default function CustomCursor() {
 				el.removeEventListener('mouseleave', handleMouseLeave)
 			})
 		}
-	}, [isAdmin, isBlog, isDark])
+	}, [isAdmin, isBlog, isCatalog, isDark])
 
-	if (isAdmin || isBlog) return null
+	if (isAdmin || isBlog || isCatalog) return null
 
 	return (
 		<>

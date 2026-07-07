@@ -14,7 +14,7 @@
 // ============================================================
 
 import 'server-only'
-import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
 
 const ACCOUNT_ID = process.env.R2_ACCOUNT_ID
 const ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID
@@ -58,7 +58,34 @@ export const r2KeyFromPublicUrl = (url: string): string | null => {
   const prefix = `${R2_PUBLIC_BASE_URL}/`
   if (!url.startsWith(prefix)) return null
   const key = url.slice(prefix.length)
-  return /^(products|models)\/[a-f0-9-]+\.[a-z0-9]+$/.test(key) ? key : null
+  // Only our own object namespaces are ever deletable. Matches the real
+  // layout written by upload.actions.ts: produtos/<slug>/… and
+  // modelos_3d/<slug>/… (models, posters and texture variations).
+  if (!key || key.endsWith('/')) return null
+  return /^(produtos|modelos_3d)\//.test(key) ? key : null
+}
+
+// Recursively list every object key under a prefix (no delimiter), paging
+// past the 1000-key cap. Used to reconcile a product's 3D folder on save:
+// list everything under modelos_3d/<slug>/ and delete keys no longer referenced.
+export const listR2Keys = async (prefix: string): Promise<string[]> => {
+  const keys: string[] = []
+  let token: string | undefined
+  do {
+    const res = await r2Client.send(
+      new ListObjectsV2Command({
+        Bucket: R2_BUCKET,
+        Prefix: prefix,
+        ContinuationToken: token,
+        MaxKeys: 1000,
+      })
+    )
+    for (const o of res.Contents ?? []) {
+      if (o.Key && !o.Key.endsWith('/')) keys.push(o.Key)
+    }
+    token = res.IsTruncated ? res.NextContinuationToken : undefined
+  } while (token)
+  return keys
 }
 
 // Best-effort deletion of multiple objects. Failures are swallowed per-key

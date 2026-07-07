@@ -14,7 +14,7 @@ import type { ProductCardData } from '@/components/catalog/ProductCard'
 
 type Props = { params: Promise<{ slug: string }> }
 
-const SELECT_CARD = 'id, name, slug, sku, cover_image, environment, primary_material'
+const SELECT_CARD = 'id, name, slug, sku, cover_image, environment'
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
@@ -198,6 +198,10 @@ export default async function ProductDetailPage({ params }: Props) {
                 src={product.model_3d_url}
                 poster={product.model_3d_poster}
                 alt={product.model_3d_alt}
+                variations={product.model_3d_variations}
+                materialLabels={product.model_3d_material_labels}
+                objectType={product.model_3d_object_type}
+                arScale={product.model_3d_ar_scale}
               />
             ) : (
               <div className="product-3d-placeholder">

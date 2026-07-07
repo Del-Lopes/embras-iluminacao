@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { createCategoryAction, deleteCategoryAction } from '@/server/category.actions'
+import { Input } from '@/components/ui/input'
 import type { Category } from '@/lib/db/schema'
 
 type Props = {
@@ -56,11 +57,10 @@ export function CategoriesManager({ categories }: Props) {
             <label htmlFor="cat-name" className="cat-label">
               Nome <span className="cat-required">*</span>
             </label>
-            <input
+            <Input
               id="cat-name"
               ref={nameRef}
               type="text"
-              className="toolbar-input"
               placeholder="Ex: Iluminação Comercial"
               maxLength={80}
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
@@ -71,11 +71,10 @@ export function CategoriesManager({ categories }: Props) {
             <label htmlFor="cat-desc" className="cat-label">
               Descrição <span className="cat-optional">(opcional)</span>
             </label>
-            <input
+            <Input
               id="cat-desc"
               ref={descRef}
               type="text"
-              className="toolbar-input"
               placeholder="Breve descrição da categoria"
               maxLength={255}
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}

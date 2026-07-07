@@ -14,15 +14,17 @@ const MODEL_CONTENT_TYPE = 'model/gltf-binary'
 
 type Props = {
   value: string
-  onChange: (url: string) => void
+  // Repassa a URL pública e o nome original do arquivo (a chave no R2 é um UUID).
+  onChange: (url: string, filename?: string) => void
+  // Nome original do arquivo salvo (para exibir no lugar do hash).
+  filename?: string
   // Subpasta no R2 dentro de modelos_3d/ (nome do produto). Vazio = bloqueado.
   folder?: string
 }
 
-export const R2ModelUpload = ({ value, onChange, folder = '' }: Props) => {
+export const R2ModelUpload = ({ value, onChange, filename = '', folder = '' }: Props) => {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [urlInput, setUrlInput] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,7 +63,7 @@ export const R2ModelUpload = ({ value, onChange, folder = '' }: Props) => {
         setError('Falha no envio para o storage')
         return
       }
-      onChange(result.publicUrl)
+      onChange(result.publicUrl, file.name)
     } catch {
       setError('Erro inesperado no upload')
     } finally {
@@ -70,24 +72,12 @@ export const R2ModelUpload = ({ value, onChange, folder = '' }: Props) => {
     }
   }
 
-  const commitUrl = () => {
-    const url = urlInput.trim()
-    if (!url) return
-    try {
-      new URL(url)
-      onChange(url)
-      setError(null)
-    } catch {
-      setError('URL inválida')
-    }
-  }
-
   if (value) {
     return (
       <div className="model-upload">
         <div className="model-upload-current">
-          <span className="model-upload-file">📦 {value.split('/').pop()}</span>
-          <button type="button" className="image-remove-btn" onClick={() => onChange('')}>
+          <span className="model-upload-file">📦 {filename || 'Modelo 3D (.glb)'}</span>
+          <button type="button" className="image-remove-btn" onClick={() => onChange('', '')}>
             Remover
           </button>
         </div>
@@ -98,7 +88,7 @@ export const R2ModelUpload = ({ value, onChange, folder = '' }: Props) => {
   return (
     <div className="model-upload">
       {!folder && (
-        <Alert variant="warning" className="mb-3">
+        <Alert variant="warning">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             Informe o nome do produto antes de enviar o modelo.
@@ -116,20 +106,6 @@ export const R2ModelUpload = ({ value, onChange, folder = '' }: Props) => {
         />
         {uploading ? 'Enviando...' : '+ Enviar modelo .glb'}
       </label>
-
-      <div className="img-url-row">
-        <input
-          type="url"
-          className="toolbar-input"
-          placeholder="ou cole a URL de um .glb / .gltf"
-          value={urlInput}
-          onChange={(e) => setUrlInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), commitUrl())}
-        />
-        <button type="button" className="btn-secondary img-url-btn" onClick={commitUrl}>
-          Usar
-        </button>
-      </div>
 
       {error && <span className="field-error">{error}</span>}
     </div>
