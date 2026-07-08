@@ -21,6 +21,9 @@ export default function SmoothScroll({ children }: { children: ReactNode }) {
 			touchMultiplier: 1.5,
 		})
 
+		// Exposto para scroll programático suave (ex.: botão "Ver em 3D").
+		;(window as unknown as { __lenis?: Lenis }).__lenis = lenis
+
 		lenis.on('scroll', ScrollTrigger.update)
 
 		const tickerCallback = (time: number) => {
@@ -33,6 +36,7 @@ export default function SmoothScroll({ children }: { children: ReactNode }) {
 		return () => {
 			gsap.ticker.remove(tickerCallback)
 			lenis.destroy()
+			;(window as unknown as { __lenis?: Lenis }).__lenis = undefined
 		}
 	}, [isAdmin])
 

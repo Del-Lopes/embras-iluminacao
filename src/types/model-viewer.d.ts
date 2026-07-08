@@ -15,7 +15,10 @@ type ModelViewerAttributes = React.DetailedHTMLProps<
   'ar-modes'?: string
   'ar-placement'?: string
   'ar-scale'?: string
+  'disable-zoom'?: boolean | ''
   'shadow-intensity'?: string
+  'min-camera-orbit'?: string
+  'max-camera-orbit'?: string
   exposure?: string
   'environment-image'?: string
   'tone-mapping'?: string

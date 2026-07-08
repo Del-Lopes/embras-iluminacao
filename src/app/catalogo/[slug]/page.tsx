@@ -136,7 +136,12 @@ export default async function ProductDetailPage({ params }: Props) {
       <article className="product-detail">
         <div className="product-detail-top">
           {/* Gallery */}
-          <ProductGallery coverImage={product.cover_image} images={images} name={product.name} />
+          <ProductGallery
+            coverImage={product.cover_image}
+            images={images}
+            name={product.name}
+            has3d={product.has_3d_model && !!product.model_3d_url}
+          />
 
           {/* Info — NO price / cart / buy button (sample catalog) */}
           <div className="product-info">
@@ -155,8 +160,8 @@ export default async function ProductDetailPage({ params }: Props) {
             <h1 className="product-info-name">{product.name}</h1>
             <p className="product-info-sku">SKU: {product.sku}</p>
 
-            {/* Share */}
-            <div className="blog-share-wrap">
+            {/* Share — abaixo da linha, alinhado à esquerda */}
+            <div className="blog-share-wrap product-share-wrap">
               <p className="blog-share-label">Compartilhar</p>
               <div className="blog-share">
                 <a href={shareLinks.twitter} target="_blank" rel="noopener noreferrer" className="blog-share-icon" aria-label="Compartilhar no X">
@@ -191,7 +196,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
         {/* 3D model (model-viewer) */}
         {product.has_3d_model && (
-          <div className="product-section">
+          <div className="product-section" id="produto-3d-viewer" style={{ scrollMarginTop: 90 }}>
             <h2 className="product-section-title">Visualização 3D</h2>
             {product.model_3d_url ? (
               <ProductModelViewer

@@ -1037,12 +1037,47 @@ p {
 }
 
 .product-gallery-main {
+	position: relative;
 	flex: 1;
 	aspect-ratio: 1 / 1;
 	border-radius: 12px;
 	overflow: hidden;
 	background-color: var(--color-surface);
 	border: 1px solid var(--color-border);
+}
+
+/* Botão "Ver em 3D" (canto inferior direito da imagem) — preto fixo em qualquer tema */
+.gallery-3d-btn {
+	position: absolute;
+	right: 12px;
+	bottom: 12px;
+	z-index: 3;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 9px 16px;
+	border: none;
+	border-radius: 999px;
+	background-color: #111111;
+	color: #ffffff;
+	font-family: var(--font-body);
+	font-size: var(--font-size-xs);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	cursor: pointer;
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+	transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.gallery-3d-btn:hover {
+	background-color: #000000;
+	transform: translateY(-1px);
+}
+
+.gallery-3d-btn svg {
+	color: #ffffff;
+	flex-shrink: 0;
 }
 
 .product-gallery-main-img {
@@ -1158,7 +1193,8 @@ a.product-info-category:hover {
 	border: 1px solid var(--color-border);
 	border-radius: 12px;
 	overflow: hidden;
-	background-color: var(--color-surface);
+	/* Fundo sempre branco (mesmo no tema escuro) para a sombra do objeto aparecer */
+	background-color: #ffffff;
 }
 
 .product-3d-loading {
@@ -1167,12 +1203,36 @@ a.product-info-category:hover {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	color: var(--color-muted);
+	color: #6b7280;
 	font-size: var(--font-size-sm);
 }
 
 .product-3d-viewer model-viewer {
 	--poster-color: transparent;
+	background-color: #ffffff;
+}
+
+/* Dica de zoom (aparece ao rolar sem Ctrl sobre o visualizador) */
+.product-3d-hint {
+	position: absolute;
+	top: 12px;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 6;
+	padding: 6px 12px;
+	border-radius: 999px;
+	background-color: rgba(17, 24, 39, 0.85);
+	color: #fff;
+	font-size: var(--font-size-sm);
+	pointer-events: none;
+}
+
+.product-3d-hint kbd {
+	padding: 1px 6px;
+	border-radius: 4px;
+	background-color: rgba(255, 255, 255, 0.2);
+	font-family: inherit;
+	font-size: 0.9em;
 }
 
 /* 3D variation selector (overlay bottom-left of the viewer) */
@@ -1186,10 +1246,11 @@ a.product-info-category:hover {
 	gap: 4px;
 }
 
+/* Overlay sempre sobre fundo branco → cores fixas escuras (independe do tema) */
 .product-3d-variations-label {
 	font-size: var(--font-size-sm);
 	font-weight: 600;
-	color: var(--color-text);
+	color: #1a1a1a;
 }
 
 .product-3d-variations-select {
@@ -1197,11 +1258,17 @@ a.product-info-category:hover {
 	max-width: 220px;
 	padding: 8px 10px;
 	border-radius: 6px;
-	border: 1px solid var(--color-border);
-	background-color: var(--color-surface);
-	color: var(--color-text);
+	border: 1px solid #cbd0d6;
+	background-color: #ffffff;
+	color: #1a1a1a;
 	font-size: var(--font-size-sm);
 	outline: 0;
+}
+
+.product-3d-active {
+	margin: 0;
+	font-size: var(--font-size-sm);
+	color: #1a1a1a;
 }
 
 /* ---- Admin: 3D variations panel ---- */
@@ -3808,6 +3875,21 @@ tr[data-selected='true'] td {
 	gap: 12px;
 }
 
+/* Produto: compartilhar abaixo da linha (hr no topo) e alinhado à esquerda */
+.product-share-wrap {
+	align-items: flex-start;
+	margin-bottom: 0;
+	padding-bottom: 0;
+	border-bottom: none;
+	margin-top: 40px;
+	padding-top: 40px;
+	border-top: 1px solid var(--color-border);
+}
+
+.product-share-wrap .blog-share {
+	justify-content: flex-start;
+}
+
 .blog-share-icon {
 	display: flex;
 	align-items: center;
@@ -3824,6 +3906,22 @@ tr[data-selected='true'] td {
 
 .blog-share-icon:hover {
 	background-color: var(--color-muted);
+}
+
+/* Página de produto: cantos retos (o site usa bordas pontudas por padrão) */
+.product-gallery-main,
+.product-gallery-thumb,
+.product-gallery-placeholder,
+.product-gallery-main-img,
+.product-3d-viewer,
+.product-3d-viewer model-viewer,
+.product-3d-placeholder,
+.product-specs-table,
+.product-3d-variations-select,
+.gallery-3d-btn,
+.product-3d-hint,
+.product-share-wrap .blog-share-icon {
+	border-radius: 0;
 }
 
 .blog-source {

@@ -58,9 +58,12 @@ const securityHeaders = [
       // a blob: URL — without this the worker is blocked (default-src 'self').
       "worker-src 'self' blob:",
       // connect-src:
+      //  - blob: / data: → <model-viewer>/three fetch embedded GLB textures from
+      //    blob: URLs (via ImageBitmap); without this the texture silently fails
+      //    ("Couldn't load texture blob:") and the material renders untextured.
       //  - r2PublicOrigin → fetch the .glb / textures over the public domain
       //  - www.gstatic.com → model-viewer fetches the Draco/KTX2 decoder libs from here
-      `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.gstatic.com ${r2S3Origin} ${r2PublicOrigin}`,
+      `connect-src 'self' blob: data: https://*.supabase.co wss://*.supabase.co https://www.gstatic.com ${r2S3Origin} ${r2PublicOrigin}`,
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
