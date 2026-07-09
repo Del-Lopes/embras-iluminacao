@@ -1,25 +1,41 @@
 'use client'
 
+import { useTransition } from 'react'
 import { deletePostAction } from '@/server/admin.actions'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 
 type Props = {
   postId: string
   postTitle: string
 }
 
-export const DeletePostButton = ({ postId, postTitle }: Props) => (
-  <form action={deletePostAction}>
-    <input type="hidden" name="postId" value={postId} />
+export const DeletePostButton = ({ postId, postTitle }: Props) => {
+  const confirm = useConfirm()
+  const [pending, startTransition] = useTransition()
+
+  const handleClick = async () => {
+    const ok = await confirm({
+      title: `Excluir "${postTitle}"?`,
+      description: 'Esta ação não pode ser desfeita.',
+      confirmText: 'Excluir',
+      destructive: true,
+    })
+    if (!ok) return
+    const fd = new FormData()
+    fd.set('postId', postId)
+    startTransition(async () => {
+      await deletePostAction(fd)
+    })
+  }
+
+  return (
     <button
-      type="submit"
+      type="button"
       className="action-btn action-btn--delete"
-      onClick={(e) => {
-        if (!confirm(`Excluir "${postTitle}"?\nEsta ação não pode ser desfeita.`)) {
-          e.preventDefault()
-        }
-      }}
+      onClick={handleClick}
+      disabled={pending}
     >
-      Excluir
+      {pending ? 'Excluindo…' : 'Excluir'}
     </button>
-  </form>
-)
+  )
+}

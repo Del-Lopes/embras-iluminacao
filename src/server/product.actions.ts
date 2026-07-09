@@ -318,7 +318,8 @@ const productSchema = z.object({
       (s) => !s || SLUG_RE.test(s),
       'Slug deve conter apenas letras minúsculas, números e hífens'
     ),
-  sku: z.string().min(1, 'SKU é obrigatório'),
+  // SKU obrigatório no save manual; no auto-save de rascunho pode faltar (usa slug).
+  sku: z.string().optional().default(''),
   description: z.string().optional().default(''),
   short_description: z.string().optional().default(''),
   cover_image: z.string().optional().default(''),
@@ -369,6 +370,13 @@ const numOrNull = (v: string): number | null => {
   const n = parseFloat(v.replace(',', '.'))
   return Number.isFinite(n) ? n : null
 }
+
+// SEO mínimo determinístico (sem IA) — usado no auto-save de rascunho.
+const draftSeo = (name: string, shortDesc: string) => ({
+  seo_title: name.slice(0, 60),
+  seo_description: (shortDesc || '').slice(0, 160),
+  seo_keywords: [] as string[],
+})
 
 // Map validated form data → products row columns (shared create/update).
 // SEO (seo_title/description/keywords) é resolvido à parte (IA) no create/update.
@@ -587,7 +595,8 @@ export const isProductSlugTaken = async (
 // createProductAction
 // ================================================================
 export const createProductAction = async (
-  input: ProductFormInput
+  input: ProductFormInput,
+  opts?: { autosave?: boolean }
 ): Promise<ProductActionResult> => {
   const supabase = await createSupabaseServerClient()
   const {
@@ -601,19 +610,27 @@ export const createProductAction = async (
   }
   const d = parsed.data
 
+  // SKU: obrigatório no save manual; no auto-save cai para o slug (permite
+  // criar o rascunho só com o nome).
+  if (!opts?.autosave && !d.sku.trim()) return { error: 'SKU é obrigatório' }
+  if (!d.sku.trim()) d.sku = d.slug.trim() || toSlug(d.name)
+
   const columns = toProductColumns(d)
 
-  // SEO por IA (2 tentativas) com fallback determinístico automático.
-  const categoryNames = await resolveCategoryNames(
-    supabase,
-    [d.primary_category_id, ...d.secondary_category_ids].filter((x): x is string => !!x)
-  )
-  const seo = await generateProductSeo({
-    name: d.name,
-    description: d.description,
-    categories: categoryNames,
-    environment: d.environment,
-  })
+  // SEO por IA só quando o produto é salvo como PUBLICADO. Rascunhos (auto-save
+  // ou save manual) usam SEO mínimo determinístico.
+  const seo =
+    d.status === 'published'
+      ? await generateProductSeo({
+          name: d.name,
+          description: d.description,
+          categories: await resolveCategoryNames(
+            supabase,
+            [d.primary_category_id, ...d.secondary_category_ids].filter((x): x is string => !!x)
+          ),
+          environment: d.environment,
+        })
+      : draftSeo(d.name, d.short_description)
 
   const { data: created, error } = await supabase
     .from('products')
@@ -662,7 +679,8 @@ export const createProductAction = async (
 // updateProductAction
 // ================================================================
 export const updateProductAction = async (
-  input: ProductFormInput
+  input: ProductFormInput,
+  opts?: { autosave?: boolean }
 ): Promise<ProductActionResult> => {
   const productId = input.id
   if (!productId) return { error: 'ID inválido' }
@@ -679,6 +697,10 @@ export const updateProductAction = async (
   }
   const d = parsed.data
 
+  // SKU: obrigatório no save manual; no auto-save cai para o slug.
+  if (!opts?.autosave && !d.sku.trim()) return { error: 'SKU é obrigatório' }
+  if (!d.sku.trim()) d.sku = d.slug.trim() || toSlug(d.name)
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
@@ -686,10 +708,13 @@ export const updateProductAction = async (
     .single()
   const isAdmin = profile?.role === 'admin'
 
-  // Existing row — for ownership, old asset cleanup and published_at carry-over.
+  // Existing row — for ownership, old asset cleanup, published_at carry-over and
+  // (no auto-save) reuso do SEO já gerado.
   const { data: existing } = await supabase
     .from('products')
-    .select('cover_image, model_3d_url, model_3d_poster, model_3d_variations, published_at')
+    .select(
+      'cover_image, model_3d_url, model_3d_poster, model_3d_variations, published_at, seo_title, seo_description, seo_keywords'
+    )
     .eq('id', productId)
     .single()
 
@@ -699,17 +724,25 @@ export const updateProductAction = async (
       ? existing?.published_at ?? new Date().toISOString()
       : existing?.published_at ?? null
 
-  // SEO por IA (2 tentativas) com fallback determinístico automático.
-  const categoryNames = await resolveCategoryNames(
-    supabase,
-    [d.primary_category_id, ...d.secondary_category_ids].filter((x): x is string => !!x)
-  )
-  const seo = await generateProductSeo({
-    name: d.name,
-    description: d.description,
-    categories: categoryNames,
-    environment: d.environment,
-  })
+  // SEO por IA só quando salvo como PUBLICADO. Rascunho mantém o SEO existente
+  // (ou mínimo) — sem chamar a IA.
+  const seo =
+    d.status === 'published'
+      ? await generateProductSeo({
+          name: d.name,
+          description: d.description,
+          categories: await resolveCategoryNames(
+            supabase,
+            [d.primary_category_id, ...d.secondary_category_ids].filter((x): x is string => !!x)
+          ),
+          environment: d.environment,
+        })
+      : {
+          seo_title: existing?.seo_title ?? draftSeo(d.name, d.short_description).seo_title,
+          seo_description:
+            existing?.seo_description ?? draftSeo(d.name, d.short_description).seo_description,
+          seo_keywords: existing?.seo_keywords ?? [],
+        }
 
   const updateData = {
     ...columns,

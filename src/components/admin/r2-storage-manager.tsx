@@ -9,6 +9,7 @@ import {
   deleteR2Folder,
   type R2Object,
 } from '@/server/upload.actions'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 
 const PAGE_SIZE = 100
 
@@ -22,6 +23,7 @@ type Entry =
   | { kind: 'file'; file: R2Object }
 
 export function R2StorageManager() {
+  const confirm = useConfirm()
   const [path, setPath] = useState('')
   const [folders, setFolders] = useState<string[]>([])
   const [allFiles, setAllFiles] = useState<R2Object[]>([])
@@ -108,12 +110,13 @@ export function R2StorageManager() {
   }
 
   const handleDeleteFolder = async (prefix: string, name: string) => {
-    if (
-      !confirm(
-        `Excluir a pasta "${name}" e TODO o seu conteúdo (arquivos e subpastas)?\nEsta ação não pode ser desfeita.`
-      )
-    )
-      return
+    const ok = await confirm({
+      title: `Excluir a pasta "${name}"?`,
+      description: 'Todo o conteúdo (arquivos e subpastas) será removido. Esta ação não pode ser desfeita.',
+      confirmText: 'Excluir',
+      destructive: true,
+    })
+    if (!ok) return
     setDeletingFolder(prefix)
     setError(null)
     const res = await deleteR2Folder(prefix)
@@ -124,7 +127,13 @@ export function R2StorageManager() {
 
   const handleBulkDelete = async () => {
     if (selected.size === 0) return
-    if (!confirm(`Excluir ${selected.size} arquivo(s)?\nEsta ação não pode ser desfeita.`)) return
+    const ok = await confirm({
+      title: `Excluir ${selected.size} arquivo(s)?`,
+      description: 'Esta ação não pode ser desfeita.',
+      confirmText: 'Excluir',
+      destructive: true,
+    })
+    if (!ok) return
     setBulkDeleting(true)
     setError(null)
     const keys = Array.from(selected)

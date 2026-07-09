@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/db/supabase-client'
 import { Trash2, Copy, Upload, RefreshCw, FolderOpen, ChevronRight } from 'lucide-react'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 
 const BUCKET = 'cover-images'
 const PAGE_SIZE = 100
@@ -16,6 +17,7 @@ type FileEntry = {
 }
 
 export function StorageManager() {
+  const confirm = useConfirm()
   const [path, setPath] = useState('')
   const [allFiles, setAllFiles] = useState<FileEntry[]>([])
   const [page, setPage] = useState(0)
@@ -127,7 +129,13 @@ export function StorageManager() {
 
   const handleBulkDelete = async () => {
     if (selected.size === 0) return
-    if (!confirm(`Excluir ${selected.size} arquivo(s)?\nEsta ação não pode ser desfeita.`)) return
+    const ok = await confirm({
+      title: `Excluir ${selected.size} arquivo(s)?`,
+      description: 'Esta ação não pode ser desfeita.',
+      confirmText: 'Excluir',
+      destructive: true,
+    })
+    if (!ok) return
     setBulkDeleting(true)
     setError(null)
     const supabase = createSupabaseBrowserClient()

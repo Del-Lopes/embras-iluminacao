@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { DeleteProductButton } from '@/components/admin/delete-product-button'
 import { AdminPagination } from '@/components/admin/admin-pagination'
 import { bulkDeleteProductsAction } from '@/server/product.actions'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 import type { ProductRow } from '@/server/product.actions'
 import type { ProductStatus } from '@/lib/db/schema'
 import type { VariantProps } from 'class-variance-authority'
@@ -87,6 +88,7 @@ type Props = {
 }
 
 export const ProductDataTable = ({ products, total, page, pageCount, searchParams }: Props) => {
+  const confirm = useConfirm()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [isPending, startTransition] = useTransition()
 
@@ -113,8 +115,14 @@ export const ProductDataTable = ({ products, total, page, pageCount, searchParam
       return next
     })
 
-  const handleBulkDelete = () => {
-    if (!confirm(`Excluir ${selected.size} produto${selected.size !== 1 ? 's' : ''}?\nEsta ação não pode ser desfeita.`)) return
+  const handleBulkDelete = async () => {
+    const ok = await confirm({
+      title: `Excluir ${selected.size} produto${selected.size !== 1 ? 's' : ''}?`,
+      description: 'Esta ação não pode ser desfeita.',
+      confirmText: 'Excluir',
+      destructive: true,
+    })
+    if (!ok) return
     startTransition(async () => {
       await bulkDeleteProductsAction(Array.from(selected))
       setSelected(new Set())

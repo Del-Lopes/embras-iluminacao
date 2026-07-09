@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { DeletePostButton } from '@/components/admin/delete-post-button'
 import { AdminPagination } from '@/components/admin/admin-pagination'
 import { bulkDeletePostsAction } from '@/server/admin.actions'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 import type { PostStatus, PostWithRelations } from '@/lib/db/schema'
 import type { VariantProps } from 'class-variance-authority'
 import type { badgeVariants } from '@/components/ui/badge'
@@ -57,6 +58,7 @@ type Props = {
 }
 
 export const PostDataTable = ({ posts, total, page, pageCount, searchParams }: Props) => {
+  const confirm = useConfirm()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [isPending, startTransition] = useTransition()
 
@@ -88,8 +90,14 @@ export const PostDataTable = ({ posts, total, page, pageCount, searchParams }: P
     })
   }
 
-  const handleBulkDelete = () => {
-    if (!confirm(`Excluir ${selected.size} post${selected.size !== 1 ? 's' : ''}?\nEsta ação não pode ser desfeita.`)) return
+  const handleBulkDelete = async () => {
+    const ok = await confirm({
+      title: `Excluir ${selected.size} post${selected.size !== 1 ? 's' : ''}?`,
+      description: 'Esta ação não pode ser desfeita.',
+      confirmText: 'Excluir',
+      destructive: true,
+    })
+    if (!ok) return
     startTransition(async () => {
       await bulkDeletePostsAction(Array.from(selected))
       setSelected(new Set())

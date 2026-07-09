@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
 import { Sidebar } from '@/components/admin/sidebar'
 import { Toaster } from '@/components/ui/sonner'
+import { ConfirmProvider } from '@/components/ui/confirm-dialog'
 
 // Layout for the (admin) route group.
 // Strategy:
@@ -32,13 +33,15 @@ export default async function AdminLayout({
     .single()
 
   return (
-    <div className="admin-shell">
-      <Sidebar
-        userName={profile?.full_name ?? 'Admin'}
-        userRole={profile?.role ?? 'editor'}
-      />
-      <main className="admin-main">{children}</main>
-      <Toaster />
-    </div>
+    <ConfirmProvider>
+      <div className="admin-shell">
+        <Sidebar
+          userName={profile?.full_name ?? 'Admin'}
+          userRole={profile?.role ?? 'editor'}
+        />
+        <main className="admin-main">{children}</main>
+        <Toaster />
+      </div>
+    </ConfirmProvider>
   )
 }

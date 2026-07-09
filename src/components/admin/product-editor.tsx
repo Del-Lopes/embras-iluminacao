@@ -136,6 +136,14 @@ export const ProductEditor = ({
   const [soqueteIds, setSoqueteIds] = useState<string[]>(productSoqueteIds)
   const [images, setImages] = useState<GalleryImage[]>(productImages)
 
+  // Auto-save (rascunho) — só na criação. Cria o produto assim que houver nome e
+  // vai atualizando; se o usuário sair, o rascunho e os arquivos permanecem.
+  const draftIdRef = useRef<string | null>(product?.id ?? null)
+  const savingRef = useRef(false)
+  const manualSubmitRef = useRef(false)
+  const autosaveInitRef = useRef(false)
+  const [draftSaved, setDraftSaved] = useState(false)
+
   // Lista única de materiais + soquetes vinda das características.
   const materialOptions = characteristics.filter((c) => c.type === 'material')
   const soqueteOptions = characteristics.filter((c) => c.type === 'soquete')
@@ -149,6 +157,7 @@ export const ProductEditor = ({
     control,
     setValue,
     watch,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -232,28 +241,76 @@ export const ProductEditor = ({
     toast.info('Geração de descrição por IA será habilitada em uma próxima etapa.')
   }
 
+  // Monta o payload a partir dos valores do form + seleções de taxonomia.
+  const buildPayload = (data: FormValues): ProductFormInput => ({
+    ...(draftIdRef.current ? { id: draftIdRef.current } : {}),
+    ...data,
+    primary_category_id: primaryCategoryId || null,
+    secondary_category_ids: secondaryCategoryIds.filter((id) => id !== primaryCategoryId),
+    primary_material_id: primaryMaterialId || null,
+    secondary_material_ids: secondaryMaterialIds.filter((id) => id !== primaryMaterialId),
+    soquete_ids: soqueteIds,
+    images,
+    has_3d_model: !!data.has_3d_model,
+  })
+
+  // Salva/atualiza o rascunho automaticamente (sem SEO por IA, sem navegar).
+  const autosaveDraft = async () => {
+    if (savingRef.current || manualSubmitRef.current) return
+    const data = getValues()
+    if (!(data.name ?? '').trim()) return
+    savingRef.current = true
+    try {
+      const payload = buildPayload(data)
+      const result = draftIdRef.current
+        ? await updateProductAction(payload, { autosave: true })
+        : await createProductAction(payload, { autosave: true })
+      if (!('error' in result)) {
+        if (!draftIdRef.current) draftIdRef.current = result.id
+        setDraftSaved(true)
+      }
+    } finally {
+      savingRef.current = false
+    }
+  }
+
+  // Dispara o auto-save (debounce) sempre que algo muda — apenas na criação.
+  const autosaveSnapshot = JSON.stringify({
+    v: watch(),
+    pc: primaryCategoryId,
+    sc: secondaryCategoryIds,
+    pm: primaryMaterialId,
+    sm: secondaryMaterialIds,
+    sq: soqueteIds,
+    img: images,
+  })
+  useEffect(() => {
+    if (isEdit) return
+    // Pula a primeira execução (montagem) — só salva após uma alteração real.
+    if (!autosaveInitRef.current) {
+      autosaveInitRef.current = true
+      return
+    }
+    const t = setTimeout(() => {
+      autosaveDraft()
+    }, 1500)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autosaveSnapshot, isEdit])
+
   const onSubmit = handleSubmit(async (data) => {
     setServerError(null)
+    manualSubmitRef.current = true
 
-    const payload: ProductFormInput = {
-      ...(isEdit ? { id: product!.id } : {}),
-      ...data,
-      primary_category_id: primaryCategoryId || null,
-      secondary_category_ids: secondaryCategoryIds.filter((id) => id !== primaryCategoryId),
-      primary_material_id: primaryMaterialId || null,
-      secondary_material_ids: secondaryMaterialIds.filter((id) => id !== primaryMaterialId),
-      soquete_ids: soqueteIds,
-      images,
-      has_3d_model: !!data.has_3d_model,
-    }
-
-    const result = isEdit
+    const payload = buildPayload(data)
+    const result = draftIdRef.current
       ? await updateProductAction(payload)
       : await createProductAction(payload)
 
     if ('error' in result) {
       setServerError(result.error)
       toast.error(result.error)
+      manualSubmitRef.current = false
       return
     }
 
@@ -527,6 +584,11 @@ export const ProductEditor = ({
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? 'Salvando...' : isEdit ? 'Salvar alterações' : 'Criar produto'}
             </Button>
+            {!isEdit && draftSaved && (
+              <span className="field-hint field-hint--xs" style={{ margin: 0 }}>
+                Rascunho salvo automaticamente
+              </span>
+            )}
           </div>
 
           {/* Imagem de capa (invertido com Área de uso) */}
