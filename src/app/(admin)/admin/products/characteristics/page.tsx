@@ -26,7 +26,7 @@ export default async function ProductCharacteristicsPage() {
         <Link href="/admin/products" className="editor-back">← Produtos</Link>
         <h1 className="dashboard-title">Especificações de Produto</h1>
         <p className="dashboard-subtitle">
-          Cadastre os valores de Material Principal (filtro do catálogo), Material Secundário e Tipo de Soquete
+          Cadastre os filtros de materiais, principal e secundário, e tipo de soquete
         </p>
       </div>
 

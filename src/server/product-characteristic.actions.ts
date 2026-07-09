@@ -2,9 +2,9 @@
 
 // ================================================================
 // product-characteristic.actions.ts
-// CRUD das características de produto (Material Principal, Material
-// Secundário, Tipo de Soquete). Espelha product-category.actions.ts:
-// slug único (por tipo), escrita gated por RLS (admin/editor).
+// CRUD das características de produto (Materiais e Tipo de Soquete).
+// Espelha product-category.actions.ts: slug único (por tipo), escrita
+// gated por RLS (admin/editor).
 // ================================================================
 
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
@@ -22,7 +22,7 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
 
-const TYPES = ['material_principal', 'material_secundario', 'soquete'] as const
+const TYPES = ['material', 'soquete'] as const
 
 // ================================================================
 // createProductCharacteristicAction

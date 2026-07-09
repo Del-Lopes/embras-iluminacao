@@ -15,9 +15,8 @@ type ColumnDef = {
 }
 
 const COLUMNS: ColumnDef[] = [
-  { type: 'material_principal', label: 'Material Principal (Filtro)', hint: 'Estes valores viram filtro no catálogo', placeholder: 'Ex: aço' },
-  { type: 'material_secundario', label: 'Material Secundário', hint: 'Aparece nas informações técnicas', placeholder: 'Ex: vidro' },
-  { type: 'soquete', label: 'Tipo de Soquete', hint: 'Aparece nas informações técnicas', placeholder: 'Ex: E27' },
+  { type: 'material', label: 'Materiais', hint: 'Lista única de materiais', placeholder: 'Ex: aço' },
+  { type: 'soquete', label: 'Tipo de Soquete', hint: 'Lista para tipos de soquete', placeholder: 'Ex: E27' },
 ]
 
 type Props = { characteristics: ProductCharacteristic[] }

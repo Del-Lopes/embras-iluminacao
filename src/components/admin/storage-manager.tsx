@@ -177,7 +177,7 @@ export function StorageManager() {
                 border: 'none',
                 padding: 0,
                 cursor: i === breadcrumbs.length - 1 ? 'default' : 'pointer',
-                color: i === breadcrumbs.length - 1 ? 'var(--color-foreground)' : 'var(--color-accent)',
+                color: i === breadcrumbs.length - 1 ? 'var(--color-primary)' : 'var(--color-accent)',
                 fontSize: 13,
                 fontWeight: i === breadcrumbs.length - 1 ? 600 : 400,
               }}

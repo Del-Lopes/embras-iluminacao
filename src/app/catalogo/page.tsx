@@ -25,6 +25,7 @@ type SearchParams = Promise<{
   environment?: string
   tipo?: string
   material?: string
+  soquete?: string
   sort?: string
   view?: string
 }>
@@ -36,13 +37,14 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
   const environment = params.environment?.trim() ?? ''
   const tipo = params.tipo?.trim() ?? ''
   const material = params.material?.trim() ?? ''
+  const soquete = params.soquete?.trim() ?? ''
   const sort = params.sort?.trim() || 'recentes'
   const view: 'grid' | 'list' = params.view === 'list' ? 'list' : 'grid'
 
   const supabase = await createSupabaseServerClient()
 
-  // Filter sources: category tree + valores de Material Principal (características)
-  const [{ data: catData }, { data: matData }] = await Promise.all([
+  // Filter sources: árvore de categorias + materiais + soquetes (características)
+  const [{ data: catData }, { data: matData }, { data: soqData }] = await Promise.all([
     supabase
       .from('product_categories')
       .select('id, name, slug, parent_id, description, sort_order, created_at')
@@ -51,7 +53,13 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
     supabase
       .from('product_characteristics')
       .select('id, name, slug')
-      .eq('type', 'material_principal')
+      .eq('type', 'material')
+      .order('sort_order')
+      .order('name'),
+    supabase
+      .from('product_characteristics')
+      .select('id, name, slug')
+      .eq('type', 'soquete')
       .order('sort_order')
       .order('name'),
   ])
@@ -59,6 +67,8 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
   const categories = flattenCategoryTree((catData ?? []) as ProductCategory[])
   const materialChars = (matData ?? []) as { id: string; name: string; slug: string }[]
   const materials = materialChars.map((c) => ({ slug: c.slug, name: c.name }))
+  const soqueteChars = (soqData ?? []) as { id: string; name: string; slug: string }[]
+  const soquetes = soqueteChars.map((c) => ({ slug: c.slug, name: c.name }))
 
   // Resolve "tipo" (category slug) → product ids via the m2m map
   let tipoProductIds: string[] | null = null
@@ -75,7 +85,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
     }
   }
 
-  // Resolve "material" (slug da característica Material Principal) → product ids
+  // Resolve "material" (slug do material) → product ids (principal OU secundário)
   let materialProductIds: string[] | null = null
   if (material) {
     const mc = materialChars.find((c) => c.slug === material)
@@ -90,8 +100,23 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
     }
   }
 
-  // Interseção das restrições por id (tipo ∩ material)
-  const idConstraints = [tipoProductIds, materialProductIds].filter(
+  // Resolve "soquete" (slug do soquete) → product ids
+  let soqueteProductIds: string[] | null = null
+  if (soquete) {
+    const sc = soqueteChars.find((c) => c.slug === soquete)
+    if (!sc) {
+      soqueteProductIds = []
+    } else {
+      const { data: maps } = await supabase
+        .from('product_characteristic_map')
+        .select('product_id')
+        .eq('characteristic_id', sc.id)
+      soqueteProductIds = (maps ?? []).map((m) => m.product_id)
+    }
+  }
+
+  // Interseção das restrições por id (tipo ∩ material ∩ soquete)
+  const idConstraints = [tipoProductIds, materialProductIds, soqueteProductIds].filter(
     (l): l is string[] => l !== null
   )
   const combinedIds: string[] | null =
@@ -136,31 +161,35 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
       const [{ data: catMap }, { data: charMap }] = await Promise.all([
         supabase
           .from('product_category_map')
-          .select('product_id, product_categories(name, slug)')
+          .select('product_id, is_primary, product_categories(name, slug)')
           .in('product_id', ids),
         supabase
           .from('product_characteristic_map')
-          .select('product_id, product_characteristics(name, type)')
+          .select('product_id, is_primary, product_characteristics(name, type)')
           .in('product_id', ids),
       ])
 
+      // Card exibe apenas a categoria PRINCIPAL (is_primary).
       const catByProduct = new Map<string, { name: string; slug: string }>()
       for (const row of (catMap ?? []) as unknown as {
         product_id: string
+        is_primary: boolean
         product_categories: { name: string; slug: string } | null
       }[]) {
-        if (row.product_categories && !catByProduct.has(row.product_id)) {
+        if (row.product_categories && row.is_primary) {
           catByProduct.set(row.product_id, row.product_categories)
         }
       }
 
+      // Card exibe apenas o material PRINCIPAL (is_primary + type 'material').
       const matByProduct = new Map<string, string>()
       for (const row of (charMap ?? []) as unknown as {
         product_id: string
+        is_primary: boolean
         product_characteristics: { name: string; type: string } | null
       }[]) {
         const c = row.product_characteristics
-        if (c && c.type === 'material_principal' && !matByProduct.has(row.product_id)) {
+        if (c && c.type === 'material' && row.is_primary) {
           matByProduct.set(row.product_id, c.name)
         }
       }
@@ -181,6 +210,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
     if (environment) urlParams.set('environment', environment)
     if (tipo) urlParams.set('tipo', tipo)
     if (material) urlParams.set('material', material)
+    if (soquete) urlParams.set('soquete', soquete)
     if (sort !== 'recentes') urlParams.set('sort', sort)
     if (view !== 'grid') urlParams.set('view', view)
     if (p > 1) urlParams.set('page', String(p))
@@ -208,10 +238,12 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
           <CatalogSidebar
             categories={categories}
             materials={materials}
+            soquetes={soquetes}
             currentQ={q}
             currentEnvironment={environment}
             currentTipo={tipo}
             currentMaterial={material}
+            currentSoquete={soquete}
           />
         </Suspense>
 

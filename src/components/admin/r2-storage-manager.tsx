@@ -6,10 +6,14 @@ import {
   listR2Objects,
   deleteProductObject,
   deleteProductObjects,
+  deleteR2Folder,
   type R2Object,
 } from '@/server/upload.actions'
 
 const PAGE_SIZE = 100
+
+// Pastas-base do sistema — não podem ser excluídas pelo gerenciador.
+const PROTECTED_FOLDERS = new Set(['modelos_3d/', 'produtos/'])
 
 const isImageKey = (key: string) => /\.(jpe?g|png|webp|gif|avif)$/i.test(key)
 
@@ -26,6 +30,7 @@ export function R2StorageManager() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deletingKey, setDeletingKey] = useState<string | null>(null)
+  const [deletingFolder, setDeletingFolder] = useState<string | null>(null)
   const [bulkDeleting, setBulkDeleting] = useState(false)
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
 
@@ -102,6 +107,21 @@ export function R2StorageManager() {
     setDeletingKey(null)
   }
 
+  const handleDeleteFolder = async (prefix: string, name: string) => {
+    if (
+      !confirm(
+        `Excluir a pasta "${name}" e TODO o seu conteúdo (arquivos e subpastas)?\nEsta ação não pode ser desfeita.`
+      )
+    )
+      return
+    setDeletingFolder(prefix)
+    setError(null)
+    const res = await deleteR2Folder(prefix)
+    if ('error' in res) setError(res.error)
+    else setFolders((prev) => prev.filter((f) => f !== prefix))
+    setDeletingFolder(null)
+  }
+
   const handleBulkDelete = async () => {
     if (selected.size === 0) return
     if (!confirm(`Excluir ${selected.size} arquivo(s)?\nEsta ação não pode ser desfeita.`)) return
@@ -154,7 +174,7 @@ export function R2StorageManager() {
                 border: 'none',
                 padding: 0,
                 cursor: i === breadcrumbs.length - 1 ? 'default' : 'pointer',
-                color: i === breadcrumbs.length - 1 ? 'var(--color-foreground)' : 'var(--color-accent)',
+                color: i === breadcrumbs.length - 1 ? 'var(--color-primary)' : 'var(--color-accent)',
                 fontSize: 13,
                 fontWeight: i === breadcrumbs.length - 1 ? 600 : 400,
               }}
@@ -226,6 +246,7 @@ export function R2StorageManager() {
               <tbody>
                 {pageEntries.map((entry) => {
                   if (entry.kind === 'folder') {
+                    const isProtected = PROTECTED_FOLDERS.has(entry.prefix)
                     return (
                       <tr key={`folder:${entry.prefix}`} className="data-table-row">
                         <td className="data-table-cell" />
@@ -255,7 +276,23 @@ export function R2StorageManager() {
                         </td>
                         <td className="data-table-cell" style={{ color: 'var(--color-muted)' }}>—</td>
                         <td className="data-table-cell" style={{ color: 'var(--color-muted)' }}>—</td>
-                        <td className="data-table-cell" />
+                        <td className="data-table-cell">
+                          <div className="row-actions">
+                            <button
+                              type="button"
+                              className="action-btn action-btn--delete"
+                              onClick={() => handleDeleteFolder(entry.prefix, entry.name)}
+                              disabled={deletingFolder === entry.prefix || isProtected}
+                              title={
+                                isProtected
+                                  ? 'Pasta do sistema — não pode ser excluída'
+                                  : 'Excluir pasta e todo o conteúdo'
+                              }
+                            >
+                              {deletingFolder === entry.prefix ? '...' : <Trash2 size={13} strokeWidth={1.5} />}
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     )
                   }

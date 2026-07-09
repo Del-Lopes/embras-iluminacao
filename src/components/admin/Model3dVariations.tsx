@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { ChevronDown, RefreshCw } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { R2Upload } from '@/components/admin/r2-upload'
@@ -26,6 +27,8 @@ type Props = {
   arScale: Model3dArScale
   materialLabels: Model3dMaterialLabels
   variations: Model3dVariation[]
+  // Edição de produto existente → a lista de materiais começa aberta.
+  isEdit?: boolean
   onObjectTypeChange: (v: Model3dObjectType) => void
   onArScaleChange: (v: Model3dArScale) => void
   onMaterialLabelsChange: (v: Model3dMaterialLabels) => void
@@ -41,6 +44,7 @@ export function Model3dVariations({
   arScale,
   materialLabels,
   variations,
+  isEdit = false,
   onObjectTypeChange,
   onArScaleChange,
   onMaterialLabelsChange,
@@ -48,6 +52,8 @@ export function Model3dVariations({
 }: Props) {
   const { status, materials, error, read, reset } = useGlbMaterials()
   const [replacedNotice, setReplacedNotice] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
+  const [listOpen, setListOpen] = useState(isEdit)
   // Materiais "finalizados" pelo usuário — apenas visual (não persiste),
   // ajuda a acompanhar quais já foram configurados.
   const [savedMaterials, setSavedMaterials] = useState<Set<string>>(new Set())
@@ -102,6 +108,11 @@ export function Model3dVariations({
   const materialNames =
     materials.length > 0 ? materials : Object.keys(materialLabels)
 
+  // Variações só aparecem se o modelo tiver ao menos 1 material (mantém o
+  // feedback enquanto lê / em erro, para permitir recarregar).
+  const showVariations =
+    materialNames.length > 0 || status === 'loading' || status === 'error'
+
   const setLabel = (material: string, friendly: string) =>
     onMaterialLabelsChange({ ...materialLabels, [material]: friendly })
 
@@ -123,6 +134,8 @@ export function Model3dVariations({
 
   return (
     <div className="model3d-variations">
+      <h4 className="model3d-title">Configurações do Modelo 3D</h4>
+
       {/* AR config */}
       <div className="editor-row">
         <div className="field-group">
@@ -147,38 +160,86 @@ export function Model3dVariations({
             onChange={(e) => onArScaleChange(e.target.value as Model3dArScale)}
           >
             <option value="fixed">Fixa</option>
-            <option value="auto">Automática</option>
+            <option value="auto">Livre</option>
           </select>
           <p className="field-hint">Se o objeto pode ser redimensionado no AR.</p>
         </div>
       </div>
 
-      {/* Status / materials header */}
-      <div className="model3d-status">
+      {showVariations && (
+        <>
+      <hr className="model3d-sep" />
+
+      <div className="model3d-variations-head">
+        <h4 className="model3d-title">Variações (cor/textura)</h4>
         <button
           type="button"
-          className="model3d-outline-btn btn-xs"
+          className="model3d-help-summary"
+          onClick={() => setHelpOpen((o) => !o)}
+          aria-expanded={helpOpen}
+        >
+          <span className="model3d-help-q">?</span> Saiba mais
+          <ChevronDown
+            size={14}
+            strokeWidth={2}
+            className={`model3d-chevron${helpOpen ? ' model3d-chevron--open' : ''}`}
+          />
+        </button>
+      </div>
+
+      <div className="model3d-help">
+        <div className={`model3d-collapse${helpOpen ? ' model3d-collapse--open' : ''}`}>
+          <div className="model3d-collapse-inner">
+            <div className="model3d-help-body">
+              <p>
+                Cada material representa uma parte específica do objeto que vem pré-definido
+                no modelo 3D. As variações são agrupadas de acordo com o material alvo escolhido.
+              </p>
+              <div className="model3d-help-gifs">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/images/material_alvo-gif.gif" alt="Lista de materiais no modelo 3D" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/images/nome-grupo-gif.gif" alt="Seletor de variações na página do produto" />
+              </div>
+              <p>
+                <strong>Ex</strong>: Podemos atribuir o nome &quot;Base de Metal&quot; para o
+                material &quot;Linea_-_Metal_Preto_Fosco&quot;.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Status / materials header */}
+      <div className="model3d-status">
+        <span className="model3d-status-text">
+          {status === 'loading' && 'Lendo materiais do modelo…'}
+          {status === 'error' && <span className="field-error">{error}</span>}
+          {status !== 'loading' && materialNames.length > 0 && (
+            <>
+              Seu modelo possui <strong>{materialNames.length}</strong>{' '}
+              {materialNames.length === 1 ? 'material' : 'materiais'}
+            </>
+          )}
+          {status !== 'loading' && materialNames.length === 0 && status !== 'error' && (
+            <span className="field-hint">Nenhum material lido ainda.</span>
+          )}
+        </span>
+        <button
+          type="button"
+          className="model3d-refresh-btn"
           onClick={() => {
             setReplacedNotice(false)
             read(modelUrl)
           }}
+          title="Recarregar a lista de materiais"
+          aria-label="Recarregar a lista de materiais"
         >
-          Reler materiais
+          <RefreshCw size={16} strokeWidth={2} />
         </button>
-        {status === 'loading' && <span>Lendo materiais do modelo…</span>}
-        {status === 'error' && <span className="field-error">{error}</span>}
-        {status !== 'loading' && materialNames.length > 0 && (
-          <span>
-            Seu modelo possui <strong>{materialNames.length}</strong>{' '}
-            {materialNames.length === 1 ? 'material' : 'materiais'}
-          </span>
-        )}
-        {status !== 'loading' && materialNames.length === 0 && status !== 'error' && (
-          <span className="field-hint">
-            Nenhum material lido ainda.
-          </span>
-        )}
       </div>
+
+      <hr className="model3d-sep model3d-sep--solid" />
 
       {replacedNotice && (
         <p className="model3d-replaced-notice">
@@ -187,8 +248,30 @@ export function Model3dVariations({
         </p>
       )}
 
-      {/* Per-material configuration */}
-      {materialNames.map((material) => {
+      {/* Lista de materiais dentro de um toggle "Exibir lista" */}
+      <div className="model3d-list-toggle">
+        <button
+          type="button"
+          className="model3d-list-summary"
+          onClick={() => setListOpen((o) => !o)}
+          aria-expanded={listOpen}
+        >
+          Exibir lista
+          <ChevronDown
+            size={14}
+            strokeWidth={2}
+            className={`model3d-chevron${listOpen ? ' model3d-chevron--open' : ''}`}
+          />
+        </button>
+        <div className={`model3d-collapse${listOpen ? ' model3d-collapse--open' : ''}`}>
+          <div className="model3d-collapse-inner">
+            <div className="model3d-list-body">
+              <p className="model3d-disclaimer">
+                Você pode cadastrar o produto sem inserir nenhuma variação, ele será exibido
+                com a opção padrão na página do produto.
+              </p>
+
+              {materialNames.map((material) => {
         const rows = variations
           .map((v, i) => ({ v, i }))
           .filter((x) => x.v.material === material)
@@ -284,7 +367,7 @@ export function Model3dVariations({
 
             <button
               type="button"
-              className="btn-secondary btn-xs"
+              className="model3d-outline-btn btn-xs"
               onClick={() => addVariation(material)}
             >
               + Adicionar variação
@@ -305,6 +388,12 @@ export function Model3dVariations({
           </div>
         )
       })}
+            </div>
+          </div>
+        </div>
+      </div>
+        </>
+      )}
     </div>
   )
 }

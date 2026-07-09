@@ -28,11 +28,10 @@ export function ProductSpecs({ product, characteristics = [] }: Props) {
   if (product.depth_cm != null) rows.push({ label: 'Profundidade', value: `${product.depth_cm} cm` })
   if (product.weight_kg != null) rows.push({ label: 'Peso', value: `${product.weight_kg} kg` })
 
-  const principal = namesOf('material_principal')
-  const secundario = namesOf('material_secundario')
+  // Materiais em uma linha única (principal + secundários, mesma lista).
+  const materiais = namesOf('material')
   const soquete = namesOf('soquete')
-  if (principal) rows.push({ label: 'Material principal', value: principal })
-  if (secundario) rows.push({ label: 'Materiais secundários', value: secundario })
+  if (materiais) rows.push({ label: materiais.includes(',') ? 'Materiais' : 'Material', value: materiais })
   if (soquete) rows.push({ label: 'Tipo de soquete', value: soquete })
 
   return (

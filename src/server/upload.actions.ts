@@ -14,7 +14,7 @@
 // ================================================================
 
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
-import { r2Client, R2_BUCKET, r2PublicUrl, deleteR2Objects } from '@/lib/storage/r2-client'
+import { r2Client, R2_BUCKET, r2PublicUrl, deleteR2Objects, deleteR2Prefix } from '@/lib/storage/r2-client'
 import { PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { randomUUID } from 'node:crypto'
@@ -213,6 +213,33 @@ export const deleteProductObjects = async (
   } catch (err) {
     console.error('[deleteProductObjects]', (err as Error).message)
     return { error: 'Erro ao excluir arquivos' }
+  }
+}
+
+// ================================================================
+// deleteR2Folder — gated recursive delete of an entire "folder" (prefix)
+// ================================================================
+export type DeleteFolderResult = { error: string } | { ok: true; deleted: number }
+
+export const deleteR2Folder = async (prefix: string): Promise<DeleteFolderResult> => {
+  const user = await requireStaff()
+  if (!user) return { error: 'Não autorizado' }
+
+  // A folder prefix must be non-empty and end with '/'. Never allow '' (bucket root).
+  const clean = (prefix || '').replace(/^\/+/, '')
+  if (!clean || !clean.endsWith('/')) return { error: 'Pasta inválida' }
+
+  // Pastas-base do sistema não podem ser excluídas (subpastas dentro delas sim).
+  if (clean === 'modelos_3d/' || clean === 'produtos/') {
+    return { error: 'Esta pasta do sistema não pode ser excluída' }
+  }
+
+  try {
+    const deleted = await deleteR2Prefix(clean)
+    return { ok: true, deleted }
+  } catch (err) {
+    console.error('[deleteR2Folder]', (err as Error).message)
+    return { error: 'Erro ao excluir a pasta' }
   }
 }
 

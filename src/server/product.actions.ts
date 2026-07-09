@@ -170,9 +170,12 @@ export const getProducts = async ({
 }
 
 // ================================================================
-// Best-effort R2 cleanup — fetches a product's image URLs, derives the
-// R2 keys and deletes them. Dynamic import so the dashboard never depends
-// on R2 env being present; storage cleanup failing never blocks the delete.
+// Best-effort R2 cleanup on product delete — removes ALL files associated with
+// the product by deleting its entire folders (produtos/<slug>/ and
+// modelos_3d/<slug>/). Folders are derived from the product's real stored keys,
+// so cover, gallery images, the 3D model, its poster and every texture variation
+// (plus any orphan) go together. Dynamic import so the dashboard never depends on
+// R2 env being present; storage cleanup failing never blocks the DB delete.
 // ================================================================
 const cleanupProductStorage = async (productIds: string[]): Promise<void> => {
   if (!productIds.length) return
@@ -181,26 +184,33 @@ const cleanupProductStorage = async (productIds: string[]): Promise<void> => {
     const [{ data: products }, { data: images }] = await Promise.all([
       supabase
         .from('products')
-        .select('cover_image, model_3d_url, model_3d_poster')
+        .select('cover_image, model_3d_url, model_3d_poster, model_3d_variations')
         .in('id', productIds),
       supabase.from('product_images').select('url').in('product_id', productIds),
     ])
 
     const urls = [
-      ...(products ?? []).flatMap((p) => [p.cover_image, p.model_3d_url, p.model_3d_poster]),
+      ...(products ?? []).flatMap((p) => [
+        p.cover_image,
+        p.model_3d_url,
+        p.model_3d_poster,
+        ...(((p.model_3d_variations as Model3dVariation[] | null) ?? []).map((v) => v.texture_url)),
+      ]),
       ...(images ?? []).map((i) => i.url),
     ].filter((u): u is string => !!u)
 
     if (!urls.length) return
 
-    const { r2KeyFromPublicUrl, deleteR2Objects } = await import(
-      '@/lib/storage/r2-client'
-    )
-    const keys = urls
-      .map((u) => r2KeyFromPublicUrl(u))
-      .filter((k): k is string => !!k)
+    const { r2KeyFromPublicUrl, deleteR2Prefix } = await import('@/lib/storage/r2-client')
 
-    if (keys.length) await deleteR2Objects(keys)
+    // Distinct product folders (produtos/<slug>/, modelos_3d/<slug>/) from real keys.
+    const prefixes = new Set<string>()
+    for (const u of urls) {
+      const m = r2KeyFromPublicUrl(u)?.match(/^((?:produtos|modelos_3d)\/[^/]+)\//)
+      if (m) prefixes.add(`${m[1]}/`)
+    }
+
+    await Promise.allSettled([...prefixes].map((p) => deleteR2Prefix(p)))
   } catch (err) {
     console.error('[cleanupProductStorage]', (err as Error).message)
   }
@@ -310,6 +320,7 @@ const productSchema = z.object({
     ),
   sku: z.string().min(1, 'SKU é obrigatório'),
   description: z.string().optional().default(''),
+  short_description: z.string().optional().default(''),
   cover_image: z.string().optional().default(''),
   status: z.enum(['draft', 'published']),
   environment: z.enum(['interno', 'externo']),
@@ -317,9 +328,14 @@ const productSchema = z.object({
   width_cm: z.string().optional().default(''),
   depth_cm: z.string().optional().default(''),
   weight_kg: z.string().optional().default(''),
-  category_ids: z.array(z.string().uuid()).optional().default([]),
-  // Material principal / secundário / soquete agora são características (N:N)
-  characteristic_ids: z.array(z.string().uuid()).optional().default([]),
+  // Categorias: 1 principal (exibida no card) + N secundárias. Ambas filtráveis.
+  primary_category_id: z.string().uuid().nullable().optional().default(null),
+  secondary_category_ids: z.array(z.string().uuid()).optional().default([]),
+  // Materiais (lista única): 1 principal (card) + N secundários. Ambos filtráveis.
+  primary_material_id: z.string().uuid().nullable().optional().default(null),
+  secondary_material_ids: z.array(z.string().uuid()).optional().default([]),
+  // Soquetes: N por produto, filtráveis.
+  soquete_ids: z.array(z.string().uuid()).optional().default([]),
   images: z.array(imageInputSchema).optional().default([]),
   has_3d_model: z.boolean().optional().default(false),
   model_3d_url: z.string().optional().default(''),
@@ -358,42 +374,55 @@ const numOrNull = (v: string): number | null => {
 // SEO (seo_title/description/keywords) é resolvido à parte (IA) no create/update.
 const toProductColumns = (
   d: z.infer<typeof productSchema>
-): Omit<InsertProduct, 'author_id' | 'seo_title' | 'seo_description' | 'seo_keywords'> => ({
-  name: d.name.trim(),
-  // Fallback: slug derivado do nome quando não informado.
-  slug: d.slug.trim() || toSlug(d.name),
-  sku: d.sku.trim(),
-  description: d.description.trim() || null,
-  cover_image: d.cover_image.trim() || null,
-  status: d.status,
-  environment: d.environment as ProductEnvironment,
-  // Colunas legadas — substituídas pelas características (tabela à parte).
-  primary_material: null,
-  height_cm: numOrNull(d.height_cm),
-  width_cm: numOrNull(d.width_cm),
-  depth_cm: numOrNull(d.depth_cm),
-  weight_kg: numOrNull(d.weight_kg),
-  materials: null,
-  socket_type: null,
-  has_3d_model: d.has_3d_model,
-  // 3D fields only persist while the switcher is on
-  model_3d_url: d.has_3d_model ? d.model_3d_url.trim() || null : null,
-  // O poster de carregamento é sempre a imagem de capa do produto.
-  model_3d_poster: d.has_3d_model ? d.cover_image.trim() || null : null,
-  // O texto alternativo é sempre o nome do produto.
-  model_3d_alt: d.has_3d_model ? d.name.trim() : null,
-  model_3d_filename: d.has_3d_model ? d.model_3d_filename.trim() || null : null,
-  model_3d_object_type: d.has_3d_model ? d.model_3d_object_type : null,
-  model_3d_ar_scale: d.has_3d_model ? d.model_3d_ar_scale : null,
-  model_3d_material_labels: d.has_3d_model ? d.model_3d_material_labels : null,
-  // Keep only complete variations (a color needs a HEX, a texture needs a URL).
-  model_3d_variations: d.has_3d_model
-    ? d.model_3d_variations.filter((v) =>
-        v.type === 'color' ? !!v.color : !!v.texture_url
+): Omit<InsertProduct, 'author_id' | 'seo_title' | 'seo_description' | 'seo_keywords'> => {
+  // Mantém só variações completas (cor precisa de HEX, textura precisa de URL).
+  const variations = d.has_3d_model
+    ? d.model_3d_variations.filter((v) => (v.type === 'color' ? !!v.color : !!v.texture_url))
+    : []
+  // Um material só é "registrado" se tiver ao menos uma variação. Labels de
+  // materiais sem variação são descartados — assim, um produto sem nenhuma
+  // variação recarrega a lista completa de materiais ao editar (mapa vazio),
+  // e remover todas as variações volta a exibir a lista completa.
+  const materialsWithVars = new Set(variations.map((v) => v.material))
+  const materialLabels = d.has_3d_model
+    ? Object.fromEntries(
+        Object.entries(d.model_3d_material_labels).filter(([m]) => materialsWithVars.has(m))
       )
-    : null,
-  published_at: null, // resolved per create/update below
-})
+    : null
+
+  return {
+    name: d.name.trim(),
+    // Fallback: slug derivado do nome quando não informado.
+    slug: d.slug.trim() || toSlug(d.name),
+    sku: d.sku.trim(),
+    description: d.description.trim() || null,
+    short_description: d.short_description.trim() || null,
+    cover_image: d.cover_image.trim() || null,
+    status: d.status,
+    environment: d.environment as ProductEnvironment,
+    // Colunas legadas — substituídas pelas características (tabela à parte).
+    primary_material: null,
+    height_cm: numOrNull(d.height_cm),
+    width_cm: numOrNull(d.width_cm),
+    depth_cm: numOrNull(d.depth_cm),
+    weight_kg: numOrNull(d.weight_kg),
+    materials: null,
+    socket_type: null,
+    has_3d_model: d.has_3d_model,
+    // 3D fields only persist while the switcher is on
+    model_3d_url: d.has_3d_model ? d.model_3d_url.trim() || null : null,
+    // O poster de carregamento é sempre a imagem de capa do produto.
+    model_3d_poster: d.has_3d_model ? d.cover_image.trim() || null : null,
+    // O texto alternativo é sempre o nome do produto.
+    model_3d_alt: d.has_3d_model ? d.name.trim() : null,
+    model_3d_filename: d.has_3d_model ? d.model_3d_filename.trim() || null : null,
+    model_3d_object_type: d.has_3d_model ? d.model_3d_object_type : null,
+    model_3d_ar_scale: d.has_3d_model ? d.model_3d_ar_scale : null,
+    model_3d_material_labels: materialLabels,
+    model_3d_variations: d.has_3d_model ? variations : null,
+    published_at: null, // resolved per create/update below
+  }
+}
 
 // Resolve os nomes das categorias selecionadas (contexto para o SEO por IA).
 const resolveCategoryNames = async (
@@ -413,32 +442,45 @@ const uniqueViolationMessage = (msg: string): string =>
     ? 'Já existe um produto com esse SKU'
     : 'Já existe um produto com esse slug'
 
-// Replace the product's category mappings with the given ids.
+// Replace the product's category mappings: 1 primary (is_primary=true) + N
+// secondary. The primary never doubles as a secondary.
 const syncCategories = async (
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   productId: string,
-  categoryIds: string[]
+  primaryId: string | null,
+  secondaryIds: string[]
 ) => {
   await supabase.from('product_category_map').delete().eq('product_id', productId)
-  if (categoryIds.length) {
-    await supabase
-      .from('product_category_map')
-      .insert(categoryIds.map((category_id) => ({ product_id: productId, category_id })))
+  const rows: { product_id: string; category_id: string; is_primary: boolean }[] = []
+  if (primaryId) rows.push({ product_id: productId, category_id: primaryId, is_primary: true })
+  for (const id of secondaryIds) {
+    if (id !== primaryId) rows.push({ product_id: productId, category_id: id, is_primary: false })
   }
+  if (rows.length) await supabase.from('product_category_map').insert(rows)
 }
 
-// Replace the product's characteristic mappings (material/soquete) with the given ids.
+// Replace the product's characteristic mappings: 1 primary material
+// (is_primary=true) + N secondary materials + N soquetes (is_primary=false).
 const syncCharacteristics = async (
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   productId: string,
-  characteristicIds: string[]
+  primaryMaterialId: string | null,
+  secondaryMaterialIds: string[],
+  soqueteIds: string[]
 ) => {
   await supabase.from('product_characteristic_map').delete().eq('product_id', productId)
-  if (characteristicIds.length) {
-    await supabase
-      .from('product_characteristic_map')
-      .insert(characteristicIds.map((characteristic_id) => ({ product_id: productId, characteristic_id })))
+  const rows: { product_id: string; characteristic_id: string; is_primary: boolean }[] = []
+  const seen = new Set<string>()
+  if (primaryMaterialId) {
+    rows.push({ product_id: productId, characteristic_id: primaryMaterialId, is_primary: true })
+    seen.add(primaryMaterialId)
   }
+  for (const id of [...secondaryMaterialIds, ...soqueteIds]) {
+    if (seen.has(id)) continue
+    seen.add(id)
+    rows.push({ product_id: productId, characteristic_id: id, is_primary: false })
+  }
+  if (rows.length) await supabase.from('product_characteristic_map').insert(rows)
 }
 
 // Replace the product's images, returning URLs that were removed (for R2 cleanup).
@@ -469,58 +511,51 @@ const syncImages = async (
   return removed
 }
 
-// Reconcile a product's 3D folder (modelos_3d/<slug>/): delete every stored
-// object no longer referenced by the product — a replaced model/poster, textures
-// of removed variations, and files uploaded then abandoned before saving. This is
-// the single point where 3D storage is pruned: nothing is deleted while editing.
-// `keepUrls` are the URLs the saved product still references; `folderHintUrls`
-// (e.g. the previously stored URLs) only help locate the folder — useful when 3D
-// is being turned off and no new URL remains to derive the prefix from.
+// Reconcile a product's R2 folders (produtos/<slug>/ and modelos_3d/<slug>/):
+// after each save, delete every stored object that the product no longer
+// references — replaced cover/model/poster, textures of removed variations,
+// gallery images that were dropped, and (crucially) any file uploaded then
+// abandoned without being used. This is the single point where product storage
+// is pruned, so uploads that go unused don't accumulate.
+//   - `keepUrls`: every URL the saved product still references (cover, gallery
+//     images, model, poster, texture variations).
+//   - `hintUrls`: previously stored URLs — only used to locate the folder
+//     prefixes (e.g. when 3D/cover is removed and no new URL remains to derive them).
 // Best-effort: failures are logged, never block the save.
-const reconcileModelFolder = async (
+const reconcileProductFolders = async (
   keepUrls: (string | null | undefined)[],
-  folderHintUrls: (string | null | undefined)[] = []
+  hintUrls: (string | null | undefined)[] = []
 ) => {
   try {
     const { listR2Keys, deleteR2Objects, r2KeyFromPublicUrl } = await import(
       '@/lib/storage/r2-client'
     )
 
-    // Derive modelos_3d/<slug>/ from any known key (new or previously stored).
-    let prefix: string | null = null
-    for (const u of [...keepUrls, ...folderHintUrls]) {
+    // Distinct folder prefixes (produtos/<slug>/ and/or modelos_3d/<slug>/) from
+    // real keys — external/pasted URLs resolve to null and are ignored.
+    const prefixes = new Set<string>()
+    for (const u of [...keepUrls, ...hintUrls]) {
       if (!u) continue
-      const m = r2KeyFromPublicUrl(u)?.match(/^(modelos_3d\/[^/]+)\//)
-      if (m) {
-        prefix = `${m[1]}/`
-        break
-      }
+      const m = r2KeyFromPublicUrl(u)?.match(/^((?:produtos|modelos_3d)\/[^/]+)\//)
+      if (m) prefixes.add(`${m[1]}/`)
     }
-    if (!prefix) return // product has no assets in our R2 model namespace
+    if (!prefixes.size) return // product has no assets in our R2 namespaces
 
     const keep = new Set(
       keepUrls
         .map((u) => (u ? r2KeyFromPublicUrl(u) : null))
         .filter((k): k is string => !!k)
     )
-    const stored = await listR2Keys(prefix)
-    const toDelete = stored.filter((k) => !keep.has(k))
-    if (toDelete.length) await deleteR2Objects(toDelete)
-  } catch (err) {
-    console.error('[reconcileModelFolder]', (err as Error).message)
-  }
-}
 
-// Best-effort R2 deletion for a set of public URLs (dynamic import → no coupling).
-const cleanupUrls = async (urls: string[]) => {
-  const real = urls.filter(Boolean)
-  if (!real.length) return
-  try {
-    const { r2KeyFromPublicUrl, deleteR2Objects } = await import('@/lib/storage/r2-client')
-    const keys = real.map((u) => r2KeyFromPublicUrl(u)).filter((k): k is string => !!k)
-    if (keys.length) await deleteR2Objects(keys)
+    await Promise.allSettled(
+      [...prefixes].map(async (prefix) => {
+        const stored = await listR2Keys(prefix)
+        const toDelete = stored.filter((k) => !keep.has(k))
+        if (toDelete.length) await deleteR2Objects(toDelete)
+      })
+    )
   } catch (err) {
-    console.error('[cleanupUrls]', (err as Error).message)
+    console.error('[reconcileProductFolders]', (err as Error).message)
   }
 }
 
@@ -569,7 +604,10 @@ export const createProductAction = async (
   const columns = toProductColumns(d)
 
   // SEO por IA (2 tentativas) com fallback determinístico automático.
-  const categoryNames = await resolveCategoryNames(supabase, d.category_ids)
+  const categoryNames = await resolveCategoryNames(
+    supabase,
+    [d.primary_category_id, ...d.secondary_category_ids].filter((x): x is string => !!x)
+  )
   const seo = await generateProductSeo({
     name: d.name,
     description: d.description,
@@ -596,12 +634,21 @@ export const createProductAction = async (
     return { error: 'Erro ao criar produto' }
   }
 
-  await syncCategories(supabase, created.id, d.category_ids)
-  await syncCharacteristics(supabase, created.id, d.characteristic_ids)
+  await syncCategories(supabase, created.id, d.primary_category_id, d.secondary_category_ids)
+  await syncCharacteristics(
+    supabase,
+    created.id,
+    d.primary_material_id,
+    d.secondary_material_ids,
+    d.soquete_ids
+  )
   await syncImages(supabase, created.id, d.images)
 
-  // Prune any 3D assets uploaded then abandoned before this first save.
-  await reconcileModelFolder([
+  // Remove do R2 qualquer arquivo (imagem ou modelo/textura) que tenha sido
+  // enviado mas não é usado pelo produto salvo.
+  await reconcileProductFolders([
+    columns.cover_image,
+    ...d.images.map((i) => i.url),
     columns.model_3d_url,
     columns.model_3d_poster,
     ...(columns.model_3d_variations ?? []).map((v) => v.texture_url),
@@ -653,7 +700,10 @@ export const updateProductAction = async (
       : existing?.published_at ?? null
 
   // SEO por IA (2 tentativas) com fallback determinístico automático.
-  const categoryNames = await resolveCategoryNames(supabase, d.category_ids)
+  const categoryNames = await resolveCategoryNames(
+    supabase,
+    [d.primary_category_id, ...d.secondary_category_ids].filter((x): x is string => !!x)
+  )
   const seo = await generateProductSeo({
     name: d.name,
     description: d.description,
@@ -679,29 +729,32 @@ export const updateProductAction = async (
     return { error: 'Erro ao atualizar produto' }
   }
 
-  await syncCategories(supabase, productId, d.category_ids)
-  await syncCharacteristics(supabase, productId, d.characteristic_ids)
-  const removedImageUrls = await syncImages(supabase, productId, d.images)
+  await syncCategories(supabase, productId, d.primary_category_id, d.secondary_category_ids)
+  await syncCharacteristics(
+    supabase,
+    productId,
+    d.primary_material_id,
+    d.secondary_material_ids,
+    d.soquete_ids
+  )
+  await syncImages(supabase, productId, d.images)
 
-  // R2 cleanup (produtos/ namespace): removed gallery images + a replaced cover.
-  const replaced = (old: string | null | undefined, next: string | null) =>
-    old && old !== next ? [old] : []
-  await cleanupUrls([
-    ...removedImageUrls,
-    ...replaced(existing?.cover_image, columns.cover_image),
-  ])
-
-  // R2 reconcile (modelos_3d/<slug>/): prune the old model, replaced poster,
-  // textures of removed variations and any abandoned upload — in one pass.
+  // R2 reconcile (produtos/<slug>/ + modelos_3d/<slug>/): remove tudo que o
+  // produto salvo não usa mais — capa/modelo/poster substituídos, texturas de
+  // variações removidas, imagens da galeria descartadas e arquivos enviados mas
+  // nunca usados. Uma passada por ambas as pastas.
   const existingVariations =
     (existing?.model_3d_variations as Model3dVariation[] | null) ?? []
-  await reconcileModelFolder(
+  await reconcileProductFolders(
     [
+      columns.cover_image,
+      ...d.images.map((i) => i.url),
       columns.model_3d_url,
       columns.model_3d_poster,
       ...(columns.model_3d_variations ?? []).map((v) => v.texture_url),
     ],
     [
+      existing?.cover_image,
       existing?.model_3d_url,
       existing?.model_3d_poster,
       ...existingVariations.map((v) => v.texture_url),

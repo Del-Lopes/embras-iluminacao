@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 // Reads the technical material names of a .glb by parsing the glTF JSON chunk
 // directly — no rendering, no three.js/model-viewer, no texture/Draco decoding.
@@ -114,9 +114,6 @@ export function useGlbMaterials(): UseGlbMaterials {
         setStatus('error')
       })
   }, [])
-
-  // Invalidate any in-flight read on unmount.
-  useEffect(() => () => { reqRef.current += 1 }, [])
 
   return { status, materials, error, read, reset }
 }

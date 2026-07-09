@@ -14,7 +14,7 @@
 // ============================================================
 
 import 'server-only'
-import { S3Client, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
+import { S3Client, DeleteObjectsCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
 
 const ACCOUNT_ID = process.env.R2_ACCOUNT_ID
 const ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID
@@ -88,12 +88,35 @@ export const listR2Keys = async (prefix: string): Promise<string[]> => {
   return keys
 }
 
-// Best-effort deletion of multiple objects. Failures are swallowed per-key
-// (caller treats storage cleanup as non-critical relative to the DB delete).
+// Bulk deletion via S3 DeleteObjects (one request per 1000 keys, the API cap).
+// Best-effort: failures are swallowed per-batch (cleanup is non-critical relative
+// to the DB delete).
 export const deleteR2Objects = async (keys: string[]): Promise<void> => {
+  const valid = keys.filter(Boolean)
+  if (!valid.length) return
+
+  const batches: string[][] = []
+  for (let i = 0; i < valid.length; i += 1000) batches.push(valid.slice(i, i + 1000))
+
   await Promise.allSettled(
-    keys.map((Key) =>
-      r2Client.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key }))
+    batches.map((batch) =>
+      r2Client.send(
+        new DeleteObjectsCommand({
+          Bucket: R2_BUCKET,
+          Delete: { Objects: batch.map((Key) => ({ Key })), Quiet: true },
+        })
+      )
     )
   )
+}
+
+// Delete every object under a prefix (an entire "folder"), recursively.
+// Returns the number of objects removed. Best-effort like deleteR2Objects.
+export const deleteR2Prefix = async (prefix: string): Promise<number> => {
+  const clean = prefix.replace(/^\/+/, '')
+  if (!clean) return 0 // never allow an empty prefix (would target the whole bucket)
+  const keys = await listR2Keys(clean)
+  if (!keys.length) return 0
+  await deleteR2Objects(keys)
+  return keys.length
 }

@@ -10,10 +10,12 @@ type MaterialOption = { slug: string; name: string }
 type Props = {
   categories: CategoryOption[]
   materials: MaterialOption[]
+  soquetes: MaterialOption[]
   currentQ: string
   currentEnvironment: string
   currentTipo: string
   currentMaterial: string
+  currentSoquete: string
 }
 
 const ENVIRONMENTS = [
@@ -24,10 +26,12 @@ const ENVIRONMENTS = [
 export function CatalogSidebar({
   categories,
   materials,
+  soquetes,
   currentQ,
   currentEnvironment,
   currentTipo,
   currentMaterial,
+  currentSoquete,
 }: Props) {
   const router = useRouter()
   const pathname = usePathname()
@@ -57,7 +61,8 @@ export function CatalogSidebar({
     updateParams({ q })
   }
 
-  const hasFilters = currentQ || currentEnvironment || currentTipo || currentMaterial
+  const hasFilters =
+    currentQ || currentEnvironment || currentTipo || currentMaterial || currentSoquete
 
   return (
     <aside className="blog-sidebar catalog-sidebar">
@@ -136,11 +141,35 @@ export function CatalogSidebar({
         </nav>
       )}
 
+      {/* Tipo de soquete */}
+      {soquetes.length > 0 && (
+        <nav className="blog-sidebar-cats">
+          <p className="blog-sidebar-cats-label">Tipo de soquete</p>
+          <ul>
+            {soquetes.map((soq) => (
+              <li key={soq.slug}>
+                <label className="blog-cat-label">
+                  <input
+                    type="checkbox"
+                    className="blog-cat-check"
+                    checked={currentSoquete === soq.slug}
+                    onChange={() => toggle('soquete', currentSoquete, soq.slug)}
+                  />
+                  <span className="blog-cat-name">{soq.name}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
+
       {hasFilters && (
         <button
           type="button"
           className="catalog-clear-filters"
-          onClick={() => updateParams({ q: '', environment: '', tipo: '', material: '' })}
+          onClick={() =>
+            updateParams({ q: '', environment: '', tipo: '', material: '', soquete: '' })
+          }
         >
           Limpar filtros
         </button>

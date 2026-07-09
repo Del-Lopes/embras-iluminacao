@@ -58,7 +58,7 @@ export default async function ProductDetailPage({ params }: Props) {
       .order('sort_order'),
     supabase
       .from('product_category_map')
-      .select('product_categories(id, name, slug)')
+      .select('is_primary, product_categories(id, name, slug)')
       .eq('product_id', product.id),
     supabase
       .from('product_characteristic_map')
@@ -76,13 +76,17 @@ export default async function ProductDetailPage({ params }: Props) {
     .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name, 'pt-BR'))
 
   const images = (imgData ?? []).map((i) => ({ url: i.url, alt: i.alt ?? '' }))
-  const categories = (
-    (mapData ?? []) as unknown as { product_categories: { id: string; name: string; slug: string } | null }[]
-  )
-    .map((m) => m.product_categories)
-    .filter((c): c is { id: string; name: string; slug: string } => !!c)
+  const categoryRows = (
+    (mapData ?? []) as unknown as {
+      is_primary: boolean
+      product_categories: { id: string; name: string; slug: string } | null
+    }[]
+  ).filter((m): m is { is_primary: boolean; product_categories: { id: string; name: string; slug: string } } => !!m.product_categories)
+  const categories = categoryRows.map((m) => m.product_categories)
 
-  const primaryCategory = categories[0] ?? null
+  // Breadcrumb usa a categoria PRINCIPAL (is_primary); fallback para a primeira.
+  const primaryCategory =
+    categoryRows.find((m) => m.is_primary)?.product_categories ?? categories[0] ?? null
 
   // Related: share a category; fallback to same area of use
   let related: ProductCardData[] = []
@@ -159,6 +163,9 @@ export default async function ProductDetailPage({ params }: Props) {
 
             <h1 className="product-info-name">{product.name}</h1>
             <p className="product-info-sku">SKU: {product.sku}</p>
+            {product.short_description && (
+              <p className="product-info-short-desc">{product.short_description}</p>
+            )}
 
             {/* Share — abaixo da linha, alinhado à esquerda */}
             <div className="blog-share-wrap product-share-wrap">

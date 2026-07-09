@@ -108,6 +108,7 @@ export type Product = {
   slug: string
   sku: string
   description: string | null
+  short_description: string | null
   cover_image: string | null
   status: ProductStatus
   environment: ProductEnvironment
@@ -140,9 +141,11 @@ export type Product = {
   updated_at: string
 }
 
+// is_primary: marca a categoria PRINCIPAL do produto (exibida no card).
 export type ProductCategoryMap = {
   product_id: string
   category_id: string
+  is_primary: boolean
 }
 
 export type ProductImage = {
@@ -154,13 +157,11 @@ export type ProductImage = {
   created_at: string
 }
 
-// Características cadastráveis (igual categorias) nos três tipos.
-// material_principal vira filtro do catálogo; os demais só aparecem
-// nas informações técnicas do produto.
-export type ProductCharacteristicType =
-  | 'material_principal'
-  | 'material_secundario'
-  | 'soquete'
+// Características cadastráveis: uma única lista de materiais ('material') e os
+// tipos de soquete ('soquete'). Material e soquete são filtros do catálogo.
+// (O enum no banco ainda tem os valores legados material_principal/secundario,
+// mas nenhuma linha os usa após a migração 012.)
+export type ProductCharacteristicType = 'material' | 'soquete'
 
 export type ProductCharacteristic = {
   id: string
@@ -171,9 +172,12 @@ export type ProductCharacteristic = {
   created_at: string
 }
 
+// is_primary: para materiais, marca o material PRINCIPAL do produto (exibido no
+// card). Secundários e soquetes têm is_primary=false.
 export type ProductCharacteristicMap = {
   product_id: string
   characteristic_id: string
+  is_primary: boolean
 }
 
 // ----------------------------------------------------------------
@@ -344,7 +348,7 @@ export type Database = {
       }
       product_category_map: {
         Row: ProductCategoryMap
-        Insert: ProductCategoryMap
+        Insert: Omit<ProductCategoryMap, 'is_primary'> & { is_primary?: boolean }
         Update: Partial<ProductCategoryMap>
         Relationships: []
       }
@@ -362,7 +366,7 @@ export type Database = {
       }
       product_characteristic_map: {
         Row: ProductCharacteristicMap
-        Insert: ProductCharacteristicMap
+        Insert: Omit<ProductCharacteristicMap, 'is_primary'> & { is_primary?: boolean }
         Update: Partial<ProductCharacteristicMap>
         Relationships: []
       }

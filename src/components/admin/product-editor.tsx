@@ -16,6 +16,7 @@ import {
 } from '@/server/product.actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { RichTextField } from '@/components/admin/rich-text-field'
@@ -29,7 +30,6 @@ import type {
   Model3dVariation,
   Product,
   ProductCharacteristic,
-  ProductCharacteristicType,
 } from '@/lib/db/schema'
 
 // The variations panel pulls in @google/model-viewer to read materials, so it's
@@ -54,6 +54,7 @@ const schema = z.object({
     ),
   sku: z.string().min(1, 'SKU é obrigatório'),
   description: z.string().optional(),
+  short_description: z.string().optional(),
   cover_image: z.string().optional(),
   status: z.enum(['draft', 'published']),
   environment: z.enum(['interno', 'externo']),
@@ -102,19 +103,15 @@ const IMAGE_UPLOAD_HINT = 'Formatos aceitos: JPG, PNG, WebP, TIFF. Tamanho máxi
 
 type CategoryOption = { id: string; name: string; depth: number }
 
-// Grupos de características exibidos no seletor à direita do editor.
-const CHARACTERISTIC_GROUPS: { type: ProductCharacteristicType; label: string }[] = [
-  { type: 'material_principal', label: 'Material Principal' },
-  { type: 'material_secundario', label: 'Materiais Secundários' },
-  { type: 'soquete', label: 'Tipo de Soquete' },
-]
-
 type Props = {
   categories: CategoryOption[]
   characteristics: ProductCharacteristic[]
   product?: Product
-  productCategoryIds?: string[]
-  productCharacteristicIds?: string[]
+  productPrimaryCategoryId?: string | null
+  productSecondaryCategoryIds?: string[]
+  productPrimaryMaterialId?: string | null
+  productSecondaryMaterialIds?: string[]
+  productSoqueteIds?: string[]
   productImages?: GalleryImage[]
 }
 
@@ -122,16 +119,26 @@ export const ProductEditor = ({
   categories,
   characteristics,
   product,
-  productCategoryIds = [],
-  productCharacteristicIds = [],
+  productPrimaryCategoryId = null,
+  productSecondaryCategoryIds = [],
+  productPrimaryMaterialId = null,
+  productSecondaryMaterialIds = [],
+  productSoqueteIds = [],
   productImages = [],
 }: Props) => {
   const isEdit = !!product
   const router = useRouter()
   const [serverError, setServerError] = useState<string | null>(null)
-  const [categoryIds, setCategoryIds] = useState<string[]>(productCategoryIds)
-  const [characteristicIds, setCharacteristicIds] = useState<string[]>(productCharacteristicIds)
+  const [primaryCategoryId, setPrimaryCategoryId] = useState<string>(productPrimaryCategoryId ?? '')
+  const [secondaryCategoryIds, setSecondaryCategoryIds] = useState<string[]>(productSecondaryCategoryIds)
+  const [primaryMaterialId, setPrimaryMaterialId] = useState<string>(productPrimaryMaterialId ?? '')
+  const [secondaryMaterialIds, setSecondaryMaterialIds] = useState<string[]>(productSecondaryMaterialIds)
+  const [soqueteIds, setSoqueteIds] = useState<string[]>(productSoqueteIds)
   const [images, setImages] = useState<GalleryImage[]>(productImages)
+
+  // Lista única de materiais + soquetes vinda das características.
+  const materialOptions = characteristics.filter((c) => c.type === 'material')
+  const soqueteOptions = characteristics.filter((c) => c.type === 'soquete')
   const slugTouched = useRef(isEdit)
   const [showSlug, setShowSlug] = useState(false)
   const [slugTaken, setSlugTaken] = useState(false)
@@ -150,6 +157,7 @@ export const ProductEditor = ({
       slug: product?.slug ?? '',
       sku: product?.sku ?? '',
       description: product?.description ?? '',
+      short_description: product?.short_description ?? '',
       cover_image: product?.cover_image ?? '',
       status: product?.status ?? 'draft',
       environment: product?.environment ?? 'interno',
@@ -205,13 +213,18 @@ export const ProductEditor = ({
   const model3dMaterialLabels = watch('model_3d_material_labels') ?? {}
   const model3dVariations = watch('model_3d_variations') ?? []
 
-  const toggleCategory = (id: string) =>
-    setCategoryIds((prev) =>
+  const toggleSecondaryCategory = (id: string) =>
+    setSecondaryCategoryIds((prev) =>
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
     )
 
-  const toggleCharacteristic = (id: string) =>
-    setCharacteristicIds((prev) =>
+  const toggleSecondaryMaterial = (id: string) =>
+    setSecondaryMaterialIds((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+    )
+
+  const toggleSoquete = (id: string) =>
+    setSoqueteIds((prev) =>
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
     )
 
@@ -225,8 +238,11 @@ export const ProductEditor = ({
     const payload: ProductFormInput = {
       ...(isEdit ? { id: product!.id } : {}),
       ...data,
-      category_ids: categoryIds,
-      characteristic_ids: characteristicIds,
+      primary_category_id: primaryCategoryId || null,
+      secondary_category_ids: secondaryCategoryIds.filter((id) => id !== primaryCategoryId),
+      primary_material_id: primaryMaterialId || null,
+      secondary_material_ids: secondaryMaterialIds.filter((id) => id !== primaryMaterialId),
+      soquete_ids: soqueteIds,
       images,
       has_3d_model: !!data.has_3d_model,
     }
@@ -319,6 +335,16 @@ export const ProductEditor = ({
           {/* Descrição */}
           <div className="editor-section">
             <div className="field-group">
+              <Label htmlFor="short_description">Breve descrição</Label>
+              <Textarea
+                id="short_description"
+                rows={3}
+                maxLength={300}
+                placeholder="Resumo curto do produto"
+                {...register('short_description')}
+              />
+            </div>
+            <div className="field-group">
               <div className="field-label-row">
                 <Label>Descrição</Label>
                 <button type="button" className="btn-secondary btn-ai" onClick={handleAiDescription}>
@@ -358,39 +384,73 @@ export const ProductEditor = ({
             </div>
           </div>
 
-          {/* Especificações (3 colunas) */}
+          {/* Especificações — material principal (1) + secundários (N) + soquete (N) */}
           <div className="editor-section">
             <p className="editor-section-title">Especificações</p>
             {characteristics.length === 0 ? (
               <p className="field-hint" style={{ margin: 0 }}>
-                Nenhuma especificação cadastrada. Crie em “Especificações”.
+                Nenhuma característica cadastrada. Crie em “Especificações”.
               </p>
             ) : (
               <div className="char-groups-grid">
-                {CHARACTERISTIC_GROUPS.map((group) => {
-                  const opts = characteristics.filter((c) => c.type === group.type)
-                  return (
-                    <div key={group.type} className="char-group">
-                      <p className="char-group-label">{group.label}</p>
-                      {opts.length === 0 ? (
-                        <p className="field-hint" style={{ margin: 0 }}>—</p>
-                      ) : (
-                        <div className="category-checklist">
-                          {opts.map((c) => (
-                            <label key={c.id} className="category-check">
-                              <input
-                                type="checkbox"
-                                checked={characteristicIds.includes(c.id)}
-                                onChange={() => toggleCharacteristic(c.id)}
-                              />
-                              <span>{c.name}</span>
-                            </label>
-                          ))}
-                        </div>
-                      )}
+                {/* Material principal (aparece no card) */}
+                <div className="char-group">
+                  <p className="char-group-label">Material Principal</p>
+                  <select
+                    className="editor-select"
+                    value={primaryMaterialId}
+                    onChange={(e) => setPrimaryMaterialId(e.target.value)}
+                  >
+                    <option value="">— Nenhum —</option>
+                    {materialOptions.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Materiais secundários (filtram, não aparecem no card) */}
+                <div className="char-group">
+                  <p className="char-group-label">Materiais Secundários</p>
+                  {materialOptions.filter((m) => m.id !== primaryMaterialId).length === 0 ? (
+                    <p className="field-hint" style={{ margin: 0 }}>—</p>
+                  ) : (
+                    <div className="category-checklist">
+                      {materialOptions
+                        .filter((m) => m.id !== primaryMaterialId)
+                        .map((m) => (
+                          <label key={m.id} className="category-check">
+                            <input
+                              type="checkbox"
+                              checked={secondaryMaterialIds.includes(m.id)}
+                              onChange={() => toggleSecondaryMaterial(m.id)}
+                            />
+                            <span>{m.name}</span>
+                          </label>
+                        ))}
                     </div>
-                  )
-                })}
+                  )}
+                </div>
+
+                {/* Tipo de Soquete (vários, filtram) */}
+                <div className="char-group">
+                  <p className="char-group-label">Tipo de Soquete</p>
+                  {soqueteOptions.length === 0 ? (
+                    <p className="field-hint" style={{ margin: 0 }}>—</p>
+                  ) : (
+                    <div className="category-checklist">
+                      {soqueteOptions.map((s) => (
+                        <label key={s.id} className="category-check">
+                          <input
+                            type="checkbox"
+                            checked={soqueteIds.includes(s.id)}
+                            onChange={() => toggleSoquete(s.id)}
+                          />
+                          <span>{s.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -438,6 +498,7 @@ export const ProductEditor = ({
                 <Model3dVariations
                   slug={effectiveSlug}
                   modelUrl={model3dUrl ?? ''}
+                  isEdit={isEdit}
                   objectType={model3dObjectType as Model3dObjectType}
                   arScale={model3dArScale as Model3dArScale}
                   materialLabels={model3dMaterialLabels as Model3dMaterialLabels}
@@ -499,17 +560,41 @@ export const ProductEditor = ({
                 Nenhuma categoria cadastrada. Crie em “Categorias” antes de classificar o produto.
               </p>
             ) : (
-              <div className="category-checklist">
-                {categories.map((cat) => (
-                  <label key={cat.id} className="category-check" style={{ paddingLeft: cat.depth * 18 }}>
-                    <input
-                      type="checkbox"
-                      checked={categoryIds.includes(cat.id)}
-                      onChange={() => toggleCategory(cat.id)}
-                    />
-                    <span>{cat.name}</span>
-                  </label>
-                ))}
+              <div className="cat-fields">
+                <div>
+                  <p className="char-group-label">Categoria principal</p>
+                  <select
+                    id="primary_category"
+                    className="editor-select"
+                    value={primaryCategoryId}
+                    onChange={(e) => setPrimaryCategoryId(e.target.value)}
+                  >
+                    <option value="">— Nenhuma —</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {'— '.repeat(cat.depth)}{cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <p className="char-group-label">Categorias secundárias</p>
+                  <div className="category-checklist">
+                    {categories
+                      .filter((cat) => cat.id !== primaryCategoryId)
+                      .map((cat) => (
+                        <label key={cat.id} className="category-check" style={{ paddingLeft: cat.depth * 18 }}>
+                          <input
+                            type="checkbox"
+                            checked={secondaryCategoryIds.includes(cat.id)}
+                            onChange={() => toggleSecondaryCategory(cat.id)}
+                          />
+                          <span>{cat.name}</span>
+                        </label>
+                      ))}
+                  </div>
+                </div>
               </div>
             )}
           </div>

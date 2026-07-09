@@ -680,6 +680,14 @@ p {
 	letter-spacing: 0.04em;
 }
 
+/* Campos de categorias (principal + secundárias): um único filho da seção,
+   para o espaçamento título→campos igualar o de Especificações. */
+.cat-fields {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
 .switcher-row {
 	display: flex;
 	align-items: center;
@@ -1126,6 +1134,13 @@ a.product-info-category:hover {
 	margin: 0;
 }
 
+.product-info-short-desc {
+	margin: 16px 0 0;
+	font-size: var(--font-size-base);
+	line-height: 1.6;
+	color: var(--color-muted);
+}
+
 /* Sections */
 .product-section {
 	max-width: 1100px;
@@ -1271,6 +1286,22 @@ a.product-info-category:hover {
 	color: #1a1a1a;
 }
 
+/* Toasts (sonner): título em negrito + descrição cinza, sem ícone de tipo */
+.app-toast-title {
+	font-weight: 600;
+	color: #18181b;
+	font-size: 14px;
+}
+
+.app-toast-description {
+	color: #71717a;
+	font-size: 13px;
+}
+
+[data-sonner-toast] [data-icon] {
+	display: none;
+}
+
 /* ---- Admin: 3D variations panel ---- */
 .model3d-variations {
 	margin-top: 14px;
@@ -1283,13 +1314,181 @@ a.product-info-category:hover {
 	color: var(--color-primary);
 }
 
+.model3d-title {
+	margin: 0;
+	font-size: var(--font-size-base);
+	font-weight: 600;
+	color: var(--color-primary);
+}
+
+/* Título "Variações" + "Saiba mais" na mesma linha */
+.model3d-variations-head {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	flex-wrap: wrap;
+}
+
+.model3d-sep {
+	width: 100%;
+	border: none;
+	/* Mesmo tracejado que separa o upload do modelo do painel de variações */
+	border-top: 1px dashed var(--color-border);
+	margin: 4px 0;
+}
+
+/* Colapso animado (Saiba mais / Exibir lista) */
+.model3d-collapse {
+	display: grid;
+	grid-template-rows: 0fr;
+	transition: grid-template-rows 0.28s ease;
+}
+.model3d-collapse--open {
+	grid-template-rows: 1fr;
+}
+.model3d-collapse-inner {
+	overflow: hidden;
+	min-height: 0;
+}
+
+.model3d-chevron {
+	transition: transform 0.2s ease;
+}
+.model3d-chevron--open {
+	transform: rotate(180deg);
+}
+
+/* Toggle "Saiba mais" (azul) */
+.model3d-help-summary {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 0;
+	border: none;
+	background: none;
+	cursor: pointer;
+	color: #2563eb;
+	font-weight: 600;
+	font-size: var(--font-size-sm);
+}
+
+.model3d-help-q {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	background-color: #2563eb;
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+}
+
+.model3d-help-body {
+	margin-top: 10px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	font-size: var(--font-size-sm);
+	color: var(--color-primary);
+}
+
+.model3d-help-body p {
+	margin: 0;
+}
+
+.model3d-help-gifs {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+}
+
+.model3d-help-gifs img {
+	width: 100%;
+	height: auto;
+	display: block;
+	border: 1px solid var(--color-border);
+	border-radius: 6px;
+}
+
+/* Toggle "Exibir lista" (borda azul, hover azul claro transparente) */
+.model3d-list-summary {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 7px 14px;
+	border: 1px solid #2563eb;
+	border-radius: 6px;
+	background-color: transparent;
+	color: #2563eb;
+	font-weight: 600;
+	font-size: var(--font-size-xs);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	cursor: pointer;
+	transition: background-color var(--transition-fast);
+}
+.model3d-list-summary:hover {
+	background-color: rgba(37, 99, 235, 0.1);
+}
+
+.model3d-list-body {
+	margin-top: 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.model3d-disclaimer {
+	margin: 0;
+	font-size: var(--font-size-sm);
+	color: var(--color-primary);
+	background-color: color-mix(in srgb, #eab308 14%, transparent);
+	border-left: 3px solid #eab308;
+	padding: 8px 12px;
+}
+
+@media (max-width: 720px) {
+	.model3d-help-gifs {
+		grid-template-columns: 1fr;
+	}
+}
+
 .model3d-status {
 	display: flex;
 	align-items: center;
-	justify-content: flex-start;
-	gap: 12px;
+	gap: 8px;
 	flex-wrap: wrap;
 	font-size: var(--font-size-sm);
+}
+
+/* Botão de recarregar materiais — só ícone, sem borda, ao lado do texto */
+.model3d-refresh-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	padding: 0;
+	border: none;
+	border-radius: 6px;
+	background: none;
+	color: var(--color-accent);
+	cursor: pointer;
+	flex-shrink: 0;
+	transition: background-color var(--transition-fast);
+}
+
+.model3d-refresh-btn:hover {
+	background-color: rgba(0, 0, 0, 0.06);
+}
+
+/* Separador sólido (ex.: abaixo do contador de materiais) */
+.model3d-sep--solid {
+	border-top-style: solid;
+	/* Sobe um pouco a barra, aproximando do contador acima */
+	margin-top: -8px;
 }
 
 .model3d-replaced-notice {
@@ -1379,7 +1578,7 @@ a.product-info-category:hover {
 }
 
 .model3d-tech {
-	font-size: 0.8em;
+	font-size: 0.9em;
 	color: var(--color-text-muted, #6b7280);
 	background-color: var(--color-surface);
 	padding: 1px 5px;
@@ -2039,6 +2238,8 @@ tr[data-selected='true'] td {
 	cursor: pointer;
 	text-decoration: none;
 	border: 1px solid var(--color-border);
+	/* Cor explícita — sem isto as setas (↑ ↓) do reordenador ficam invisíveis */
+	color: var(--color-accent);
 	background: none;
 	transition:
 		background-color var(--transition-fast),
@@ -2051,6 +2252,11 @@ tr[data-selected='true'] td {
 
 .action-btn--edit:hover {
 	background-color: rgba(255, 255, 255, 0.08);
+}
+
+.action-btn:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
 }
 
 .action-btn--delete {
