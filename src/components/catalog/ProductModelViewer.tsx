@@ -64,6 +64,8 @@ export function ProductModelViewer({
 }: Props) {
   const [ready, setReady] = useState(false)
   const [showHint, setShowHint] = useState(false)
+  // Touch (celular/tablet) → zoom nativo por pinça; desktop → Ctrl + scroll.
+  const [isTouch, setIsTouch] = useState(false)
   // Which variation is active per material (for the "Ativas: nome[i]" line).
   const [active, setActive] = useState<Record<string, string>>({})
 
@@ -95,6 +97,11 @@ export function ProductModelViewer({
     return () => {
       alive = false
     }
+  }, [])
+
+  // Detecta dispositivo com toque (após montar, evita mismatch de hidratação).
+  useEffect(() => {
+    setIsTouch('ontouchstart' in window || navigator.maxTouchPoints > 0)
   }, [])
 
   // Silence three.js's benign "Couldn't load texture blob:" console.error — some
@@ -133,16 +140,24 @@ export function ProductModelViewer({
     return () => mv.removeEventListener('load', capture)
   }, [ready, src])
 
-  // Zoom only with Ctrl/Cmd + scroll; a plain scroll passes through to the page.
+  // Dica interativa (desktop): aparece ao entrar com o mouse na janela e ao
+  // rolar sobre ela, permanecendo 3s. Zoom só com Ctrl/Cmd + scroll; scroll
+  // normal rola a página. No touch o zoom é por pinça (nativo do model-viewer).
   useEffect(() => {
     const mv = mvRef.current
-    if (!ready || !mv) return
+    if (!ready || !mv || isTouch) return
+
+    const flashHint = () => {
+      setShowHint(true)
+      if (hintTimer.current) clearTimeout(hintTimer.current)
+      hintTimer.current = setTimeout(() => setShowHint(false), 2000)
+    }
+
+    const onEnter = () => flashHint()
     const onWheel = (e: WheelEvent) => {
       if (!(e.ctrlKey || e.metaKey)) {
-        // Let the page scroll; nudge the user toward Ctrl + scroll.
-        setShowHint(true)
-        if (hintTimer.current) clearTimeout(hintTimer.current)
-        hintTimer.current = setTimeout(() => setShowHint(false), 1200)
+        // Deixa a página rolar; reforça a dica.
+        flashHint()
         return
       }
       e.preventDefault()
@@ -154,12 +169,15 @@ export function ProductModelViewer({
         /* camera not ready yet */
       }
     }
+
+    mv.addEventListener('pointerenter', onEnter)
     mv.addEventListener('wheel', onWheel, { passive: false })
     return () => {
+      mv.removeEventListener('pointerenter', onEnter)
       mv.removeEventListener('wheel', onWheel)
       if (hintTimer.current) clearTimeout(hintTimer.current)
     }
-  }, [ready])
+  }, [ready, isTouch])
 
   const onSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const opt = e.currentTarget.selectedOptions[0]
@@ -240,7 +258,7 @@ export function ProductModelViewer({
         ar-modes="webxr scene-viewer quick-look"
         ar-placement={objectType || 'floor'}
         ar-scale={arScale || 'fixed'}
-        disable-zoom
+        disable-zoom={isTouch ? undefined : ''}
         shadow-intensity="1"
         loading="eager"
         style={{ width: '100%', height: '100%', visibility: ready ? 'visible' : 'hidden' }}
@@ -248,7 +266,59 @@ export function ProductModelViewer({
 
       {showHint && (
         <div className="product-3d-hint" aria-hidden="true">
-          Use <kbd>Ctrl</kbd> + scroll para dar zoom
+          {/* Coluna esquerda — comandos com Ctrl */}
+          <div className="product-3d-hint-col">
+            <span className="product-3d-hint-line">
+              <kbd>Ctrl</kbd> +
+              <svg className="mv-icon mv-icon-scroll" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="7.5" y="2.5" width="9" height="19" rx="4.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                <line className="mv-scroll-wheel" x1="12" y1="6" x2="12" y2="9.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+              para dar zoom
+            </span>
+            <span className="product-3d-hint-line">
+              <kbd>Ctrl</kbd> +
+              <svg className="mv-icon mv-icon-move" viewBox="0 0 24 24" aria-hidden="true">
+                <g stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="3.5" x2="12" y2="20.5" />
+                  <line x1="3.5" y1="12" x2="20.5" y2="12" />
+                  <polyline points="9,6.5 12,3.5 15,6.5" />
+                  <polyline points="9,17.5 12,20.5 15,17.5" />
+                  <polyline points="6.5,9 3.5,12 6.5,15" />
+                  <polyline points="17.5,9 20.5,12 17.5,15" />
+                </g>
+              </svg>
+              para mover
+            </span>
+          </div>
+          {/* Coluna direita — comandos com mouse */}
+          <div className="product-3d-hint-col">
+            <span className="product-3d-hint-line">
+              <svg className="mv-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="6.5" y="3" width="11" height="18" rx="5.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                <rect x="7.8" y="4.2" width="3.6" height="4.6" rx="1.4" fill="currentColor" />
+              </svg>
+              +
+              <svg className="mv-icon mv-icon-move" viewBox="0 0 24 24" aria-hidden="true">
+                <g stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="3.5" x2="12" y2="20.5" />
+                  <line x1="3.5" y1="12" x2="20.5" y2="12" />
+                  <polyline points="9,6.5 12,3.5 15,6.5" />
+                  <polyline points="9,17.5 12,20.5 15,17.5" />
+                  <polyline points="6.5,9 3.5,12 6.5,15" />
+                  <polyline points="17.5,9 20.5,12 17.5,15" />
+                </g>
+              </svg>
+              para rotacionar
+            </span>
+            <span className="product-3d-hint-line">
+              <svg className="mv-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="6.5" y="3" width="11" height="18" rx="5.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                <rect x="12.6" y="4.2" width="3.6" height="4.6" rx="1.4" fill="currentColor" />
+              </svg>
+              para centralizar
+            </span>
+          </div>
         </div>
       )}
 

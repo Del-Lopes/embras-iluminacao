@@ -39,6 +39,13 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
   const material = params.material?.trim() ?? ''
   const soquete = params.soquete?.trim() ?? ''
   const sort = params.sort?.trim() || 'recentes'
+
+  // tipo / material / soquete são multi-seleção (lista separada por vírgula)
+  const parseList = (s: string) =>
+    s ? s.split(',').map((v) => v.trim()).filter(Boolean) : []
+  const tipoSlugs = parseList(tipo)
+  const materialSlugs = parseList(material)
+  const soqueteSlugs = parseList(soquete)
   const view: 'grid' | 'list' = params.view === 'list' ? 'list' : 'grid'
 
   const supabase = await createSupabaseServerClient()
@@ -70,48 +77,48 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
   const soqueteChars = (soqData ?? []) as { id: string; name: string; slug: string }[]
   const soquetes = soqueteChars.map((c) => ({ slug: c.slug, name: c.name }))
 
-  // Resolve "tipo" (category slug) → product ids via the m2m map
+  // Resolve "tipo" (slugs de categoria) → product ids (união das categorias selecionadas)
   let tipoProductIds: string[] | null = null
-  if (tipo) {
-    const category = categories.find((c) => c.slug === tipo)
-    if (!category) {
+  if (tipoSlugs.length) {
+    const ids = categories.filter((c) => tipoSlugs.includes(c.slug)).map((c) => c.id)
+    if (!ids.length) {
       tipoProductIds = []
     } else {
       const { data: maps } = await supabase
         .from('product_category_map')
         .select('product_id')
-        .eq('category_id', category.id)
-      tipoProductIds = (maps ?? []).map((m) => m.product_id)
+        .in('category_id', ids)
+      tipoProductIds = [...new Set((maps ?? []).map((m) => m.product_id))]
     }
   }
 
-  // Resolve "material" (slug do material) → product ids (principal OU secundário)
+  // Resolve "material" (slugs) → product ids (principal OU secundário, união dos materiais)
   let materialProductIds: string[] | null = null
-  if (material) {
-    const mc = materialChars.find((c) => c.slug === material)
-    if (!mc) {
+  if (materialSlugs.length) {
+    const ids = materialChars.filter((c) => materialSlugs.includes(c.slug)).map((c) => c.id)
+    if (!ids.length) {
       materialProductIds = []
     } else {
       const { data: maps } = await supabase
         .from('product_characteristic_map')
         .select('product_id')
-        .eq('characteristic_id', mc.id)
-      materialProductIds = (maps ?? []).map((m) => m.product_id)
+        .in('characteristic_id', ids)
+      materialProductIds = [...new Set((maps ?? []).map((m) => m.product_id))]
     }
   }
 
-  // Resolve "soquete" (slug do soquete) → product ids
+  // Resolve "soquete" (slugs) → product ids (união dos soquetes selecionados)
   let soqueteProductIds: string[] | null = null
-  if (soquete) {
-    const sc = soqueteChars.find((c) => c.slug === soquete)
-    if (!sc) {
+  if (soqueteSlugs.length) {
+    const ids = soqueteChars.filter((c) => soqueteSlugs.includes(c.slug)).map((c) => c.id)
+    if (!ids.length) {
       soqueteProductIds = []
     } else {
       const { data: maps } = await supabase
         .from('product_characteristic_map')
         .select('product_id')
-        .eq('characteristic_id', sc.id)
-      soqueteProductIds = (maps ?? []).map((m) => m.product_id)
+        .in('characteristic_id', ids)
+      soqueteProductIds = [...new Set((maps ?? []).map((m) => m.product_id))]
     }
   }
 
@@ -143,6 +150,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
 
     if (sort === 'az') query = query.order('name', { ascending: true })
     else if (sort === 'za') query = query.order('name', { ascending: false })
+    else if (sort === 'antigos') query = query.order('published_at', { ascending: true })
     else query = query.order('published_at', { ascending: false })
 
     if (environment) query = query.eq('environment', environment as 'interno' | 'externo')
@@ -223,11 +231,14 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
       <BlogHeader />
 
       {/* ── Hero ── */}
-      <div className="blog-index-hero">
+      <div
+        className="blog-index-hero blog-index-hero--banner"
+        style={{ backgroundImage: 'url(/images/catalogo-bg.webp)' }}
+      >
         <div className="blog-index-hero-inner">
           <h1 className="blog-index-title">Catálogo</h1>
           <p className="blog-index-desc">
-            Soluções de iluminação Embras para áreas internas e externas — amostras do nosso portfólio.
+            Soluções de iluminação Embras para áreas internas e externas.
           </p>
         </div>
       </div>

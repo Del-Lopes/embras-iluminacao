@@ -78,7 +78,7 @@ export default function ProductLines() {
 					</AnimatedPill>
 					<AnimatedHeading className="text-5xl md:text-7xl font-(--font-heading) uppercase leading-tight md:leading-[82px] tracking-tighter text-(--color-primary)">
 						O design <br className="md:hidden" />{' '}
-						<span className="text-(--color-muted)">vira arte</span>
+						<span className="text-(--color-highlight)">vira arte</span>
 					</AnimatedHeading>
 				</div>
 
@@ -107,7 +107,7 @@ export default function ProductLines() {
 					>
 						{currentLine.products.map((product) => (
 							<div key={product.id} className="product-card flex flex-col group/card">
-								<div className="aspect-3/4 bg-[#0f0f0f] border border-white/10 mb-8 relative overflow-hidden transition-all duration-500 hover:border-white/30">
+								<div className="aspect-3/4 bg-[#0f0f0f] border border-(--color-border) mb-8 relative overflow-hidden transition-all duration-500 hover:border-white/30">
 									<Image
 										src={product.image}
 										alt={product.name}
@@ -117,12 +117,12 @@ export default function ProductLines() {
 									/>
 									<div className="absolute inset-0 bg-linear-to-tr from-transparent to-white/5 opacity-0 group-hover/card:opacity-100 transition-opacity" />
 								</div>
-								<span className="product-category mb-3 block text-(--color-accent)/60">{product.category}</span>
+								<span className="product-category mb-3 block text-(--color-accent)">{product.category}</span>
 								<h3 className="text-xl font-(--font-heading) uppercase text-(--color-accent) tracking-widest leading-none mb-6">
 									{product.name}
 								</h3>
 								<button
-									className="flex items-center gap-3 w-fit px-6 py-3 border border-(--color-accent)/20 text-[11px] uppercase tracking-[2px] font-semibold text-(--color-accent) hover:bg-(--color-accent) hover:text-(--color-bg) transition-all group/btn"
+									className="flex items-center gap-3 w-fit px-6 py-3 border border-(--color-border) text-[11px] uppercase tracking-[2px] font-semibold text-(--color-accent) hover:bg-(--color-accent) hover:text-(--color-bg) transition-all group/btn"
 									style={{ borderRadius: 0 }}
 								>
 									Ver em 3D

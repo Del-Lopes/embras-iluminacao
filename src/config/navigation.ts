@@ -2,10 +2,11 @@ import type { NavItem } from '@/types'
 
 export const navItems: NavItem[] = [
   { label: 'Projetos', href: '/#projetos' },
-  { label: 'Produtos', href: '/#produtos' },
+  { label: 'Quem Somos', href: '/#quem-somos' },
   { label: 'Manifesto', href: '/#manifesto' },
   { label: 'Catálogo', href: '/catalogo' },
   { label: 'Blog', href: '/blog' },
+  { label: 'Contato', href: '', disabled: true },
 ]
 
 export const socialLinks: NavItem[] = [

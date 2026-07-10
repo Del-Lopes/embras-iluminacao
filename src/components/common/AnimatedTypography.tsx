@@ -205,6 +205,12 @@ export const AnimatedPill: React.FC<AnimatedPillProps> = ({
 				gsap.getProperty(textRef.current, 'color') ||
 				'rgba(255, 255, 255, 0.4)'
 
+			// Flash para a cor do texto do tema (branco no dark, preto no light)
+			const highlightColor =
+				getComputedStyle(containerRef.current)
+					.getPropertyValue('--color-accent')
+					.trim() || '#ffffff'
+
 			const split = new SplitText(textRef.current, { type: 'chars' })
 
 			const tl = gsap.timeline({
@@ -217,7 +223,7 @@ export const AnimatedPill: React.FC<AnimatedPillProps> = ({
 
 			tl.to(split.chars, {
 				keyframes: [
-					{ color: '#ffffff', duration: 0.15 },
+					{ color: highlightColor, duration: 0.15 },
 					{ color: computedColor, duration: 0.45 },
 				],
 				stagger: 0.08,
@@ -250,10 +256,10 @@ export const AnimatedPill: React.FC<AnimatedPillProps> = ({
 			<span ref={textRef} className="block relative">
 				{children}
 			</span>
-			<div className="relative mt-[8px] h-px w-[40%] overflow-hidden bg-white/20">
+			<div className="relative mt-[8px] h-px w-[40%] overflow-hidden bg-[color-mix(in_srgb,var(--color-accent)_20%,transparent)]">
 				<div
 					ref={lineRef}
-					className="absolute inset-0 h-full w-full bg-white will-change-transform"
+					className="absolute inset-0 h-full w-full bg-(--color-accent) will-change-transform"
 				/>
 			</div>
 		</div>

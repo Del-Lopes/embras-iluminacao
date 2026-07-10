@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { gsap, ScrollTrigger } from '@/lib/gsap'
 import { useGSAP } from '@gsap/react'
 import ThemeToggle from '@/components/common/ThemeToggle'
+import { navItems } from '@/config/navigation'
 
 const products = [
 	{
@@ -211,19 +212,24 @@ export default function HeroProductsWrapper() {
 							</div>
 						</div>
 						<nav className="hidden md:flex gap-10 items-center">
-							{[
-								'Projetos',
-								'Produtos',
-								'Manifesto',
-							].map((item) => (
-								<a
-									key={item}
-									href={`#${item.toLowerCase()}`}
-									className="text-[10px] uppercase tracking-[0.3em] text-white hover:text-white/50 transition-colors"
-								>
-									{item}
-								</a>
-							))}
+							{navItems.map((item) =>
+								item.disabled ? (
+									<span
+										key={item.label}
+										className="text-[10px] uppercase tracking-[0.3em] text-white cursor-default"
+									>
+										{item.label}
+									</span>
+								) : (
+									<a
+										key={item.label}
+										href={item.href}
+										className="text-[10px] uppercase tracking-[0.3em] text-white hover:text-white/50 transition-colors"
+									>
+										{item.label}
+									</a>
+								)
+							)}
 						</nav>
 						<ThemeToggle />
 					</div>
@@ -314,7 +320,7 @@ export default function HeroProductsWrapper() {
 					<div className="shrink-0 w-[40vw] h-screen flex items-center">
 						<h2 className="text-5xl md:text-7xl font-(--font-heading) uppercase leading-tight md:leading-[82px] text-white drop-shadow-md">
 							Nossa <br /> Seleção <br />{' '}
-							<span className="text-(--color-muted) opacity-80">
+							<span className="text-(--color-highlight)">
 								Premium
 							</span>
 						</h2>
@@ -337,7 +343,7 @@ export default function HeroProductsWrapper() {
 
 							{/* Text block positioned absolute inside the image container */}
 							<div className="absolute bottom-[30px] left-[30px] flex flex-col gap-2 z-10 pointer-events-none drop-shadow-lg">
-								<span className="product-category block text-xs md:text-sm tracking-[0.2em] text-white/80 uppercase">
+								<span className="product-category block text-xs md:text-sm tracking-[0.2em] text-white uppercase">
 									{product.category}
 								</span>
 								<h3 className="text-2xl md:text-3xl font-(--font-heading) uppercase text-white tracking-widest leading-none">

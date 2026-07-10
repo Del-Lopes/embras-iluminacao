@@ -1,9 +1,9 @@
 import { Suspense } from 'react'
-import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { BlogHeader } from '@/components/blog/BlogHeader'
 import { BlogSidebar } from '@/components/blog/BlogSidebar'
+import { BlogControls } from '@/components/blog/BlogControls'
 import Footer from '@/components/layout/Footer'
 import { PostCard } from '@/components/blog/PostCard'
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
@@ -16,23 +16,24 @@ export const metadata: Metadata = {
 
 const PAGE_SIZE = 6
 
-type SearchParams = Promise<{ page?: string; q?: string; category?: string }>
+type SearchParams = Promise<{ page?: string; q?: string; category?: string; sort?: string }>
 
 export default async function BlogPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams
   const page = Math.max(1, parseInt(params.page ?? '1', 10))
   const q = params.q?.trim() ?? ''
   const categorySlug = params.category?.trim() ?? ''
+  const sort = params.sort?.trim() || 'recentes'
+
+  // category é multi-seleção (lista separada por vírgula)
+  const parseList = (s: string) =>
+    s ? s.split(',').map((v) => v.trim()).filter(Boolean) : []
+  const categorySlugs = parseList(categorySlug)
 
   const supabase = await createSupabaseServerClient()
 
   // Slugs de categorias ocultas — indexadas mas não listadas no blog
   const HIDDEN_SLUGS = ['google']
-
-  // Redireciona para /blog se alguém tentar filtrar por uma categoria oculta
-  if (categorySlug && HIDDEN_SLUGS.includes(categorySlug)) {
-    redirect('/blog')
-  }
 
   const { data: allCategories } = await supabase
     .from('categories')
@@ -47,12 +48,10 @@ export default async function BlogPage({ searchParams }: { searchParams: SearchP
     .filter((c) => HIDDEN_SLUGS.includes(c.slug))
     .map((c) => c.id)
 
-  // Resolve category_id from slug — ignora slugs ocultos
-  let categoryId = ''
-  if (categorySlug && !HIDDEN_SLUGS.includes(categorySlug)) {
-    const match = categories.find((c) => c.slug === categorySlug)
-    categoryId = match?.id ?? ''
-  }
+  // Resolve os slugs selecionados → ids (ignora ocultas e inexistentes)
+  const categoryIds = categories
+    .filter((c) => categorySlugs.includes(c.slug))
+    .map((c) => c.id)
 
   const from = (page - 1) * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
@@ -65,8 +64,13 @@ export default async function BlogPage({ searchParams }: { searchParams: SearchP
       { count: 'exact' }
     )
     .eq('status', 'published')
-    .order('published_at', { ascending: false })
-    .range(from, to)
+
+  if (sort === 'az') query = query.order('title', { ascending: true })
+  else if (sort === 'za') query = query.order('title', { ascending: false })
+  else if (sort === 'antigos') query = query.order('published_at', { ascending: true })
+  else query = query.order('published_at', { ascending: false })
+
+  query = query.range(from, to)
 
   // Nunca listar posts de categorias ocultas — independente de filtros
   for (const id of hiddenCategoryIds) {
@@ -74,7 +78,7 @@ export default async function BlogPage({ searchParams }: { searchParams: SearchP
   }
 
   if (q) query = query.ilike('title', `%${q}%`)
-  if (categoryId) query = query.eq('category_id', categoryId)
+  if (categoryIds.length) query = query.in('category_id', categoryIds)
 
   const { data, count } = await query
   const posts = (data ?? []) as unknown as PostCardData[]
@@ -85,6 +89,7 @@ export default async function BlogPage({ searchParams }: { searchParams: SearchP
     const urlParams = new URLSearchParams()
     if (q) urlParams.set('q', q)
     if (categorySlug) urlParams.set('category', categorySlug)
+    if (sort && sort !== 'recentes') urlParams.set('sort', sort)
     if (p > 1) urlParams.set('page', String(p))
     const qs = urlParams.toString()
     return qs ? `/blog?${qs}` : '/blog'
@@ -105,11 +110,14 @@ export default async function BlogPage({ searchParams }: { searchParams: SearchP
       <BlogHeader />
 
       {/* ── Hero ── */}
-      <div className="blog-index-hero">
+      <div
+        className="blog-index-hero blog-index-hero--banner"
+        style={{ backgroundImage: 'url(/images/blog-bg.webp)' }}
+      >
         <div className="blog-index-hero-inner">
           <h1 className="blog-index-title">Blog</h1>
           <p className="blog-index-desc">
-            Tendências em iluminação, arquitetura e design de interiores — conteúdo para inspirar projetos e decisões.
+            Tendências em iluminação, arquitetura e design de interiores para inspirar projetos e decisões.
           </p>
         </div>
       </div>
@@ -127,6 +135,10 @@ export default async function BlogPage({ searchParams }: { searchParams: SearchP
 
         {/* Grid + pagination */}
         <section className="blog-grid-section">
+          <Suspense fallback={<div className="catalog-controls" />}>
+            <BlogControls total={total} currentSort={sort} />
+          </Suspense>
+
           {posts.length === 0 ? (
             <p className="blog-grid-empty">Nenhum post encontrado.</p>
           ) : (

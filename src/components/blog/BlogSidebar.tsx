@@ -36,9 +36,14 @@ export function BlogSidebar({ categories, currentQ, currentCategorySlug }: Props
     updateParams({ q })
   }
 
+  const parseList = (s: string) =>
+    s ? s.split(',').map((v) => v.trim()).filter(Boolean) : []
+
+  // Multi-seleção (checkbox): adiciona/remove a categoria da lista
   const toggleCategory = (slug: string) => {
-    // Toggle: if already active, clear; otherwise set
-    updateParams({ category: currentCategorySlug === slug ? '' : slug })
+    const list = parseList(currentCategorySlug)
+    const next = list.includes(slug) ? list.filter((v) => v !== slug) : [...list, slug]
+    updateParams({ category: next.join(',') })
   }
 
   return (
@@ -60,7 +65,7 @@ export function BlogSidebar({ categories, currentQ, currentCategorySlug }: Props
           <p className="blog-sidebar-cats-label">Categorias</p>
           <ul>
             {categories.map((cat) => {
-              const checked = currentCategorySlug === cat.slug
+              const checked = parseList(currentCategorySlug).includes(cat.slug)
               return (
                 <li key={cat.id}>
                   <label className="blog-cat-label">

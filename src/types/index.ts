@@ -22,4 +22,6 @@ export type NavItem = {
   label: string
   href: string
   isExternal?: boolean
+  /** Item exibido sem link (ex.: página ainda não criada) */
+  disabled?: boolean
 }

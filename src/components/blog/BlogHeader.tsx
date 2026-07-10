@@ -8,11 +8,11 @@ import ThemeToggle from '@/components/common/ThemeToggle'
 
 const NAV = [
   { label: 'Projetos', href: '/#projetos' },
-  { label: 'Produtos', href: '/#produtos' },
+  { label: 'Quem Somos', href: '/#quem-somos' },
   { label: 'Manifesto', href: '/#manifesto' },
-  { label: 'Contato', href: '/#contato' },
   { label: 'Catálogo', href: '/catalogo' },
   { label: 'Blog', href: '/blog' },
+  { label: 'Contato', href: '', disabled: true },
 ]
 
 export function BlogHeader() {
@@ -36,11 +36,17 @@ export function BlogHeader() {
 
         {/* Desktop nav */}
         <nav className="blog-header-nav">
-          {NAV.map((item) => (
-            <Link key={item.label} href={item.href} className="blog-header-link">
-              {item.label}
-            </Link>
-          ))}
+          {NAV.map((item) =>
+            item.disabled ? (
+              <span key={item.label} className="blog-header-link blog-header-link--disabled">
+                {item.label}
+              </span>
+            ) : (
+              <Link key={item.label} href={item.href} className="blog-header-link">
+                {item.label}
+              </Link>
+            )
+          )}
           <ThemeToggle themed />
         </nav>
 
@@ -64,16 +70,25 @@ export function BlogHeader() {
         >
           Fechar
         </button>
-        {NAV.map((item) => (
-          <Link
-            key={item.label}
-            href={item.href}
-            className="blog-header-mobile-link"
-            onClick={() => setIsOpen(false)}
-          >
-            {item.label}
-          </Link>
-        ))}
+        {NAV.map((item) =>
+          item.disabled ? (
+            <span
+              key={item.label}
+              className="blog-header-mobile-link blog-header-mobile-link--disabled"
+            >
+              {item.label}
+            </span>
+          ) : (
+            <Link
+              key={item.label}
+              href={item.href}
+              className="blog-header-mobile-link"
+              onClick={() => setIsOpen(false)}
+            >
+              {item.label}
+            </Link>
+          )
+        )}
         <ThemeToggle themed />
       </div>
     </header>

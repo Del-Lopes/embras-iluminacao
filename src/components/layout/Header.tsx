@@ -19,15 +19,24 @@ export default function Header() {
 			</div>
 
 			<div className="hidden md:flex gap-12">
-				{navItems.map((item) => (
-					<a
-						key={item.label}
-						href={item.href}
-						className="text-[10px] uppercase tracking-[0.3em] text-white hover:opacity-50 transition-opacity"
-					>
-						{item.label}
-					</a>
-				))}
+				{navItems.map((item) =>
+					item.disabled ? (
+						<span
+							key={item.label}
+							className="text-[10px] uppercase tracking-[0.3em] text-white cursor-default"
+						>
+							{item.label}
+						</span>
+					) : (
+						<a
+							key={item.label}
+							href={item.href}
+							className="text-[10px] uppercase tracking-[0.3em] text-white hover:opacity-50 transition-opacity"
+						>
+							{item.label}
+						</a>
+					)
+				)}
 			</div>
 
 			<div className="flex items-center gap-6">
@@ -55,16 +64,25 @@ export default function Header() {
 				>
 					Close
 				</button>
-				{navItems.map((item) => (
-					<a
-						key={item.label}
-						href={item.href}
-						className="text-4xl font-(--font-heading) uppercase tracking-tighter text-white hover:text-(--color-muted)"
-						onClick={() => setIsOpen(false)}
-					>
-						{item.label}
-					</a>
-				))}
+				{navItems.map((item) =>
+					item.disabled ? (
+						<span
+							key={item.label}
+							className="text-4xl font-(--font-heading) uppercase tracking-tighter text-white cursor-default"
+						>
+							{item.label}
+						</span>
+					) : (
+						<a
+							key={item.label}
+							href={item.href}
+							className="text-4xl font-(--font-heading) uppercase tracking-tighter text-white hover:text-(--color-muted)"
+							onClick={() => setIsOpen(false)}
+						>
+							{item.label}
+						</a>
+					)
+				)}
 			</div>
 		</nav>
 	)

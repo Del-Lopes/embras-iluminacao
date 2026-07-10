@@ -231,7 +231,7 @@ export default function Manifesto() {
 				style={{
 					background: isDark
 						? 'radial-gradient(65% 75% at 8% 5%, #6b6b6b 0%, #2a2a2a 45%, #050505 100%)'
-						: 'radial-gradient(65% 75% at 8% 5%, #9e9b93 0%, #c4c1b9 45%, #f5f5f0 100%)',
+						: 'radial-gradient(65% 75% at 8% 5%, #9e9b93 0%, #c4c1b9 45%, #f5f5f5 100%)',
 				}}
 			/>
 

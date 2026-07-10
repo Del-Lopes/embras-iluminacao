@@ -21,7 +21,7 @@ export default function ContactSection() {
 					</AnimatedPill>
 					<AnimatedHeading className="text-6xl md:text-8xl font-(--font-heading) uppercase leading-tight md:leading-[106px] tracking-tighter">
 						Vamos <br /> iluminar seu <br />
-						<span className="text-(--color-muted)">próximo projeto.</span>
+						<span className="text-(--color-highlight)">próximo projeto.</span>
 					</AnimatedHeading>
 				</div>
 

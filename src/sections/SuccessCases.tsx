@@ -92,7 +92,7 @@ export default function SuccessCases() {
 					<AnimatedHeading className="text-5xl md:text-7xl font-(--font-heading) uppercase leading-tight md:leading-[82px] tracking-tighter">
 						Onde a luz <br />
 						encontra a <br />
-						<span className="text-(--color-muted)">arquitetura</span>
+						<span className="text-(--color-highlight)">arquitetura</span>
 					</AnimatedHeading>
 				</div>
 				<div className="max-w-md">
@@ -106,12 +106,12 @@ export default function SuccessCases() {
 				<div
 					ref={lineHRef}
 					className="absolute top-1/2 left-0 w-full h-px z-5 pointer-events-none"
-					style={{ backgroundColor: '#474747', transformOrigin: 'center', transform: 'scaleX(0)', opacity: 0 }}
+					style={{ backgroundColor: 'var(--color-border)', transformOrigin: 'center', transform: 'scaleX(0)', opacity: 0 }}
 				/>
 				<div
 					ref={lineVRef}
 					className="absolute left-1/2 top-0 w-px h-full z-5 pointer-events-none"
-					style={{ backgroundColor: '#474747', transformOrigin: 'center', transform: 'scaleY(0)', opacity: 0 }}
+					style={{ backgroundColor: 'var(--color-border)', transformOrigin: 'center', transform: 'scaleY(0)', opacity: 0 }}
 				/>
 				<div
 					ref={logoRef}
@@ -132,7 +132,7 @@ export default function SuccessCases() {
 							ref={(el) => { cardsRef.current[index] = el }}
 							className="group cursor-pointer"
 						>
-							<div className="aspect-square bg-[#0f0f0f] border border-white/10 relative overflow-hidden transition-all duration-700 group-hover:border-white/30">
+							<div className="aspect-square bg-[#0f0f0f] border border-(--color-border) relative overflow-hidden transition-all duration-700 group-hover:border-white/30">
 								<Image
 									src={project.image}
 									alt={project.title}

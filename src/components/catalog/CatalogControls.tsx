@@ -11,6 +11,7 @@ type Props = {
 
 const SORT_OPTIONS = [
   { label: 'Mais recentes', value: 'recentes' },
+  { label: 'Mais antigos', value: 'antigos' },
   { label: 'Nome (A–Z)', value: 'az' },
   { label: 'Nome (Z–A)', value: 'za' },
 ]
@@ -35,7 +36,7 @@ export function CatalogControls({ total, currentSort, currentView }: Props) {
   return (
     <div className="catalog-controls">
       <p className="catalog-count">
-        {total} produto{total !== 1 ? 's' : ''}
+        Exibindo {total} produto{total !== 1 ? 's' : ''}
       </p>
 
       <div className="catalog-controls-right">

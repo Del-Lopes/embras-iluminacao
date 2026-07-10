@@ -12,7 +12,7 @@ export default function TestimonialsHeader() {
 			<AnimatedHeading className="text-5xl md:text-7xl font-(--font-heading) uppercase leading-tight md:leading-[82px] tracking-tighter">
 				Confiança construída
 				<br />
-				<span className="text-(--color-muted)">em cada projeto</span>
+				<span className="text-(--color-highlight)">em cada projeto</span>
 			</AnimatedHeading>
 		</section>
 	)

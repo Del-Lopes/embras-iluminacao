@@ -7,7 +7,7 @@ import {
 
 export default function WhoWeAre() {
 	return (
-		<section className="py-36 px-8 md:px-12 bg-(--color-bg) relative">
+		<section id="quem-somos" className="py-36 px-8 md:px-12 bg-(--color-bg) relative">
 			<div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-24 items-center">
 				<div className="w-full md:w-[60%] relative aspect-4/3 md:aspect-auto md:h-[600px] border border-(--color-border) overflow-hidden">
 					<FragmentedImageReveal
@@ -28,7 +28,7 @@ export default function WhoWeAre() {
 							direction="left"
 						>
 							Tradição em <br /> esculpir o <br />{' '}
-							<span className="text-(--color-muted)">invisível.</span>
+							<span className="text-(--color-highlight)">invisível.</span>
 						</AnimatedHeading>
 					</div>
 					<div className="flex flex-col gap-6 max-w-lg">

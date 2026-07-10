@@ -19,6 +19,7 @@ type Props = {
 }
 
 const ENVIRONMENTS = [
+  { label: 'Todas', value: '' },
   { label: 'Área interna', value: 'interno' },
   { label: 'Área externa', value: 'externo' },
 ]
@@ -51,9 +52,15 @@ export function CatalogSidebar({
     [router, pathname, searchParams]
   )
 
-  // Each facet is single-select; clicking the active value clears it.
-  const toggle = (key: string, current: string, value: string) =>
-    updateParams({ [key]: current === value ? '' : value })
+  const parseList = (s: string) =>
+    s ? s.split(',').map((v) => v.trim()).filter(Boolean) : []
+
+  // Multi-seleção (checkbox): adiciona/remove o valor da lista
+  const toggleMulti = (key: string, current: string, value: string) => {
+    const list = parseList(current)
+    const next = list.includes(value) ? list.filter((v) => v !== value) : [...list, value]
+    updateParams({ [key]: next.join(',') })
+  }
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -77,7 +84,7 @@ export function CatalogSidebar({
         />
       </form>
 
-      {/* Área de uso */}
+      {/* Área de uso — seleção única (radio) */}
       <nav className="blog-sidebar-cats">
         <p className="blog-sidebar-cats-label">Área de uso</p>
         <ul>
@@ -85,10 +92,11 @@ export function CatalogSidebar({
             <li key={env.value}>
               <label className="blog-cat-label">
                 <input
-                  type="checkbox"
-                  className="blog-cat-check"
+                  type="radio"
+                  name="environment"
+                  className="blog-cat-radio"
                   checked={currentEnvironment === env.value}
-                  onChange={() => toggle('environment', currentEnvironment, env.value)}
+                  onChange={() => updateParams({ environment: env.value })}
                 />
                 <span className="blog-cat-name">{env.label}</span>
               </label>
@@ -108,8 +116,8 @@ export function CatalogSidebar({
                   <input
                     type="checkbox"
                     className="blog-cat-check"
-                    checked={currentTipo === cat.slug}
-                    onChange={() => toggle('tipo', currentTipo, cat.slug)}
+                    checked={parseList(currentTipo).includes(cat.slug)}
+                    onChange={() => toggleMulti('tipo', currentTipo, cat.slug)}
                   />
                   <span className="blog-cat-name">{cat.name}</span>
                 </label>
@@ -130,8 +138,8 @@ export function CatalogSidebar({
                   <input
                     type="checkbox"
                     className="blog-cat-check"
-                    checked={currentMaterial === mat.slug}
-                    onChange={() => toggle('material', currentMaterial, mat.slug)}
+                    checked={parseList(currentMaterial).includes(mat.slug)}
+                    onChange={() => toggleMulti('material', currentMaterial, mat.slug)}
                   />
                   <span className="blog-cat-name">{mat.name}</span>
                 </label>
@@ -152,8 +160,8 @@ export function CatalogSidebar({
                   <input
                     type="checkbox"
                     className="blog-cat-check"
-                    checked={currentSoquete === soq.slug}
-                    onChange={() => toggle('soquete', currentSoquete, soq.slug)}
+                    checked={parseList(currentSoquete).includes(soq.slug)}
+                    onChange={() => toggleMulti('soquete', currentSoquete, soq.slug)}
                   />
                   <span className="blog-cat-name">{soq.name}</span>
                 </label>

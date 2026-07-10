@@ -69,7 +69,7 @@ export default function ProductCarousel() {
 				<div className="shrink-0 w-[40vw]">
 					<h2 className="text-4xl md:text-6xl font-(--font-heading) uppercase leading-none">
 						Nossa <br /> Seleção <br />{' '}
-						<span className="text-(--color-muted)">Premium</span>
+						<span className="text-(--color-highlight)">Premium</span>
 					</h2>
 				</div>
 
