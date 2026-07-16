@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import ThemeToggle from '@/components/common/ThemeToggle'
 
 interface NavProps {
@@ -8,7 +9,9 @@ export default function Nav({ openForm }: NavProps) {
   return (
     <nav className="lp-nav">
       <div className="nav-brand">
-        <img src="/images/embras-logo-w.png" alt="Embras" className="nav-logo" />
+        <Link href="/" aria-label="Ir para a home">
+          <img src="/images/embras-logo-w.png" alt="Embras" className="nav-logo" />
+        </Link>
       </div>
       <div className="nav-links">
         <a className="m-link" href="#dores">Cenário</a>

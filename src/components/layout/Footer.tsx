@@ -6,7 +6,7 @@ export default function Footer() {
 		<footer className="py-20 px-8 border-t border-(--color-surface) bg-(--color-bg)">
 			<div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
 				<div className="flex items-center gap-2">
-					<div className="relative h-8 w-[120px]">
+					<div className="footer-logo-wrap relative h-8 w-[120px]">
 						<Image
 							src="/images/embras-logo-w.png"
 							alt="Embras Iluminação"
@@ -30,7 +30,7 @@ export default function Footer() {
 							href={link.href}
 							target={link.isExternal ? '_blank' : undefined}
 							rel={link.isExternal ? 'noopener noreferrer' : undefined}
-							className="text-(--color-muted) text-[10px] tracking-widest uppercase hover:text-(--color-accent) transition-colors"
+							className="text-(--color-accent) text-[10px] tracking-widest uppercase hover:text-(--color-muted) transition-colors"
 						>
 							{link.label}
 						</a>

@@ -220,7 +220,7 @@ export default function Manifesto() {
 								className="manifesto-left-text absolute inset-0 flex items-center"
 							>
 								<p
-									className="manifesto-p font-(--font-heading) text-(--color-accent) uppercase max-w-5xl"
+									className="manifesto-p font-(--font-heading) text-(--color-accent) max-w-5xl"
 									style={{
 										fontSize: '36px',
 										lineHeight: '46px',

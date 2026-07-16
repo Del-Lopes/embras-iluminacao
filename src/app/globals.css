@@ -140,7 +140,7 @@ p {
 }
 
 .product-category {
-	font-size: var(--font-size-xs);
+	font-size: 11px;
 	font-style: normal !important;
 	text-transform: uppercase;
 	letter-spacing: 0.1em;
@@ -3888,6 +3888,22 @@ tr[data-selected='true'] td {
 
 .light .blog-header-logo-wrap {
 	filter: invert(1);
+}
+
+/* Rodapé (home): não existe asset preto do logo — o branco é invertido para
+   preto no tema light, mesmo padrão do .blog-header-logo-wrap acima. */
+.light .footer-logo-wrap {
+	filter: invert(1);
+}
+
+/* Glow de fundo da seção de depoimentos. Dark: branco a 5% clareia o preto.
+   Light: um cinza bem mais forte — escurecer o quase-branco a 5% não se vê
+   (perto do branco a percepção de contraste cai), então precisa de mais peso. */
+.testimonials-glow {
+	background: rgba(255, 255, 255, 0.05);
+}
+.light .testimonials-glow {
+	background: rgba(90, 90, 90, 0.25);
 }
 
 .blog-header-nav {

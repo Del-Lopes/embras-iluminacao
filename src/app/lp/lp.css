@@ -220,6 +220,11 @@ html.light .lp-page .proof-metric-d { color: #4a4a4a; }
   z-index: 3;
   pointer-events: none;
 }
+/* No tema light a seta do canto ativo fica branca (mesmo ajuste do
+   .pl-tab-corner-arrow da home). */
+html.light .lp-page .lp-tab-corner-arrow {
+  color: #ffffff;
+}
 .lp-page .lp-tab[data-active='true'] .lp-tab-corner-arrow {
   opacity: 1;
 }

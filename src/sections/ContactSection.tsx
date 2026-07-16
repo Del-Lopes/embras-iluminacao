@@ -27,7 +27,7 @@ export default function ContactSection() {
 
 				<div className="flex flex-col md:flex-row gap-12 mt-8">
 					<div className="flex flex-col items-center md:items-start gap-4 p-12 border border-(--color-border) bg-(--color-surface)/30 backdrop-blur-md group hover:border-(--color-accent)/30 transition-all duration-500">
-						<span className="text-[10px] uppercase tracking-widest text-(--color-muted)">
+						<span className="text-[11px] uppercase tracking-widest text-(--color-highlight)">
 							Consultoria Direta
 						</span>
 						<a href="tel:+5511999999999" className="text-xl font-medium hover:text-(--color-muted) transition-colors">
@@ -35,7 +35,7 @@ export default function ContactSection() {
 						</a>
 					</div>
 					<div className="flex flex-col items-center md:items-start gap-4 p-12 border border-(--color-border) bg-(--color-surface)/30 backdrop-blur-md group hover:border-(--color-accent)/30 transition-all duration-500">
-						<span className="text-[10px] uppercase tracking-widest text-(--color-muted)">
+						<span className="text-[11px] uppercase tracking-widest text-(--color-highlight)">
 							Email Corporativo
 						</span>
 						<a href="mailto:contato@embras.com.br" className="text-xl font-medium hover:text-(--color-muted) transition-colors">

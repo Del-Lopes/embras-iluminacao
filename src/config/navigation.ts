@@ -12,17 +12,12 @@ export const navItems: NavItem[] = [
 export const socialLinks: NavItem[] = [
   {
     label: 'Instagram',
-    href: 'https://instagram.com/embras',
+    href: 'https://www.instagram.com/embrasiluminacao/',
     isExternal: true,
   },
   {
     label: 'LinkedIn',
-    href: 'https://linkedin.com/company/embras',
-    isExternal: true,
-  },
-  {
-    label: 'Pinterest',
-    href: 'https://pinterest.com/embras',
+    href: 'https://www.linkedin.com/in/embras-ilumina%C3%A7%C3%A3o/',
     isExternal: true,
   },
 ]

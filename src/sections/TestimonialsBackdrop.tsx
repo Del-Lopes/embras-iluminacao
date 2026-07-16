@@ -61,10 +61,13 @@ export default function TestimonialsBackdrop({
 			ref={sectionRef}
 			className="h-screen w-full bg-(--color-bg) relative flex flex-row z-10"
 		>
-			{/* Background Glow Effect */}
+			{/* Background Glow Effect — a cor sai da classe testimonials-glow, que
+			    muda por tema (globals.css). No dark é branco a 5% (clareia o preto);
+			    no light um cinza mais forte, porque escurecer o quase-branco a 5%
+			    seria imperceptível — some. GSAP anima só a opacidade deste nó. */}
 			<div
 				ref={glowRef}
-				className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] bg-(--color-accent)/5 blur-[120px] rounded-full pointer-events-none"
+				className="testimonials-glow absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] blur-[120px] rounded-full pointer-events-none"
 			/>
 			{children}
 		</section>

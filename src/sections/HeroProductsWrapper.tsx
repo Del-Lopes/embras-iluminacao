@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { gsap, ScrollTrigger } from '@/lib/gsap'
 import { useGSAP } from '@gsap/react'
 import ThemeToggle from '@/components/common/ThemeToggle'
@@ -14,12 +15,11 @@ import { useTheme } from '@/components/common/ThemeProvider'
 // Galeria no topo da cena. Placeholders do próprio projeto — trocar pelas fotos
 // reais do catálogo quando houver.
 const GALLERY_IMAGES = [
-	'/images/lustres-dourado.webp',
-	'/images/product-1.png',
-	'/images/case-1.png',
-	'/images/product-2.png',
-	'/images/lustre.png',
-	'/images/hero.png',
+	'/images/hero-product-1.png',
+	'/images/hero-product-2.png',
+	'/images/hero-product-3.png',
+	'/images/hero-product-4.png',
+	'/images/hero-product-5.png',
 ]
 const GALLERY_TOP = '8vh'
 const GALLERY_H = '42vh'
@@ -39,17 +39,22 @@ const PARTICLE_DARK = '#FFFFFF' // claras no tema dark
 const PARTICLE_LIGHT = '#000000' // oposto no espectro do preto
 const THEME_FADE_S = 0.6 // rápido, porém suave
 
-// SUBIDA — máscara com dissolve longo, a partir de 45%. Só a camada da subida a
-// usa: na CHEGADA o texto é dourado chapado, sem máscara nenhuma.
+// SUBIDA — máscara com dissolve longo. Só a camada da subida a usa: na CHEGADA
+// o texto é chapado, sem máscara. Com a Playfair o dissolve começa em 50% e some
+// em 85% (pontos intermediários de 5 em 5), deixando mais da letra visível.
 const EMBRAS_MASK_RISE =
-	'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 45%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.3) 55%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0.1) 65%, rgba(0,0,0,0.05) 70%, rgba(0,0,0,0.01) 75%, rgba(0,0,0,0.0) 80%, rgba(0,0,0,0) 90%, rgba(0,0,0,0) 100%)'
+	'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.4) 55%, rgba(0,0,0,0.3) 60%, rgba(0,0,0,0.2) 65%, rgba(0,0,0,0.1) 70%, rgba(0,0,0,0.05) 75%, rgba(0,0,0,0.01) 80%, rgba(0,0,0,0.0) 85%, rgba(0,0,0,0) 92%, rgba(0,0,0,0) 100%)'
 
 // Classe compartilhada pelas duas camadas do texto — elas precisam ficar
 // exatamente sobrepostas, então qualquer divergência aqui desalinharia.
 // O tamanho NÃO fica aqui: o Tailwind exige literal (text-[12vw]), o que duplicaria
 // o EMBRAS_FONT_CSS e deixaria os dois livres para divergir. Vai por style inline.
+// TESTE de fonte: Playfair Display só no wordmark (as duas camadas compartilham
+// esta classe). Voltar para família Outfit = font-(family-name:--font-outfit).
+// PRECISA do prefixo family-name: em Tailwind v4 — sem ele (o antigo
+// font-(--font-heading)) NÃO gera font-family e o texto caía no sans do sistema.
 const EMBRAS_TEXT_CLS =
-	'font-(--font-heading) uppercase leading-none tracking-[0.05em] whitespace-nowrap'
+	'font-(family-name:--font-playfair) uppercase leading-none tracking-[0.05em] whitespace-nowrap'
 // Estado de chegada: dourado sólido, igual nos dois temas. var(--color-highlight)
 // resolve o tom por tema sozinho (#C9A86A dark / #8A6A28 light) — a única coisa
 // que muda entre eles.
@@ -74,12 +79,13 @@ const DARKEN_END = 'top 50%'
 
 // --- Texto EMBRAS ---
 // A fonte deriva da LARGURA DA GALERIA: o texto tem que medir o mesmo que ela.
-// 4.05 é a razão largura/fonte de "EMBRAS" nesta face — medida no browser (700px
-// de largura a 172,8px de fonte) e estável entre viewports, porque depende só das
-// métricas dos glifos. Se a fonte ou o tracking mudarem, remedir.
+// 4.214 é a razão largura/fonte de "EMBRAS" na Playfair Display — medida no
+// browser (1032px de largura a 245px de fonte) e estável entre viewports, porque
+// depende só das métricas dos glifos. Ao TROCAR a fonte, remedir (na Outfit era
+// ~4.05; num teste, medir a razão nova e atualizar aqui).
 // Em `calc` e não em vw: a galeria é capada em 1024px, então num monitor largo o
 // texto em vw cresceria além dela. Aqui os dois param juntos.
-const EMBRAS_W_PER_FONT = 4.05
+const EMBRAS_W_PER_FONT = 4.214
 const EMBRAS_FONT_CSS = `calc(${GALLERY_W_CSS} / ${EMBRAS_W_PER_FONT})`
 const embrasFontPx = () => galleryWidthPx() / EMBRAS_W_PER_FONT
 // Posição FINAL: centro do texto a 70vh (= 20% abaixo do centro da tela).
@@ -371,7 +377,11 @@ export default function HeroProductsWrapper() {
 				<header className="absolute top-0 left-0 w-full z-20">
 					<div className="flex items-center justify-between px-8 md:px-24 py-8">
 						<div className="flex items-center">
-							<div className="w-[120px] h-8 relative">
+							<Link
+								href="/"
+								aria-label="Ir para a home"
+								className="w-[120px] h-8 relative block"
+							>
 								<Image
 									src="/images/embras-logo-w.png"
 									alt="Embras"
@@ -379,7 +389,7 @@ export default function HeroProductsWrapper() {
 									sizes="120px"
 									className="object-contain"
 								/>
-							</div>
+							</Link>
 						</div>
 						<nav className="hidden md:flex gap-10 items-center">
 							{navItems.map((item) =>

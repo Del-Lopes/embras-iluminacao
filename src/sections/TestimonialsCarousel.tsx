@@ -192,7 +192,7 @@ export default function TestimonialsCarousel() {
 					<div className="flex-1 sm:pl-16 py-12">
 						{/* Badge */}
 						<div ref={badgeRef} className="mb-8">
-							<span className="inline-flex items-center gap-2 text-xs font-(family-name:--font-body) text-(--color-muted) border border-(--color-border) rounded-full px-3 py-1 uppercase tracking-wider">
+							<span className="inline-flex items-center gap-2 text-xs font-bold font-(family-name:--font-body) text-(--color-highlight) border border-(--color-border) rounded-full px-3 py-1 uppercase tracking-widest">
 								<span className="w-1.5 h-1.5 rounded-full bg-(--color-highlight)" />
 								{current.company}
 							</span>
@@ -218,7 +218,7 @@ export default function TestimonialsCarousel() {
 								<div ref={lineRef} className="w-8 h-px bg-(--color-accent)" />
 								<div>
 									<p className="text-base font-medium" style={{ color: 'var(--color-highlight)' }}>{current.author}</p>
-									<p className="text-sm text-(--color-muted)">{current.role}</p>
+									<p className="text-[11px] text-(--color-muted) uppercase">{current.role}</p>
 								</div>
 							</div>
 

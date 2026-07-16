@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Inter, Outfit } from 'next/font/google'
+import { Inter, Outfit, Playfair_Display } from 'next/font/google'
 import './globals.css'
 import SmoothScroll from '@/lib/lenis/SmoothScroll'
 import ThemeProvider from '@/components/common/ThemeProvider'
@@ -12,6 +12,12 @@ const inter = Inter({
 
 const outfit = Outfit({
 	variable: '--font-outfit',
+	subsets: ['latin'],
+})
+
+// Teste de fonte para o wordmark EMBRAS (hero). Serif de alto contraste.
+const playfair = Playfair_Display({
+	variable: '--font-playfair',
 	subsets: ['latin'],
 })
 
@@ -38,7 +44,7 @@ export default function RootLayout({
 				<script dangerouslySetInnerHTML={{ __html: `(function(){try{if(localStorage.getItem('theme')==='light')document.documentElement.classList.add('light')}catch(e){}})()` }} />
 			</head>
 			<body
-				className={`${inter.variable} ${outfit.variable} antialiased`}
+				className={`${inter.variable} ${outfit.variable} ${playfair.variable} antialiased`}
 				suppressHydrationWarning
 			>
 				<ThemeProvider>

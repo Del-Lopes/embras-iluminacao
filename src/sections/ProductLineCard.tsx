@@ -98,7 +98,7 @@ export function ProductLineCard({
 
       {/* Categoria e nome — sem link */}
       <span className="product-category mb-3 block text-(--color-highlight)">{category}</span>
-      <h3 className="text-base font-(--font-heading) uppercase text-(--color-accent) tracking-widest leading-tight mb-6">
+      <h3 className="text-sm font-(--font-heading) uppercase text-(--color-accent) tracking-widest leading-tight mb-6">
         {product.name}
       </h3>
 
