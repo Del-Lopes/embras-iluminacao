@@ -57,3 +57,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 /scripts/
+
+# backups
+*.backup.tsx
