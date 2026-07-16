@@ -296,6 +296,9 @@ export default function HeroProductsWrapper() {
 				onEnter: () => {
 					// Dispara primeiro a troca de cor do fundo/texto + a galeria.
 					setRevealed(true)
+					// killTweensOf antes de agendar: num vai-e-volta rápido pode haver
+					// um fade-OUT em curso; mata para o fade-in partir limpo.
+					gsap.killTweensOf(sparklesRef.current)
 					// Partículas: por último e devagar — a cascata.
 					gsap.to(sparklesRef.current, {
 						opacity: 1,
@@ -305,10 +308,13 @@ export default function HeroProductsWrapper() {
 						overwrite: 'auto',
 					})
 				},
-				// Voltou antes dos 100%: apaga (o overwrite cancela um fade-in que
-				// ainda esteja em curso, inclusive o atrasado).
+				// Voltou antes dos 100%: apaga. killTweensOf (e NÃO só overwrite): o
+				// fade-in tem delay de 0.5s, e overwrite:'auto' só mata tween que já
+				// está renderizando — um tween ainda no delay sobrevive e reacende as
+				// partículas depois, já de volta no hero. killTweensOf mata o atrasado.
 				onLeaveBack: () => {
 					setRevealed(false)
+					gsap.killTweensOf(sparklesRef.current)
 					gsap.to(sparklesRef.current, {
 						opacity: 0,
 						duration: 0.25,

@@ -142,13 +142,19 @@ export default function Manifesto() {
 				}
 			}
 
-			// Glow (onEnter) — acende ao ficar 100% visível
+			// Glow (onEnter) — acende ao ficar 100% visível.
+			// overwrite:'auto' nos DOIS: sem ele, num vai-e-volta rápido o fade-in
+			// (0.8s) e o fade-out (0.1s) coexistem — o fade-out vence por 0.1s e
+			// depois o fade-in, ainda vivo, puxa a opacidade de volta pra 1, deixando
+			// o glow preso aceso. Como nenhum tem delay, overwrite basta (mata o
+			// concorrente que está renderizando; não precisa de killTweensOf).
 			ScrollTrigger.create({
 				trigger: sectionRef.current,
 				start: 'top top',
 				onEnter: () =>
-					gsap.to(bgRef.current, { opacity: 1, duration: 0.8, ease: 'power2.out' }),
-				onLeaveBack: () => gsap.to(bgRef.current, { opacity: 0, duration: 0.1 }),
+					gsap.to(bgRef.current, { opacity: 1, duration: 0.8, ease: 'power2.out', overwrite: 'auto' }),
+				onLeaveBack: () =>
+					gsap.to(bgRef.current, { opacity: 0, duration: 0.1, overwrite: 'auto' }),
 			})
 
 			// 2. Timeline com PIN + SCRUB — troca de slides (o "restante", como no original).

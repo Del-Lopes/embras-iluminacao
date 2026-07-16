@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { ScrollTrigger } from '@/lib/gsap'
 import { cn } from '@/lib/utils/cn'
 import { AnimatedHeading, AnimatedPill } from '@/components/common/AnimatedTypography'
 import { ProductLineCard, type LineProduct } from './ProductLineCard'
@@ -27,6 +28,22 @@ export default function ProductLines({
   const currentPage = 0
   const current = lines.find((l) => l.id === activeTab) || lines[0]
   const products = current?.products ?? []
+
+  // Trocar de aba muda a ALTURA desta seção (interno sem produtos encolhe muito).
+  // O ScrollTrigger cacheia as posições de start/end no refresh e NÃO recalcula
+  // sozinho numa mudança de layout que não seja resize de janela — então o pin do
+  // Manifesto (e qualquer trigger abaixo) fica defasado e pina na posição errada.
+  // Um refresh após o novo layout pintar realinha todos. Pula a montagem: lá o
+  // ScrollTrigger já se posiciona sozinho no load.
+  const primeiraRenderizacao = useRef(true)
+  useEffect(() => {
+    if (primeiraRenderizacao.current) {
+      primeiraRenderizacao.current = false
+      return
+    }
+    const id = requestAnimationFrame(() => ScrollTrigger.refresh())
+    return () => cancelAnimationFrame(id)
+  }, [activeTab])
 
   return (
     <section id="produtos" className="py-36 px-8 bg-(--color-bg) w-full relative">
