@@ -5,7 +5,7 @@ import './lp.css'
 const jetbrainsMono = JetBrains_Mono({
   variable: '--font-jetbrains',
   subsets: ['latin'],
-  weight: ['400', '500'],
+  weight: ['400', '500', '600'],
   display: 'swap',
 })
 

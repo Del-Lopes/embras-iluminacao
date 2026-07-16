@@ -64,6 +64,9 @@ const securityHeaders = [
       //  - r2PublicOrigin → fetch the .glb / textures over the public domain
       //  - www.gstatic.com → model-viewer fetches the Draco/KTX2 decoder libs from here
       `connect-src 'self' blob: data: https://*.supabase.co wss://*.supabase.co https://www.gstatic.com ${r2S3Origin} ${r2PublicOrigin}`,
+      // Vídeo institucional de fundo embedado do YouTube (domínio nocookie, sem
+      // tracking). Sem isto o iframe cai no default-src 'self' e é bloqueado.
+      "frame-src https://www.youtube-nocookie.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

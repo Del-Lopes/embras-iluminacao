@@ -1,7 +1,10 @@
 import HeroPill from './HeroPill'
+import LineCarousel from './LineCarousel'
+import type { CarouselLine } from './LineCarousel'
 
 interface ProductsProps {
   openForm: () => void
+  lines: CarouselLine[]
 }
 
 function PoleSVGSteel() {
@@ -69,7 +72,7 @@ function PoleSVGAlum() {
   )
 }
 
-export default function Products({ openForm }: ProductsProps) {
+export default function Products({ openForm, lines }: ProductsProps) {
   return (
     <section className="section" id="produtos">
       <div className="section-inner">
@@ -164,9 +167,18 @@ export default function Products({ openForm }: ProductsProps) {
           </div>
         </div>
 
-        <div style={{ marginTop: 40, display: 'flex', justifyContent: 'center', gap: 12 }}>
+        {/* Título highlight + carrossel de linhas (Aço / Alumínio) */}
+        <h3 className="prod-matter-title">
+          Qualidade <span className="dim">traduzida</span>
+          <br />
+          em detalhes.
+        </h3>
+
+        <LineCarousel lines={lines} />
+
+        <div style={{ marginTop: 56, display: 'flex', justifyContent: 'center', gap: 12 }}>
           <button className="btn" onClick={openForm}>
-            Especificar meu projeto
+            Ver linha completa
           </button>
         </div>
       </div>

@@ -22,13 +22,16 @@ const slides = [
 	},
 ]
 
+// Tempo total que a onda leva para percorrer o parágrafo, do primeiro caractere
+// ao último. A duração do reveal de um slide é este valor + 0.3s (a entrada de
+// cada caractere). É o único número a mexer para acelerar/desacelerar o efeito.
+const REVEAL_SPREAD_S = 1.6
+
 export default function Manifesto() {
 	const { theme } = useTheme()
 	const isDark = theme === 'dark'
 
 	const sectionRef = useRef<HTMLElement>(null)
-	const leftContainerRef = useRef<HTMLDivElement>(null)
-	const rightContainerRef = useRef<HTMLDivElement>(null)
 	const lineHRef = useRef<HTMLDivElement>(null)
 	const lineVRef = useRef<HTMLDivElement>(null)
 	const bgRef = useRef<HTMLDivElement>(null)
@@ -42,7 +45,7 @@ export default function Manifesto() {
 		() => {
 			if (!mounted || !sectionRef.current) return
 
-// 1. Entrance animations - section coming into view
+			// 1. Entrada (scrub) — textos do slide 0 + linha vertical acompanham a seção entrando
 			const entranceTl = gsap.timeline({
 				scrollTrigger: {
 					trigger: sectionRef.current,
@@ -51,8 +54,6 @@ export default function Manifesto() {
 					scrub: 1,
 				},
 			})
-
-			// First slide content entrance (starts at 0% scroll, ends at 100%)
 			entranceTl.fromTo(
 				'.manifesto-left-text:first-child',
 				{ opacity: 0, x: -220 },
@@ -65,8 +66,6 @@ export default function Manifesto() {
 				{ opacity: 1, x: 0, duration: 1 },
 				0
 			)
-
-			// Vertical line: starts at 25% scroll (0.25), ends at 100% (top top)
 			entranceTl.fromTo(
 				lineVRef.current,
 				{ scaleY: 0, transformOrigin: 'top' },
@@ -74,12 +73,12 @@ export default function Manifesto() {
 				0.25
 			)
 
-			// 1.5 Unified Horizontal Line Timeline (spans across the pin)
+			// 1.5 Linha horizontal (scrub)
 			const lineHTl = gsap.timeline({
 				scrollTrigger: {
 					trigger: sectionRef.current,
-					start: 'top 30%', // Starts before pinning
-					end: 'top -30%', // Finishes after panning (during pin)
+					start: 'top 30%',
+					end: 'top -30%',
 					scrub: 1,
 				},
 			})
@@ -88,131 +87,105 @@ export default function Manifesto() {
 				{ scaleX: 0, transformOrigin: 'left' },
 				{ scaleX: 0.7, duration: 0.75, ease: 'none' }
 			)
-			lineHTl.to(lineHRef.current, {
-				scaleX: 1,
-				duration: 0.8,
-				ease: 'none',
+			lineHTl.to(lineHRef.current, { scaleX: 1, duration: 0.8, ease: 'none' })
+
+			const leftTexts = gsap.utils.toArray<HTMLElement>('.manifesto-left-text')
+			const rightTexts = gsap.utils.toArray<HTMLElement>('.manifesto-right-text')
+
+			// Slides 1 e 2 começam ocultos
+			gsap.set(leftTexts.slice(1), { autoAlpha: 0, y: 50 })
+			gsap.set(rightTexts.slice(1), { autoAlpha: 0, y: 100 })
+
+			// Divide os parágrafos em caracteres — nenhum visível até o reveal.
+			// 'words,chars' e não só 'chars': o agrupamento por palavra é o que
+			// mantém a quebra de linha correta. Sem ele cada caractere vira uma
+			// caixa independente e o texto quebra no meio das palavras.
+			const splits = gsap.utils
+				.toArray<HTMLElement>('.manifesto-p')
+				.map((p) => new SplitText(p, { type: 'words,chars', charsClass: 'char' }))
+			// inline-block permite o transform; os chars começam invisíveis, um
+			// pouco abaixo e desfocados — entram subindo e ganhando foco.
+			gsap.set('.char', {
+				display: 'inline-block',
+				opacity: 0,
+				y: 10,
+				filter: 'blur(8px)',
 			})
 
-			// 2. Timeline for slides (pining at top top)
+			// Reveal do texto: AUTOMÁTICO (roda em tempo real, sem scrub). Disparado
+			// pelo call da timeline ao entrar no slide — sem nenhum outro efeito.
+			const charsOf = (i: number) => splits[i]?.chars ?? []
+			// Cada slide revela UMA vez (não reinicia por re-disparo do scrub)
+			const played: boolean[] = []
+			const autoReveal = (i: number) => {
+				if (played[i]) return
+				played[i] = true
+				const c = charsOf(i)
+				if (c.length) {
+					gsap.to(c, {
+						opacity: 1,
+						y: 0,
+						filter: 'blur(0px)',
+						duration: 0.3,
+						ease: 'power2.out',
+						// `amount` (total distribuído) e não um valor por caractere:
+						// com stagger fixo a duração vira refém do tamanho do texto —
+						// "Valores" (329 chars) levava ~1,5x o tempo de "Visão" (220),
+						// embora os dois fiquem retidos pelo mesmo tempo de scrub.
+						// Assim todo slide revela em amount + duration, seja qual for.
+						stagger: { amount: REVEAL_SPREAD_S },
+						// Solta o filter no fim: filter permanente mantém uma camada
+						// de composição viva por caractere, sem nada a exibir.
+						clearProps: 'filter',
+						overwrite: 'auto',
+					})
+				}
+			}
+
+			// Glow (onEnter) — acende ao ficar 100% visível
+			ScrollTrigger.create({
+				trigger: sectionRef.current,
+				start: 'top top',
+				onEnter: () =>
+					gsap.to(bgRef.current, { opacity: 1, duration: 0.8, ease: 'power2.out' }),
+				onLeaveBack: () => gsap.to(bgRef.current, { opacity: 0, duration: 0.1 }),
+			})
+
+			// 2. Timeline com PIN + SCRUB — troca de slides (o "restante", como no original).
+			//    Apenas o reveal do texto é chamado de forma automática (não scrubbed).
 			const tl = gsap.timeline({
 				scrollTrigger: {
 					trigger: sectionRef.current,
 					start: 'top top',
-					end: '+=300%', // 3 slides depth
+					end: '+=300%',
 					pin: true,
 					scrub: 1,
 				},
 			})
 
-			const leftTexts = gsap.utils.toArray('.manifesto-left-text')
-			const rightTexts = gsap.utils.toArray('.manifesto-right-text')
+			// Slide 0 — reveal automático (dispara uma vez ao entrar)
+			tl.call(() => autoReveal(0), undefined, '+=0.1')
+			tl.to({}, { duration: 1.2 })
 
-			// Initial state (Slide 0 is handled by entranceTl)
-			gsap.set(leftTexts.slice(1), { autoAlpha: 0, y: 50 })
-			gsap.set(rightTexts.slice(1), { autoAlpha: 0, y: 100 })
+			// Transição 0 → 1 (scrub)
+			tl.fromTo(leftTexts[0], { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -50, duration: 0.5 }, '+=0.2')
+			tl.fromTo(rightTexts[0], { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -100, duration: 0.5 }, '<')
+			tl.fromTo(leftTexts[1], { autoAlpha: 0, y: 50 }, { autoAlpha: 1, y: 0, duration: 0.5 }, '+=0.1')
+			tl.fromTo(rightTexts[1], { autoAlpha: 0, y: 100 }, { autoAlpha: 1, y: 0, duration: 0.5 }, '<')
 
-			// Initialize SplitText for all paragraphs
-			const splits = gsap.utils.toArray('.manifesto-p').map(
-				(p) =>
-					new SplitText(p as Element, {
-						type: 'words',
-						wordsClass: 'word',
-					})
-			)
+			// Slide 1 — reveal automático (dispara uma vez ao entrar)
+			tl.call(() => autoReveal(1))
+			tl.to({}, { duration: 1.2 })
 
-			gsap.set('.word', { opacity: 0.2, color: 'var(--color-accent)' })
+			// Transição 1 → 2 (scrub)
+			tl.fromTo(leftTexts[1], { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -50, duration: 0.5 }, '+=0.2')
+			tl.fromTo(rightTexts[1], { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -100, duration: 0.5 }, '<')
+			tl.fromTo(leftTexts[2], { autoAlpha: 0, y: 50 }, { autoAlpha: 1, y: 0, duration: 0.5 }, '+=0.1')
+			tl.fromTo(rightTexts[2], { autoAlpha: 0, y: 100 }, { autoAlpha: 1, y: 0, duration: 0.5 }, '<')
 
-			// Dedicated non-scrubbed behavior for the Background Glow
-			// This guarantees instant disappearance to avoid trailing when scrolling back up.
-			ScrollTrigger.create({
-				trigger: sectionRef.current,
-				start: 'top top',
-				onEnter: () =>
-					gsap.to(bgRef.current, {
-						opacity: 1,
-						duration: 0.8,
-						ease: 'power2.out',
-					}),
-				onLeaveBack: () =>
-					gsap.to(bgRef.current, { opacity: 0, duration: 0.1 }),
-			})
-
-			// (Horizontal line completion is now handled safely by lineHTl above)
-
-			// Slide 0: reveal words (ONLY after line is done)
-			if (splits[0]) {
-				tl.to(
-					splits[0].words,
-					{ opacity: 1, color: 'var(--color-accent)', stagger: 0.1, duration: 0.1 },
-					'+=0.1'
-				)
-			}
-
-			// Transition Slide 0 -> 1
-			tl.fromTo(
-				leftTexts[0] as Element,
-				{ autoAlpha: 1, y: 0 },
-				{ autoAlpha: 0, y: -50, duration: 0.5 },
-				'+=0.2'
-			)
-			tl.fromTo(
-				rightTexts[0] as Element,
-				{ autoAlpha: 1, y: 0 },
-				{ autoAlpha: 0, y: -100, duration: 0.5 },
-				'<'
-			)
-			tl.fromTo(
-				leftTexts[1] as Element,
-				{ autoAlpha: 0, y: 50 },
-				{ autoAlpha: 1, y: 0, duration: 0.5 },
-				'+=0.1'
-			)
-			tl.fromTo(
-				rightTexts[1] as Element,
-				{ autoAlpha: 0, y: 100 },
-				{ autoAlpha: 1, y: 0, duration: 0.5 },
-				'<'
-			)
-
-			// Slide 1: reveal words
-			if (splits[1]) {
-				tl.to(splits[1].words, { opacity: 1, color: 'var(--color-accent)', stagger: 0.1, duration: 0.1 })
-			}
-
-			// Transition Slide 1 -> 2
-			tl.fromTo(
-				leftTexts[1] as Element,
-				{ autoAlpha: 1, y: 0 },
-				{ autoAlpha: 0, y: -50, duration: 0.5 },
-				'+=0.2'
-			)
-			tl.fromTo(
-				rightTexts[1] as Element,
-				{ autoAlpha: 1, y: 0 },
-				{ autoAlpha: 0, y: -100, duration: 0.5 },
-				'<'
-			)
-			tl.fromTo(
-				leftTexts[2] as Element,
-				{ autoAlpha: 0, y: 50 },
-				{ autoAlpha: 1, y: 0, duration: 0.5 },
-				'+=0.1'
-			)
-			tl.fromTo(
-				rightTexts[2] as Element,
-				{ autoAlpha: 0, y: 100 },
-				{ autoAlpha: 1, y: 0, duration: 0.5 },
-				'<'
-			)
-
-			// Slide 2: reveal words
-			if (splits[2]) {
-				tl.to(splits[2].words, { opacity: 1, color: 'var(--color-accent)', stagger: 0.1, duration: 0.1 })
-			}
-
-			// Stay at slide 2 for a bit
-			tl.to({}, { duration: 0.5 })
+			// Slide 2 — reveal automático (dispara uma vez ao entrar)
+			tl.call(() => autoReveal(2))
+			tl.to({}, { duration: 1.2 })
 		},
 		{ dependencies: [mounted], scope: sectionRef }
 	)
@@ -222,6 +195,7 @@ export default function Manifesto() {
 	return (
 		<section
 			ref={sectionRef}
+			id="manifesto"
 			className="h-screen w-full bg-(--color-bg) flex overflow-hidden relative"
 		>
 			{/* BACKGROUND GLOW */}
@@ -240,7 +214,7 @@ export default function Manifesto() {
 				{/* LEFT COLUMN (70%) */}
 				<div className="w-[70%] h-full flex flex-col justify-between pl-12 md:pl-24 pr-0 py-24 relative overflow-hidden">
 					<div className="flex-1 flex items-center relative pr-12 md:pr-24">
-						{slides.map((slide, i) => (
+						{slides.map((slide) => (
 							<div
 								key={slide.id}
 								className="manifesto-left-text absolute inset-0 flex items-center"
@@ -283,7 +257,7 @@ export default function Manifesto() {
 
 				{/* RIGHT COLUMN (30%) */}
 				<div className="w-[30%] h-full relative overflow-hidden flex items-center justify-center bg-(--color-bg)">
-					{slides.map((slide, i) => (
+					{slides.map((slide) => (
 						<div
 							key={slide.id}
 							className="manifesto-right-text absolute inset-0 flex items-center justify-center"

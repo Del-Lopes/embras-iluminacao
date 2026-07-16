@@ -34,11 +34,6 @@ export default function CTAFinal({ copy, openForm }: CTAFinalProps) {
             WhatsApp direto
           </a>
         </div>
-
-        <div className="cta-ps">
-          <div className="cta-ps-label">PS · Para quem chegou até aqui</div>
-          <p>{copy.ps}</p>
-        </div>
       </div>
     </section>
   )

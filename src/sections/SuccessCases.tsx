@@ -18,13 +18,35 @@ export default function SuccessCases() {
 	const cardsRef = useRef<(HTMLDivElement | null)[]>([])
 	const [mounted, setMounted] = useState(false)
 
-	useEffect(() => { setMounted(true) }, [])
+	useEffect(() => {
+		setMounted(true)
+	}, [])
 
 	const cases = [
-		{ id: 1, title: 'Mansão Alpha', location: 'São Paulo', image: '/images/case-1.png' },
-		{ id: 2, title: 'Fazenda Aurora', location: 'Minas Gerais', image: '/images/hero.png' },
-		{ id: 3, title: 'Apartamento Garden', location: 'Rio de Janeiro', image: '/images/case-1.png' },
-		{ id: 4, title: 'Residência Moderna', location: 'Curitiba', image: '/images/hero.png' },
+		{
+			id: 1,
+			title: 'Mansão Alpha',
+			location: 'São Paulo',
+			image: '/images/case-1.png',
+		},
+		{
+			id: 2,
+			title: 'Fazenda Aurora',
+			location: 'Minas Gerais',
+			image: '/images/hero.png',
+		},
+		{
+			id: 3,
+			title: 'Apartamento Garden',
+			location: 'Rio de Janeiro',
+			image: '/images/case-1.png',
+		},
+		{
+			id: 4,
+			title: 'Residência Moderna',
+			location: 'Curitiba',
+			image: '/images/hero.png',
+		},
 	]
 
 	useGSAP(
@@ -55,26 +77,62 @@ export default function SuccessCases() {
 				},
 			})
 
-			tlGrid.fromTo(cards[0], { x: offset, y: offset }, { x: 0, y: 0, ease: 'none' }, 0)
-			tlGrid.fromTo(cards[1], { x: -offset, y: offset }, { x: 0, y: 0, ease: 'none' }, 0)
-			tlGrid.fromTo(cards[2], { x: offset, y: -offset }, { x: 0, y: 0, ease: 'none' }, 0)
-			tlGrid.fromTo(cards[3], { x: -offset, y: -offset }, { x: 0, y: 0, ease: 'none' }, 0)
-			tlGrid.fromTo(lineH, { scaleX: 0, opacity: 0 }, { scaleX: 1, opacity: 1, ease: 'none' }, 0)
-			tlGrid.fromTo(lineV, { scaleY: 0, opacity: 0 }, { scaleY: 1, opacity: 1, ease: 'none' }, 0)
+			tlGrid.fromTo(
+				cards[0],
+				{ x: offset, y: offset },
+				{ x: 0, y: 0, ease: 'none' },
+				0
+			)
+			tlGrid.fromTo(
+				cards[1],
+				{ x: -offset, y: offset },
+				{ x: 0, y: 0, ease: 'none' },
+				0
+			)
+			tlGrid.fromTo(
+				cards[2],
+				{ x: offset, y: -offset },
+				{ x: 0, y: 0, ease: 'none' },
+				0
+			)
+			tlGrid.fromTo(
+				cards[3],
+				{ x: -offset, y: -offset },
+				{ x: 0, y: 0, ease: 'none' },
+				0
+			)
+			tlGrid.fromTo(
+				lineH,
+				{ scaleX: 0, opacity: 0 },
+				{ scaleX: 1, opacity: 1, ease: 'none' },
+				0
+			)
+			tlGrid.fromTo(
+				lineV,
+				{ scaleY: 0, opacity: 0 },
+				{ scaleY: 1, opacity: 1, ease: 'none' },
+				0
+			)
 
 			const tlLogo = gsap.timeline({
 				scrollTrigger: {
 					trigger: grid,
-					start: 'top 35%',
-					end: 'bottom 95%',
+					start: 'center bottom',
+					end: 'center 80%',
 					scrub: 0.8,
 					invalidateOnRefresh: true,
 				},
 			})
 
-			tlLogo.fromTo(logo, { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, ease: 'power2.out' })
+			tlLogo.fromTo(
+				logo,
+				{ opacity: 0, scale: 0.85 },
+				{ opacity: 1, scale: 1, ease: 'power2.out' }
+			)
 
-			return () => { ScrollTrigger.getAll().forEach((t) => t.kill()) }
+			return () => {
+				ScrollTrigger.getAll().forEach((t) => t.kill())
+			}
 		},
 		{ scope: sectionRef, dependencies: [mounted] }
 	)
@@ -82,22 +140,27 @@ export default function SuccessCases() {
 	return (
 		<section
 			ref={sectionRef}
+			id="projetos"
 			className="py-36 px-8 md:px-12 max-w-7xl mx-auto bg-(--color-bg) overflow-hidden"
 		>
 			<div className="mb-32 flex flex-col md:flex-row md:items-end md:justify-between gap-8">
 				<div className="flex flex-col gap-4">
 					<AnimatedPill className="text-(--color-muted) uppercase w-fit">
-						Cases de sucesso
+						Projetos
 					</AnimatedPill>
 					<AnimatedHeading className="text-5xl md:text-7xl font-(--font-heading) uppercase leading-tight md:leading-[82px] tracking-tighter">
 						Onde a luz <br />
 						encontra a <br />
-						<span className="text-(--color-highlight)">arquitetura</span>
+						<span className="text-(--color-highlight)">
+							arquitetura
+						</span>
 					</AnimatedHeading>
 				</div>
 				<div className="max-w-md">
 					<AnimatedParagraph>
-						Nossos projetos são intervenções artísticas que valorizam cada volume, material e textura do ambiente construído.
+						Nossos projetos são intervenções artísticas que
+						valorizam cada volume, material e textura do ambiente
+						construído.
 					</AnimatedParagraph>
 				</div>
 			</div>
@@ -106,21 +169,40 @@ export default function SuccessCases() {
 				<div
 					ref={lineHRef}
 					className="absolute top-1/2 left-0 w-full h-px z-5 pointer-events-none"
-					style={{ backgroundColor: 'var(--color-border)', transformOrigin: 'center', transform: 'scaleX(0)', opacity: 0 }}
+					style={{
+						backgroundColor: 'var(--color-border)',
+						transformOrigin: 'center',
+						transform: 'scaleX(0)',
+						opacity: 0,
+					}}
 				/>
 				<div
 					ref={lineVRef}
 					className="absolute left-1/2 top-0 w-px h-full z-5 pointer-events-none"
-					style={{ backgroundColor: 'var(--color-border)', transformOrigin: 'center', transform: 'scaleY(0)', opacity: 0 }}
+					style={{
+						backgroundColor: 'var(--color-border)',
+						transformOrigin: 'center',
+						transform: 'scaleY(0)',
+						opacity: 0,
+					}}
 				/>
 				<div
 					ref={logoRef}
 					className="absolute top-1/2 left-1/2 z-10 pointer-events-none"
-					style={{ opacity: 0, transform: 'translate(-50%, -50%) scale(0.85)' }}
+					style={{
+						opacity: 0,
+						transform: 'translate(-50%, -50%) scale(0.85)',
+					}}
 				>
 					<div className="w-[60px] h-[60px] relative bg-[#050505] rounded-full flex items-center justify-center p-2">
 						<div className="w-full h-full relative">
-							<Image src="/images/embras-form-w.png" alt="Embras" fill sizes="60px" className="object-contain" />
+							<Image
+								src="/images/embras-form-w.png"
+								alt="Embras"
+								fill
+								sizes="60px"
+								className="object-contain"
+							/>
 						</div>
 					</div>
 				</div>
@@ -129,7 +211,9 @@ export default function SuccessCases() {
 					{cases.map((project, index) => (
 						<div
 							key={project.id}
-							ref={(el) => { cardsRef.current[index] = el }}
+							ref={(el) => {
+								cardsRef.current[index] = el
+							}}
 							className="group cursor-pointer"
 						>
 							<div className="aspect-square bg-[#0f0f0f] border border-(--color-border) relative overflow-hidden transition-all duration-700 group-hover:border-white/30">

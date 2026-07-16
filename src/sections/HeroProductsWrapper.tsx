@@ -6,48 +6,206 @@ import { gsap, ScrollTrigger } from '@/lib/gsap'
 import { useGSAP } from '@gsap/react'
 import ThemeToggle from '@/components/common/ThemeToggle'
 import { navItems } from '@/config/navigation'
+import SparklesCore from '@/components/common/SparklesCore'
+import ImageGallery from '@/components/common/ImageGallery'
+import CascadeText from '@/components/common/CascadeText'
+import { useTheme } from '@/components/common/ThemeProvider'
 
-const products = [
-	{
-		id: 1,
-		name: 'Luminária Arch 01',
-		category: 'Modern',
-		image: '/images/product-1.png',
-	},
-	{
-		id: 2,
-		name: 'Luminária Arch 02',
-		category: 'Industrial',
-		image: '/images/product-2.png',
-	},
-	{
-		id: 3,
-		name: 'Luminária Arch 03',
-		category: 'Luxury',
-		image: '/images/product-1.png',
-	},
-	{
-		id: 4,
-		name: 'Luminária Arch 04',
-		category: 'Minimal',
-		image: '/images/product-2.png',
-	},
+// Galeria no topo da cena. Placeholders do próprio projeto — trocar pelas fotos
+// reais do catálogo quando houver.
+const GALLERY_IMAGES = [
+	'/images/lustres-dourado.webp',
+	'/images/product-1.png',
+	'/images/case-1.png',
+	'/images/product-2.png',
+	'/images/lustre.png',
+	'/images/hero.png',
 ]
+const GALLERY_TOP = '8vh'
+const GALLERY_H = '42vh'
+// Largura útil do container da galeria (`w-full max-w-5xl px-4`): capada em
+// 1024px menos 32px de padding. Ou seja, ela NÃO cresce com o viewport — daí o
+// texto EMBRAS derivar deste mesmo valor, e não de vw (ver EMBRAS_FONT_CSS).
+const GALLERY_W_CSS = 'min(100vw - 32px, 992px)'
+const galleryWidthPx = () => Math.min(window.innerWidth - 32, 992)
+
+// --- Tema light: depois dos 100%, a cena vira clara ---
+// A transição de entrada (escurecer + subir o texto) NÃO muda: ela continua indo
+// para o preto. Só ao chegar nos 100% o fundo troca para claro.
+const SCENE_DARK = '#050505' // cor do overlay = cena escura padrão
+const SCENE_LIGHT = '#F5F5F5'
+const EMBRAS_DARK = '#F8F7F3' // cor durante a subida, antes dos 100%
+const PARTICLE_DARK = '#FFFFFF' // claras no tema dark
+const PARTICLE_LIGHT = '#000000' // oposto no espectro do preto
+const THEME_FADE_S = 0.6 // rápido, porém suave
+
+// SUBIDA — máscara com dissolve longo, a partir de 45%. Só a camada da subida a
+// usa: na CHEGADA o texto é dourado chapado, sem máscara nenhuma.
+const EMBRAS_MASK_RISE =
+	'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 45%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.3) 55%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0.1) 65%, rgba(0,0,0,0.05) 70%, rgba(0,0,0,0.01) 75%, rgba(0,0,0,0.0) 80%, rgba(0,0,0,0) 90%, rgba(0,0,0,0) 100%)'
+
+// Classe compartilhada pelas duas camadas do texto — elas precisam ficar
+// exatamente sobrepostas, então qualquer divergência aqui desalinharia.
+// O tamanho NÃO fica aqui: o Tailwind exige literal (text-[12vw]), o que duplicaria
+// o EMBRAS_FONT_CSS e deixaria os dois livres para divergir. Vai por style inline.
+const EMBRAS_TEXT_CLS =
+	'font-(--font-heading) uppercase leading-none tracking-[0.05em] whitespace-nowrap'
+// Estado de chegada: dourado sólido, igual nos dois temas. var(--color-highlight)
+// resolve o tom por tema sozinho (#C9A86A dark / #8A6A28 light) — a única coisa
+// que muda entre eles.
+
+// --- Centralizador do slide ---
+// Alcance (fração da tela) para ele arrematar o encaixe.
+// Entrada: precisa cobrir o ponto em que a tela já ficou preta (DARKEN_END, a
+// 50% = 450px de distância). Fica acima de 0.5 porque a medição é feita com o
+// Lenis ainda deslizando (~86% do caminho), o que encurta o alcance na prática.
+const SNAP_ENTER_REACH = 0.55
+// Saída: curto — corrige só o excesso, sem prender quem quer seguir.
+const SNAP_EXIT_REACH = 0.15
+// Tempo após o usuário PARAR DE ROLAR (último gesto) para o encaixe disparar.
+const SNAP_DELAY_MS = 800
+// Duração do movimento do encaixe em si (deslize até a posição enquadrada).
+const SNAP_DURATION_S = 1.2
+
+// Onde o escurecimento do hero se completa, medido pela posição do topo da seção
+// seguinte na tela. 'top bottom' = scroll 0 (início); 'top top' = 1 tela de scroll.
+// Portanto 'top 50%' = meia tela → escurece 2x mais rápido. Menor % = mais rápido.
+const DARKEN_END = 'top 50%'
+
+// --- Texto EMBRAS ---
+// A fonte deriva da LARGURA DA GALERIA: o texto tem que medir o mesmo que ela.
+// 4.05 é a razão largura/fonte de "EMBRAS" nesta face — medida no browser (700px
+// de largura a 172,8px de fonte) e estável entre viewports, porque depende só das
+// métricas dos glifos. Se a fonte ou o tracking mudarem, remedir.
+// Em `calc` e não em vw: a galeria é capada em 1024px, então num monitor largo o
+// texto em vw cresceria além dela. Aqui os dois param juntos.
+const EMBRAS_W_PER_FONT = 4.05
+const EMBRAS_FONT_CSS = `calc(${GALLERY_W_CSS} / ${EMBRAS_W_PER_FONT})`
+const embrasFontPx = () => galleryWidthPx() / EMBRAS_W_PER_FONT
+// Posição FINAL: centro do texto a 70vh (= 20% abaixo do centro da tela).
+// centro = 100vh − bottom − fonte/2  →  bottom = 30vh − fonte/2
+const EMBRAS_BOTTOM = `calc(30vh - ${GALLERY_W_CSS} / ${EMBRAS_W_PER_FONT} / 2)`
+// Posição INICIAL: a mesma de antes (base no rodapé + sangramento de 22%), cujo
+// centro ficava em 100vh − 0.28×fonte. Como o repouso agora é 70vh, o deslocamento
+// inicial é: 30vh − 0.28×fonte. Em px, para o GSAP animar até 0.
+const embrasStartY = () => window.innerHeight * 0.3 - embrasFontPx() * 0.28
+
+// --- Partículas (campo de fundo, atrás do texto e da galeria) ---
+// Cascata (nesta ordem): o texto encaixa → fundo/texto trocam de cor e a galeria
+// entra (sem atraso nenhum) → as partículas acendem logo atrás. Nada antes dos
+// 100%. Os tempos encolheram junto com a saída do feixe: ele era o degrau do meio
+// da cascata, e sem ele não há mais o que esperar entre a cor e as partículas.
+const SPARKLES_DELAY_S = 0.5
+const SPARKLES_FADE_S = 1.4 // ainda controlada, só que sem arrastar
+// A densidade do tsparticles é por ÁREA (400×400), então cobrir a tela inteira
+// multiplicaria a contagem por ~3 em relação à faixa de 36vh de antes. 70 devolve
+// o total ao mesmo patamar de ~550 numa tela 1440×900 — o campo fica mais espalhado,
+// não mais pesado.
+const SPARKLES_DENSITY = 70
 
 export default function HeroProductsWrapper() {
 	const heroRef = useRef<HTMLElement>(null)
 	const lineRef = useRef<HTMLDivElement>(null)
 	const overlayRef = useRef<HTMLDivElement>(null)
-	const embrasTextRef = useRef<HTMLHeadingElement>(null)
+	const embrasTextRef = useRef<HTMLDivElement>(null)
+	const embrasRiseRef = useRef<HTMLHeadingElement>(null)
+	const embrasFinalRef = useRef<HTMLHeadingElement>(null)
 
 	const carouselTriggerRef = useRef<HTMLDivElement>(null)
-	const carouselSectionRef = useRef<HTMLDivElement>(null)
+	const sparklesRef = useRef<HTMLDivElement>(null)
+
+	const { theme } = useTheme()
+	const isLight = theme === 'light'
 
 	const [mounted, setMounted] = useState(false)
+	// true depois que a tela chega a 100% (mesmo gatilho do feixe/partículas).
+	const [revealed, setRevealed] = useState(false)
 
 	useEffect(() => {
 		setMounted(true)
 	}, [])
+
+	// --- Tema light: ao chegar nos 100%, a cena escura vira clara. ---
+	// Fica num efeito próprio (e não no useGSAP) porque depende do tema: o cleanup
+	// do useGSAP mata TODOS os ScrollTriggers da página, então recriá-lo a cada
+	// toggle de tema quebraria as outras seções. Aqui, alternar o tema com a cena
+	// já aberta também reaplica as cores na hora.
+	useEffect(() => {
+		if (!mounted) return
+		const light = revealed && isLight
+		gsap.to(overlayRef.current, {
+			backgroundColor: light ? SCENE_LIGHT : SCENE_DARK,
+			duration: THEME_FADE_S,
+			ease: 'power2.inOut',
+			overwrite: 'auto',
+		})
+		// Aos 100%, cross-fade entre as duas camadas do texto: sai a clara da
+		// subida, entra a dourada que dissolve para escuro. Anima só opacidade —
+		// o gradiente é CSS e resolve o dourado por tema sozinho.
+		gsap.to(embrasRiseRef.current, {
+			opacity: revealed ? 0 : 1,
+			duration: THEME_FADE_S,
+			ease: 'power2.inOut',
+			overwrite: 'auto',
+		})
+		gsap.to(embrasFinalRef.current, {
+			opacity: revealed ? 1 : 0,
+			duration: THEME_FADE_S,
+			ease: 'power2.inOut',
+			overwrite: 'auto',
+		})
+	}, [mounted, revealed, isLight])
+
+	// --- Centralizador: encaixa o slide no centro quando o scroll para perto dele.
+	// Espera o scroll ASSENTAR (debounce) e só então corrige, e apenas se já estiver
+	// perto (25% da tela). Ou seja: não sequestra a rolagem — o usuário conduz, o
+	// encaixe só arremata.
+	useEffect(() => {
+		if (!mounted) return
+		const lenis = (
+			window as unknown as {
+				__lenis?: {
+					on: (e: string, cb: () => void) => void
+					off: (e: string, cb: () => void) => void
+					scrollTo: (
+						t: HTMLElement,
+						o?: { duration?: number }
+					) => void
+				}
+			}
+		).__lenis
+		if (!lenis) return
+
+		let timer: number | null = null
+		const settle = () => {
+			const el = carouselTriggerRef.current
+			if (!el) return
+			const delta = el.getBoundingClientRect().top
+			const vh = window.innerHeight
+			// delta > 0: seção ainda abaixo (entrando) → aciona mais cedo.
+			// delta < 0: já passou (saindo) → alcance menor, só corrige o excesso.
+			const reach = vh * (delta > 0 ? SNAP_ENTER_REACH : SNAP_EXIT_REACH)
+			if (Math.abs(delta) > 2 && Math.abs(delta) < reach) {
+				lenis.scrollTo(el, { duration: SNAP_DURATION_S })
+			}
+		}
+
+		// Conta a partir do GESTO do usuário (roda/toque), e não do evento 'scroll'
+		// do Lenis: ele segue emitindo durante todo o easing dele (~1,9s), o que
+		// empurrava o encaixe para ~2,4s depois da roda.
+		const onInput = () => {
+			if (timer !== null) clearTimeout(timer)
+			timer = window.setTimeout(settle, SNAP_DELAY_MS)
+		}
+
+		window.addEventListener('wheel', onInput, { passive: true })
+		window.addEventListener('touchmove', onInput, { passive: true })
+		return () => {
+			window.removeEventListener('wheel', onInput)
+			window.removeEventListener('touchmove', onInput)
+			if (timer !== null) clearTimeout(timer)
+		}
+	}, [mounted])
 
 	useGSAP(
 		() => {
@@ -56,7 +214,6 @@ export default function HeroProductsWrapper() {
 				!heroRef.current ||
 				!lineRef.current ||
 				!carouselTriggerRef.current ||
-				!carouselSectionRef.current ||
 				!overlayRef.current
 			)
 				return
@@ -73,7 +230,9 @@ export default function HeroProductsWrapper() {
 				},
 			})
 
-			// 2. Integration Transition: Darken Hero as Carousel comes from bottom
+			// 2. Escurecimento do hero conforme a seção seguinte sobe.
+			//    Completa na METADE do percurso (DARKEN_END) em vez de só no fim:
+			//    a tela fica preta mais cedo e o EMBRAS termina de subir sobre ela.
 			gsap.fromTo(
 				overlayRef.current,
 				{ opacity: 0 },
@@ -82,65 +241,75 @@ export default function HeroProductsWrapper() {
 					ease: 'none',
 					scrollTrigger: {
 						trigger: carouselTriggerRef.current,
-						start: 'top bottom', // When carousel enters screen
-						end: 'top top', // When carousel reaches top (pins)
+						start: 'top bottom', // seção entra na tela (scroll 0)
+						end: DARKEN_END,
 						scrub: true,
 					},
 				}
 			)
 
-			// Subtle parallax/blur on EMBRAS text during transition for continuity
-			// Changed from { opacity: 1 } to { opacity: 0 } so it starts invisible on Hero and appears during scroll transition
+			// Parte da posição original (rodapé) e sobe até 70vh conforme o scroll.
+			// `y` é função para recalcular no refresh/resize.
+			// O blur acompanha o percurso e só zera na chegada: o texto ENTRA EM FOCO
+			// (borrado durante a subida → nítido quando a tela está 100%).
 			gsap.fromTo(
 				embrasTextRef.current,
-				{ opacity: 0, filter: 'blur(0px)', y: '22%' },
+				{ opacity: 0, filter: 'blur(4px)', y: () => embrasStartY() },
 				{
-					opacity: 0.3,
-					filter: 'blur(4px)',
-					y: '0%', // slightly move up to follow natural scroll
+					opacity: 1, // chega 100% visível e nítido ao fim do percurso
+					filter: 'blur(0px)',
+					y: 0,
 					ease: 'none',
 					scrollTrigger: {
 						trigger: carouselTriggerRef.current,
 						start: 'top 95%',
 						end: 'top top',
 						scrub: true,
+						invalidateOnRefresh: true,
 					},
 				}
 			)
 
-			// 3. Carousel Horizontal Pin & Static Fade-In Animation (Timeline)
-			// Elements are completely static on screen (pinned at top: 0) while they smoothly fade in.
-			const tl = gsap.timeline({
-				scrollTrigger: {
-					trigger: carouselTriggerRef.current,
-					start: 'top top',
-					end: () =>
-						`+=${carouselSectionRef.current!.scrollWidth * 0.5}`, // Shorter scroll distance to increase overall speed
-					scrub: 1,
-					pin: true,
-					anticipatePin: 1,
-					invalidateOnRefresh: true,
+			// (Sem pin.) O pin adicionava uma tela extra de scroll parado só para
+			// segurar a cena — era o "scrollar bastante" para sair do hero.
+			// Agora o hero é 1 slide: a tela seguinte é o próprio trecho em que o
+			// EMBRAS sobe, e ao terminar o hero já sai para as linhas de produtos.
+
+			// 4. Cascata ao chegar a 100%: cor do fundo/texto e galeria entram juntas,
+			//    e as partículas acendem depois, com entrada lenta. Nada antes dos
+			//    100%. Não é scrub — são fades por tempo, daí o gatilho ser onEnter.
+			ScrollTrigger.create({
+				trigger: carouselTriggerRef.current,
+				// 'top top+=4' e não 'top top': o centralizador pousa EXATAMENTE em
+				// 'top top', e o último evento de scroll do Lenis chega em ~899,97 —
+				// ainda antes do gatilho. Ele assenta nos 900 sem emitir mais nada, e
+				// sem novo evento o onEnter nunca é avaliado. Os 4px tiram o gatilho
+				// de cima da borda (dispara a 99,6% — imperceptível, e as entradas
+				// lentas garantem que a luz só se forme com o slide já enquadrado).
+				start: 'top top+=4',
+				onEnter: () => {
+					// Dispara primeiro a troca de cor do fundo/texto + a galeria.
+					setRevealed(true)
+					// Partículas: por último e devagar — a cascata.
+					gsap.to(sparklesRef.current, {
+						opacity: 1,
+						duration: SPARKLES_FADE_S,
+						delay: SPARKLES_DELAY_S,
+						ease: 'power1.inOut',
+						overwrite: 'auto',
+					})
+				},
+				// Voltou antes dos 100%: apaga (o overwrite cancela um fade-in que
+				// ainda esteja em curso, inclusive o atrasado).
+				onLeaveBack: () => {
+					setRevealed(false)
+					gsap.to(sparklesRef.current, {
+						opacity: 0,
+						duration: 0.25,
+						overwrite: 'auto',
+					})
 				},
 			})
-
-			// Phase 1: Fade in the content rapidly (first 5% of scroll)
-			tl.to(carouselSectionRef.current, {
-				opacity: 1,
-				duration: 0.15,
-				ease: 'power1.inOut',
-			})
-				// Phase 2: Horizontal scroll perfectly to the right edge
-				.to(carouselSectionRef.current, {
-					x: () => {
-						// We calculate the exact overflow distance taking into account the screen width
-						const offset = window.innerWidth
-						return -(
-							carouselSectionRef.current!.scrollWidth - offset
-						)
-					},
-					ease: 'none',
-					duration: 0.95,
-				})
 
 			return () => {
 				ScrollTrigger.getAll().forEach((t) => t.kill())
@@ -157,8 +326,9 @@ export default function HeroProductsWrapper() {
 		)
 	}
 
+	// z-10 no wrapper: mantém a cena acima da seção seguinte no empilhamento.
 	return (
-		<div className="relative w-full bg-black">
+		<div className="relative z-10 w-full bg-black">
 			{/* --- HERO SECTION (STICKY) --- */}
 			<section
 				ref={heroRef}
@@ -247,9 +417,17 @@ export default function HeroProductsWrapper() {
 							importa. Soluções exclusivas para residências,
 							estúdios e ambientes de alto padrão.
 						</p>
-						<button className="rounded-none border border-white px-8 py-4 bg-transparent text-white hover:bg-white hover:text-black transition-all uppercase tracking-[2px] text-[11px] font-semibold backdrop-blur-sm">
+						{/* <a> e não <button>: é navegação para a seção de linhas de
+						    produtos, então precisa de href (funciona sem JS, abre em
+						    nova aba, e o Lenis o intercepta para rolar suave).
+						    inline-block: em <a> inline o padding vertical não empurra
+						    a caixa, e a moldura sairia achatada. */}
+						<a
+							href="#produtos"
+							className="inline-block rounded-none border border-white px-8 py-4 bg-transparent text-white hover:bg-white hover:text-black transition-all uppercase tracking-[2px] text-[11px] font-semibold backdrop-blur-sm"
+						>
 							Conheça nossas linhas
-						</button>
+						</a>
 					</div>
 				</div>
 
@@ -282,76 +460,128 @@ export default function HeroProductsWrapper() {
 					className="absolute inset-0 bg-[#050505] z-30 pointer-events-none opacity-0"
 				/>
 
-				{/* BOTTOM GRADIENT TEXT - EMBRAS - RESTORED TO HERO SECTION */}
+				{/* PARTÍCULAS — campo de fundo cobrindo o container inteiro, sem
+				    máscara (antes eram uma faixa concentrada sob o feixe).
+				    Vivem DENTRO do hero, e não no wrapper como antes: o hero é um
+				    contexto de empilhamento (z-0), então qualquer camada no wrapper
+				    fica acima dele INTEIRO — inclusive do texto. Aqui, entre o overlay
+				    (z-30) e o EMBRAS (z-40), elas ficam atrás do texto; a galeria é
+				    z-30 no wrapper, logo acima do hero todo. Ordem final:
+				    partículas < texto < galeria. */}
 				<div
-					className="absolute left-0 w-full pointer-events-none select-none z-40 flex items-end justify-center overflow-hidden"
+					ref={sparklesRef}
+					className="absolute inset-0 z-35 pointer-events-none opacity-0"
+				>
+					<SparklesCore
+						minSize={0.4}
+						maxSize={1}
+						particleDensity={SPARKLES_DENSITY}
+						speed={2}
+						particleColor={isLight ? PARTICLE_LIGHT : PARTICLE_DARK}
+						className="w-full h-full"
+					/>
+				</div>
+
+				{/* BOTTOM GRADIENT TEXT - EMBRAS - RESTORED TO HERO SECTION */}
+				{/* SEM overflow-hidden de propósito: o texto agora percorre um trecho
+				    longo (parte do rodapé até 70vh), e o corte deste container ficaria
+				    no MEIO da tela. O próprio hero já tem overflow-hidden, então o
+				    sangramento continua sendo cortado na base da tela, como no original. */}
+				<div
+					className="absolute left-0 w-full pointer-events-none select-none z-40 flex items-end justify-center"
 					style={{
-						bottom: 0,
-						height: '20vw',
+						bottom: EMBRAS_BOTTOM,
+						height: EMBRAS_FONT_CSS,
 					}}
 				>
-					<h2
+					{/* Wrapper recebe a animação de scroll (y / opacity / blur). Dentro
+					    dele, duas camadas do mesmo texto fazem cross-fade aos 100%. */}
+					<div
 						ref={embrasTextRef}
-						className="text-[14vw] md:text-[14vw] font-(--font-heading) uppercase leading-none tracking-[0.05em] whitespace-nowrap text-[#F8F7F3]"
-						style={{
-							transform: 'translateY(18%)',
-							opacity: 0, // initially hide text completely in hero before JS takes over
-							WebkitMaskImage:
-								'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 45%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.3) 55%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0.1) 65%, rgba(0,0,0,0.05) 70%, rgba(0,0,0,0.01) 75%, rgba(0,0,0,0.0) 80%, rgba(0,0,0,0) 90%, rgba(0,0,0,0) 100%)',
-							maskImage:
-								'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 45%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.3) 55%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0.1) 65%, rgba(0,0,0,0.05) 70%, rgba(0,0,0,0.01) 75%, rgba(0,0,0,0.0) 80%, rgba(0,0,0,0) 90%, rgba(0,0,0,0) 100%)',
-						}}
+						className="relative"
+						style={{ opacity: 0 }}
 					>
-						EMBRAS
-					</h2>
+						{/* SUBIDA — claro e dissolvendo na base. */}
+						<h2
+							ref={embrasRiseRef}
+							className={EMBRAS_TEXT_CLS}
+							style={{
+								fontSize: EMBRAS_FONT_CSS,
+								color: EMBRAS_DARK,
+								WebkitMaskImage: EMBRAS_MASK_RISE,
+								maskImage: EMBRAS_MASK_RISE,
+							}}
+						>
+							EMBRAS
+						</h2>
+						{/* CHEGADA — palavra inteira, sem máscara nem recorte, com a
+						    cascata por letra no hover. As duas cores vêm de var(), e o
+						    tema resolve os dois tons sozinho, sem JS: --color-accent é
+						    #FFF no dark / #0A0A0A no light, e --color-highlight é o
+						    dourado de cada tema.
+						    O ref fica no WRAPPER, e não no CascadeText: ele é memo()
+						    sem forwardRef, e é a opacidade deste nó que o GSAP cruza
+						    com a camada da subida.
+						    `flex` no wrapper para o CascadeText (inline-block com
+						    overflow-hidden) não ser alinhado pela baseline da linha —
+						    isso o deslocaria do h2 da subida e a emenda apareceria
+						    como um pulo no cross-fade. */}
+						<div
+							ref={embrasFinalRef}
+							className="absolute top-0 left-0 flex"
+							style={{
+								opacity: 0,
+								// Só há hover depois dos 100%: opacity 0 não impede
+								// hit-test, e esta camada fica POR CIMA da subida. O
+								// container acima é pointer-events-none — 'auto' reabilita.
+								pointerEvents: revealed ? 'auto' : 'none',
+							}}
+						>
+							<CascadeText
+								text="EMBRAS"
+								as="span"
+								ariaHidden
+								className={EMBRAS_TEXT_CLS}
+								fontSize={EMBRAS_FONT_CSS}
+								color="var(--color-accent)"
+								hoverColor="var(--color-highlight)"
+								// padding 0: o default do componente (0.4em nas laterais)
+								// entraria na largura e quebraria o casamento com a galeria.
+								style={{ padding: 0 }}
+							/>
+						</div>
+					</div>
 				</div>
 			</section>
 
-			{/* --- PRODUCT CAROUSEL SECTION --- */}
+			{/* --- SLIDE PÓS-HERO --- */}
+			{/* Uma tela transparente. Ela é o GATILHO do overlay e do texto EMBRAS
+			    (por isso permanece mesmo vazia) e é o trecho de scroll em que o texto
+			    sobe até 70vh. Fundo transparente: o hero escuro atrás é a cena.
+			    pointer-events-none: vazia, mas z-10 a põe acima do hero INTEIRO (z-0)
+			    e cobrindo a tela — sem isto ela intercepta o hover do EMBRAS, que
+			    vive dentro do hero. (A galeria escapava por ser z-30, acima dela.) */}
 			<div
 				ref={carouselTriggerRef}
-				className="relative w-full z-10 overflow-hidden bg-transparent"
-			>
-				{/* Background is explicitly transparent so the dark Hero behind it serves as the scene */}
-				<div
-					ref={carouselSectionRef}
-					className="h-screen flex items-start relative gap-[8vw] md:gap-[4vw] px-[10vw] w-max bg-transparent opacity-0"
-				>
-					<div className="shrink-0 w-[40vw] h-screen flex items-center">
-						<h2 className="text-5xl md:text-7xl font-(--font-heading) uppercase leading-tight md:leading-[82px] text-white drop-shadow-md">
-							Nossa <br /> Seleção <br />{' '}
-							<span className="text-(--color-highlight)">
-								Premium
-							</span>
-						</h2>
+				className="relative w-full h-screen z-10 overflow-hidden bg-transparent pointer-events-none"
+			/>
+
+			{/* --- GALERIA --- */}
+			{/* Camada sticky, ancorada no TOPO da viewport. Sticky (e não dentro da
+			    seção que rola) para ela ENTRAR aos 100%, em vez de deslizar de baixo
+			    junto com a seção. z-30 aqui no wrapper = acima do hero INTEIRO, logo
+			    acima das partículas (que são z-[35] dentro do hero, cujo contexto é
+			    z-0). É a largura deste container que dita o tamanho do texto EMBRAS.
+			    `play={revealed}`: mesma flag da troca de cor do texto, sem atraso —
+			    é o que faz as duas coisas acontecerem juntas. */}
+			<div className="absolute inset-0 z-30 pointer-events-none">
+				<div className="sticky top-0 h-screen w-full">
+					<div
+						className="absolute left-1/2 -translate-x-1/2 w-full max-w-5xl px-4"
+						style={{ top: GALLERY_TOP, height: GALLERY_H }}
+					>
+						<ImageGallery images={GALLERY_IMAGES} play={revealed} />
 					</div>
-
-					{products.map((product) => (
-						<div
-							key={product.id}
-							className="w-[85vw] md:w-[28vw] shrink-0 relative h-[70vh] flex flex-col group cursor-pointer overflow-hidden border border-transparent hover:border-(--color-accent)/30"
-						>
-							{/* Image takes up 70vh space, fully opaque, pinned to top */}
-							<Image
-								src={product.image}
-								alt={product.name}
-								fill
-								sizes="(max-width: 768px) 85vw, 28vw"
-								className="object-cover transition-transform duration-700 group-hover:scale-110"
-							/>
-							<div className="absolute inset-0 bg-linear-to-tr from-transparent to-[#050505]/50 opacity-0 group-hover:opacity-100 transition-opacity" />
-
-							{/* Text block positioned absolute inside the image container */}
-							<div className="absolute bottom-[30px] left-[30px] flex flex-col gap-2 z-10 pointer-events-none drop-shadow-lg">
-								<span className="product-category block text-xs md:text-sm tracking-[0.2em] text-white uppercase">
-									{product.category}
-								</span>
-								<h3 className="text-2xl md:text-3xl font-(--font-heading) uppercase text-white tracking-widest leading-none">
-									{product.name}
-								</h3>
-							</div>
-						</div>
-					))}
 				</div>
 			</div>
 		</div>

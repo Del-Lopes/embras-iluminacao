@@ -13,6 +13,7 @@ import CTAFinal from './CTAFinal'
 import LPFooter from './LPFooter'
 import WhatsAppFab from './WhatsAppFab'
 import Modal from './Modal'
+import type { CarouselLine } from './LineCarousel'
 
 // ── Copy variants ────────────────────────────────────────────────
 export const COPY = {
@@ -68,7 +69,7 @@ export const HEADLINES: Record<
 }
 
 // ── App ──────────────────────────────────────────────────────────
-export default function LandingPage() {
+export default function LandingPage({ lines }: { lines: CarouselLine[] }) {
   const [modalOpen, setModalOpen] = useState(false)
 
   const copy: CopyVariant = COPY.editorial
@@ -83,7 +84,7 @@ export default function LandingPage() {
       <Hero copy={copy} headline={headline} openForm={openForm} />
       <Pain copy={copy} />
       <Solution copy={copy} openForm={openForm} />
-      <Products openForm={openForm} />
+      <Products openForm={openForm} lines={lines} />
       <Proof />
       <ObjectionsAndGuarantee />
       <FAQ openForm={openForm} />

@@ -8,7 +8,8 @@
 /* ── LP-specific design tokens ── */
 .lp-page {
   /* Overrides from globals.css */
-  --color-muted: #6a6a6a;
+  --color-muted: #5b5b5b;
+  --color-border: #5b5b5b;
   --transition-slow: 700ms cubic-bezier(.2,.7,.2,1);
 
   /* LP additions */
@@ -46,7 +47,26 @@ html.light .lp-page {
   --accent-steel: #8a6a28;
   --accent-steel-dim: #b09360;
   --accent-glow: rgba(138,106,40,0.08);
+  /* Inversão perfeita da escala de cinza usada no dark (255 − valor) */
+  --color-muted: #7a7a7a;   /* inverso de #5b5b5b (#a4a4a4), escurecido p/ legibilidade no light */
+  --color-border: #a4a4a4;  /* inverso de #5b5b5b */
 }
+
+/* Light mode: os parágrafos/descritivos usam hex claros no dark (invisíveis em
+   fundo claro), então espelhamos para tons escuros legíveis. muted/bordas
+   ficam em #5b5b5b nos dois temas. */
+html.light .lp-page .body-lg,
+html.light .lp-page .lp-body,
+html.light .lp-page .hero-sub p,
+html.light .lp-page .guar-text p,
+html.light .lp-page .cta-final .body-lg,
+html.light .lp-page .footer-tag { color: #1a1a1a; }
+
+html.light .lp-page .pain-body,
+html.light .lp-page .sol-feature-v,
+html.light .lp-page .obj-a,
+html.light .lp-page .faq-a-inner,
+html.light .lp-page .proof-metric-d { color: #4a4a4a; }
 
 /* ── Primitives ── */
 .lp-page .pill {
@@ -56,7 +76,7 @@ html.light .lp-page {
   font-family: var(--font-body);
   font-size: 11px;
   font-weight: 500;
-  letter-spacing: var(--tracking-pill);
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--color-muted);
 }
@@ -72,8 +92,8 @@ html.light .lp-page {
 
 .lp-page .kicker {
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: var(--tracking-hero);
+  font-size: 14px;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-muted);
 }
@@ -95,15 +115,149 @@ html.light .lp-page {
   letter-spacing: var(--tracking-tight);
   text-transform: uppercase;
 }
-.lp-page .dim { color: var(--color-muted); font-weight: 300; }
+.lp-page .dim { color: var(--accent-steel); font-weight: 300; }
+
+/* Título centralizado — mesmo design do lp-h1 (linha 1 branca, linha 2 dourada leve) */
+.lp-page .prod-matter-title {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: clamp(2.4rem, 5vw, 4.8rem);
+  line-height: 1.02;
+  letter-spacing: var(--tracking-tight);
+  text-transform: uppercase;
+  color: var(--color-accent);
+  text-align: center;
+  margin: 96px 0 56px;
+}
+
+/* Abas do carrossel — estilo do botão "Ver em 3D" + seta/hover + canto ativo */
+.lp-page .lp-tab {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 170px; /* largura fixa (a de "Alumínio") para ambas as abas */
+  padding: 14px 0;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-accent);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    color var(--transition-base),
+    border-color var(--transition-base);
+}
+
+/* Preenchimento branco que entra da esquerda para a direita no hover */
+.lp-page .lp-tab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+  z-index: 0;
+}
+.lp-page .lp-tab:hover::before {
+  transform: scaleX(1);
+}
+.lp-page .lp-tab:hover {
+  color: var(--color-bg);
+  border-color: var(--color-accent);
+}
+
+/* Texto centralizado, acima do preenchimento */
+.lp-page .lp-tab-label {
+  position: relative;
+  z-index: 1;
+}
+
+/* Seta inline (ao lado do nome) — visível no estado normal, acima do preenchimento */
+.lp-page .lp-tab-arrow {
+  display: block;
+  position: relative;
+  z-index: 1;
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+}
+
+/* Ativo: fundo branco sólido + canto diagonal dourado + seta no canto */
+.lp-page .lp-tab[data-active='true'] {
+  background: var(--color-accent);
+  color: var(--color-bg);
+  border-color: var(--color-accent);
+}
+.lp-page .lp-tab[data-active='true'] .lp-tab-arrow {
+  display: none;
+}
+.lp-page .lp-tab[data-active='true']::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 24px;
+  height: 24px;
+  background: var(--accent-steel);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  z-index: 2;
+}
+.lp-page .lp-tab-corner-arrow {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 10px;
+  height: 10px;
+  opacity: 0;
+  color: #0a0a0a;
+  z-index: 3;
+  pointer-events: none;
+}
+.lp-page .lp-tab[data-active='true'] .lp-tab-corner-arrow {
+  opacity: 1;
+}
+
+/* Spinner de loading do visualizador 3D no card */
+.lp-page .lp-line-spinner {
+  width: 34px;
+  height: 34px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-top-color: var(--accent-steel);
+  border-radius: 50%;
+  animation: lp-line-spin 0.8s linear infinite;
+}
+@keyframes lp-line-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Categoria dos cards do carrossel — padrão de label mono dourado da página */
+.lp-page .lp-line-cat {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-steel);
+  margin-bottom: 12px;
+}
 .lp-page .body-lg {
   font-size: 16px;
   line-height: 1.65;
   font-weight: 300;
-  color: var(--color-primary);
+  color: #e5e5e5;
   max-width: 56ch;
 }
-.lp-page .lp-body { font-size: 15px; line-height: 1.65; font-weight: 300; color: var(--color-primary); }
+.lp-page .lp-body { font-size: 15px; line-height: 1.65; font-weight: 300; color: #e5e5e5; }
 
 /* ── Buttons ── */
 .lp-page .btn {
@@ -309,7 +463,7 @@ html.light .lp-page .hero-radial {
 .lp-page .hero-meta-k {
   font-family: var(--font-mono);
   font-size: 9px;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.12em;
   color: var(--color-muted);
   text-transform: uppercase;
 }
@@ -334,8 +488,7 @@ html.light .lp-page .hero-radial {
 }
 .lp-page .hero-headline .accent { color: var(--accent-steel); font-weight: 300; }
 .lp-page .hero-headline .outline {
-  color: transparent;
-  -webkit-text-stroke: 1px var(--color-accent);
+  color: var(--accent-steel);
   font-weight: 300;
 }
 .lp-page .hero-sub {
@@ -345,13 +498,13 @@ html.light .lp-page .hero-radial {
   align-items: end;
   margin-top: 120px;
 }
-.lp-page .hero-sub p { font-size: 17px; font-weight: 300; line-height: 1.55; color: var(--color-primary); max-width: 56ch; }
+.lp-page .hero-sub p { font-size: 17px; font-weight: 300; line-height: 1.55; color: #e5e5e5; max-width: 56ch; }
 .lp-page .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
 .lp-page .hero-micro {
   margin-top: 16px;
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
+  font-size: 12px;
+  letter-spacing: 0.1em;
   color: var(--color-muted);
   text-transform: uppercase;
   display: flex;
@@ -393,8 +546,9 @@ html.light .lp-page .hero-radial {
 .lp-page .hero-stat-num .suffix { color: var(--accent-steel); font-weight: 300; }
 .lp-page .hero-stat-k {
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.25em;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   color: var(--color-muted);
   text-transform: uppercase;
 }
@@ -458,8 +612,8 @@ html.light .lp-page .hero-embras-bleed { -webkit-text-stroke: 1px rgba(0,0,0,0.0
 .lp-page .pain-item:nth-last-child(-n+3) { border-bottom: none; }
 .lp-page .pain-num {
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.25em;
+  font-size: 11px;
+  letter-spacing: 0.12em;
   color: var(--accent-steel);
   text-transform: uppercase;
 }
@@ -472,7 +626,7 @@ html.light .lp-page .hero-embras-bleed { -webkit-text-stroke: 1px rgba(0,0,0,0.0
   text-transform: uppercase;
   color: var(--color-accent);
 }
-.lp-page .pain-body { color: var(--color-muted); font-size: 14px; line-height: 1.55; }
+.lp-page .pain-body { color: #b5b5b5; font-size: 14px; line-height: 1.55; }
 .lp-page .pain-bottom {
   margin-top: 60px;
   padding: 40px;
@@ -526,9 +680,9 @@ html.light .lp-page .hero-embras-bleed { -webkit-text-stroke: 1px rgba(0,0,0,0.0
 .lp-page .sol-feature:hover { padding-left: 8px; }
 .lp-page .sol-feature-num {
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.25em;
-  color: var(--color-muted);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--accent-steel);
   padding-top: 6px;
 }
 .lp-page .sol-feature-k {
@@ -540,7 +694,7 @@ html.light .lp-page .hero-embras-bleed { -webkit-text-stroke: 1px rgba(0,0,0,0.0
   letter-spacing: var(--tracking-tight);
   color: var(--color-accent);
 }
-.lp-page .sol-feature-v { margin-top: 8px; font-size: 14px; line-height: 1.55; color: var(--color-muted); }
+.lp-page .sol-feature-v { margin-top: 8px; font-size: 14px; line-height: 1.55; color: #b5b5b5; }
 .lp-page .sol-feature-plus {
   width: 28px;
   height: 28px;
@@ -599,15 +753,15 @@ html.light .lp-page .hero-embras-bleed { -webkit-text-stroke: 1px rgba(0,0,0,0.0
 .lp-page .prod-sub {
   margin-top: 6px;
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.25em;
+  font-size: 11px;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--accent-steel);
 }
 .lp-page .prod-spec-k {
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.25em;
+  font-size: 11px;
+  letter-spacing: 0.12em;
   color: var(--color-muted);
   text-transform: uppercase;
   text-align: right;
@@ -651,8 +805,8 @@ html.light .lp-page .hero-embras-bleed { -webkit-text-stroke: 1px rgba(0,0,0,0.0
 }
 .lp-page .prod-spec-label {
   font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.25em;
+  font-size: 11px;
+  letter-spacing: 0.12em;
   color: var(--color-muted);
   text-transform: uppercase;
 }
@@ -689,8 +843,9 @@ html.light .lp-page .hero-embras-bleed { -webkit-text-stroke: 1px rgba(0,0,0,0.0
 .lp-page .proof-metric:last-child { border-right: none; }
 .lp-page .proof-metric-k {
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.25em;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   color: var(--color-muted);
   text-transform: uppercase;
 }
@@ -703,7 +858,7 @@ html.light .lp-page .hero-embras-bleed { -webkit-text-stroke: 1px rgba(0,0,0,0.0
   line-height: 1;
 }
 .lp-page .proof-metric-v .u { color: var(--accent-steel); font-weight: 300; }
-.lp-page .proof-metric-d { font-size: 12px; color: var(--color-muted); line-height: 1.5; margin-top: 4px; }
+.lp-page .proof-metric-d { font-size: 14px; color: #b5b5b5; line-height: 1.55; margin-top: 4px; }
 .lp-page .proof-projects-grid {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
@@ -760,7 +915,7 @@ html.light .lp-page .proof-project-sub { color: #f0f0f0; }
 }
 .lp-page .proof-project-tag {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.25em;
   color: var(--accent-steel);
   text-transform: uppercase;
@@ -775,7 +930,7 @@ html.light .lp-page .proof-project-sub { color: #f0f0f0; }
   color: var(--color-accent);
   line-height: 1.1;
 }
-.lp-page .proof-project-sub { font-size: 12px; color: var(--color-primary); opacity: 0.8; }
+.lp-page .proof-project-sub { font-size: 14px; color: #b5b5b5; line-height: 1.55; }
 .lp-page .proof-testi {
   margin-top: 96px;
   display: grid;
@@ -812,8 +967,8 @@ html.light .lp-page .proof-project-sub { color: #f0f0f0; }
 }
 .lp-page .proof-testi-role {
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.25em;
+  font-size: 11px;
+  letter-spacing: 0.12em;
   color: var(--color-muted);
   text-transform: uppercase;
   margin-top: 6px;
@@ -867,8 +1022,8 @@ html.light .lp-page .proof-project-sub { color: #f0f0f0; }
   color: var(--color-accent);
   margin-bottom: 16px;
 }
-.lp-page .obj-q-mark { font-family: var(--font-mono); font-size: 11px; color: var(--accent-steel); letter-spacing: 0.25em; }
-.lp-page .obj-a { font-size: 14px; line-height: 1.65; color: var(--color-muted); }
+.lp-page .obj-q-mark { font-family: var(--font-mono); font-size: 11px; color: var(--accent-steel); letter-spacing: 0.12em; }
+.lp-page .obj-a { font-size: 14px; line-height: 1.65; color: #b5b5b5; }
 @media (max-width: 900px) {
   .lp-page .obj-grid { grid-template-columns: 1fr; }
   .lp-page .obj-item { border-right: none !important; }
@@ -929,7 +1084,7 @@ html.light .lp-page .proof-project-sub { color: #f0f0f0; }
   line-height: 1.1;
   margin-bottom: 24px;
 }
-.lp-page .guar-text p { font-size: 15px; line-height: 1.65; color: var(--color-primary); max-width: 56ch; }
+.lp-page .guar-text p { font-size: 16px; line-height: 1.65; font-weight: 300; color: #e5e5e5; max-width: 56ch; }
 @media (max-width: 900px) {
   .lp-page .guar { grid-template-columns: 1fr; padding: 48px 32px; text-align: center; }
   .lp-page .guar-seal { margin: 0 auto; }
@@ -943,7 +1098,7 @@ html.light .lp-page .proof-project-sub { color: #f0f0f0; }
 .lp-page .faq-item { border-top: 1px solid var(--color-border); padding: 28px 0; cursor: pointer; }
 .lp-page .faq-item:last-child { border-bottom: 1px solid var(--color-border); }
 .lp-page .faq-q-row { display: grid; grid-template-columns: 60px 1fr 40px; gap: 20px; align-items: center; }
-.lp-page .faq-q-num { font-family: var(--font-mono); font-size: 10px; color: var(--color-muted); letter-spacing: 0.25em; }
+.lp-page .faq-q-num { font-family: var(--font-mono); font-size: 11px; color: var(--accent-steel); letter-spacing: 0.12em; }
 .lp-page .faq-q {
   font-family: var(--font-heading);
   font-weight: 500;
@@ -980,7 +1135,7 @@ html.light .lp-page .proof-project-sub { color: #f0f0f0; }
 .lp-page .faq-item.is-open .faq-toggle::after { transform: rotate(90deg); }
 .lp-page .faq-a { max-height: 0; overflow: hidden; transition: max-height .4s ease, margin .4s ease; }
 .lp-page .faq-item.is-open .faq-a { max-height: 500px; margin-top: 20px; }
-.lp-page .faq-a-inner { padding-left: 80px; font-size: 14px; line-height: 1.7; color: var(--color-muted); max-width: 60ch; }
+.lp-page .faq-a-inner { padding-left: 80px; font-size: 14px; line-height: 1.65; color: #b5b5b5; max-width: 60ch; }
 @media (max-width: 900px) {
   .lp-page .faq-wrap { grid-template-columns: 1fr; gap: 48px; }
   .lp-page .faq-left { position: static; }
@@ -1023,7 +1178,7 @@ html.light .lp-page .proof-project-sub { color: #f0f0f0; }
   margin: 24px 0;
 }
 .lp-page .cta-final h2 .accent { color: var(--accent-steel); font-weight: 300; }
-.lp-page .cta-final .body-lg { max-width: 60ch; margin: 0 auto 48px; color: var(--color-primary); text-align: center; }
+.lp-page .cta-final .body-lg { max-width: 60ch; margin: 0 auto 48px; color: #e5e5e5; text-align: center; }
 .lp-page .cta-final-cta { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 48px; }
 .lp-page .cta-ps {
   margin-top: 80px;
@@ -1066,11 +1221,11 @@ html.light .lp-page .proof-project-sub { color: #f0f0f0; }
 }
 .lp-page .footer-logo { height: 28px; width: auto; object-fit: contain; margin-bottom: 20px; }
 html.light .lp-page .footer-logo { filter: invert(1); }
-.lp-page .footer-tag { font-size: 13px; color: var(--color-muted); max-width: 40ch; line-height: 1.55; }
+.lp-page .footer-tag { font-size: 13px; color: #e5e5e5; max-width: 40ch; line-height: 1.55; }
 .lp-page .footer-col h4 {
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.25em;
+  font-size: 11px;
+  letter-spacing: 0.12em;
   color: var(--color-muted);
   text-transform: uppercase;
   margin-bottom: 20px;
@@ -1092,8 +1247,8 @@ html.light .lp-page .footer-logo { filter: invert(1); }
   display: flex;
   justify-content: space-between;
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
+  font-size: 11px;
+  letter-spacing: 0.12em;
   color: var(--color-muted);
   text-transform: uppercase;
 }
@@ -1272,4 +1427,30 @@ html.light .lp-page .footer-logo { filter: invert(1); }
 @media (max-width: 700px) {
   .lp-modal { padding: 32px 24px; }
   .lp-modal-opts { grid-template-columns: 1fr; }
+}
+
+/* ================================================================
+   Peso 600 em todos os textos na fonte mono (JetBrains Mono)
+   ================================================================ */
+.lp-page .kicker,
+.lp-page .hero-meta-k,
+.lp-page .hero-micro,
+.lp-page .hero-stat-k,
+.lp-page .pain-num,
+.lp-page .sol-feature-num,
+.lp-page .prod-sub,
+.lp-page .prod-spec-k,
+.lp-page .prod-spec-label,
+.lp-page .proof-metric-k,
+.lp-page .proof-project-tag,
+.lp-page .proof-testi-role,
+.lp-page .obj-q-mark,
+.lp-page .faq-q-num,
+.lp-page .cta-ps-label,
+.lp-page .footer-col h4,
+.lp-page .footer-bottom,
+.lp-modal-kicker,
+.lp-modal-field label,
+.lp-modal-opt .sub {
+  font-weight: 600;
 }

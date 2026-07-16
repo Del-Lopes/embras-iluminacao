@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Inter, Outfit } from 'next/font/google'
 import './globals.css'
 import SmoothScroll from '@/lib/lenis/SmoothScroll'
-import CustomCursor from '@/components/common/CustomCursor'
 import ThemeProvider from '@/components/common/ThemeProvider'
 import { defaultSEO, siteUrl } from '@/config/seo'
 
@@ -44,7 +43,6 @@ export default function RootLayout({
 			>
 				<ThemeProvider>
 					<SmoothScroll>
-						<CustomCursor />
 						{children}
 					</SmoothScroll>
 				</ThemeProvider>

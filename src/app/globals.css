@@ -11,7 +11,7 @@
 	--color-accent: #ffffff;
 	--color-primary: #f0f0f0;
 	--color-muted: #5b5b5b;
-	--color-highlight: #8a7350;
+	--color-highlight: #c9a86a;
 	--color-body-text: #e5e5e5;
 	--color-border: rgba(255, 255, 255, 0.2);
 
@@ -60,7 +60,7 @@
 	--color-accent: #0a0a0a;
 	--color-primary: #1a1a1a;
 	--color-muted: #6b6b6b;
-	--color-highlight: #8a7350;
+	--color-highlight: #8a6a28;
 	--color-body-text: #1a1a1a;
 	--color-border: rgba(0, 0, 0, 0.3);
 }
@@ -144,6 +144,100 @@ p {
 	font-style: normal !important;
 	text-transform: uppercase;
 	letter-spacing: 0.1em;
+}
+
+/* ============================================================
+   Carrossel de linhas (home) — abas estilo botão
+   (fill esquerda→direita no hover, seta, canto dourado no ativo)
+   ============================================================ */
+.pl-tab {
+	position: relative;
+	overflow: hidden;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	width: 200px;
+	padding: 14px 0;
+	border: 1px solid var(--color-border);
+	background: transparent;
+	color: var(--color-accent);
+	font-family: var(--font-body);
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 2px;
+	text-transform: uppercase;
+	cursor: pointer;
+	transition:
+		color var(--transition-base),
+		border-color var(--transition-base);
+}
+.pl-tab::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: var(--color-accent);
+	transform: scaleX(0);
+	transform-origin: left center;
+	transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+	z-index: 0;
+}
+.pl-tab:hover::before {
+	transform: scaleX(1);
+}
+.pl-tab:hover {
+	color: var(--color-bg);
+	border-color: var(--color-accent);
+}
+.pl-tab-label {
+	position: relative;
+	z-index: 1;
+}
+.pl-tab-arrow {
+	display: block;
+	position: relative;
+	z-index: 1;
+	width: 1em;
+	height: 1em;
+	flex-shrink: 0;
+}
+.pl-tab[data-active='true'] {
+	background: var(--color-accent);
+	color: var(--color-bg);
+	border-color: var(--color-accent);
+}
+.pl-tab[data-active='true'] .pl-tab-arrow {
+	display: none;
+}
+.pl-tab[data-active='true']::after {
+	content: '';
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	width: 24px;
+	height: 24px;
+	background: var(--color-highlight);
+	clip-path: polygon(100% 0, 100% 100%, 0 100%);
+	z-index: 2;
+}
+.pl-tab-corner-arrow {
+	position: absolute;
+	right: 2px;
+	bottom: 2px;
+	width: 10px;
+	height: 10px;
+	opacity: 0;
+	/* Escura no dark (padrão): lá o dourado é claro (#C9A86A). No light ele é
+	   escuro (#8A6A28) e pede a seta branca — ver override em .light abaixo. */
+	color: #0a0a0a;
+	z-index: 3;
+	pointer-events: none;
+}
+.light .pl-tab-corner-arrow {
+	color: #ffffff;
+}
+.pl-tab[data-active='true'] .pl-tab-corner-arrow {
+	opacity: 1;
 }
 
 .harmonious {
@@ -1002,7 +1096,7 @@ p {
 	font-weight: 600;
 	text-transform: uppercase;
 	letter-spacing: 0.1em;
-	color: var(--color-muted);
+	color: var(--color-highlight);
 }
 
 .catalog-card-tag--link {
@@ -1064,12 +1158,22 @@ p {
 	border-top: 1px solid var(--color-border);
 	font-size: var(--font-size-sm);
 	font-weight: 500;
-	color: var(--color-accent);
+	color: var(--color-highlight);
 	text-decoration: none;
 }
 
-.catalog-card-cta:hover {
-	gap: 9px;
+/* Só o ícone se move; o texto (span) permanece fixo */
+.catalog-card-cta span {
+	transform: none !important;
+}
+
+.catalog-card-cta svg {
+	display: inline-block;
+	transition: transform var(--transition-fast);
+}
+
+.catalog-card-cta:hover svg {
+	transform: translateX(4px);
 }
 
 /* List-view overrides: horizontal cards */
@@ -3429,7 +3533,7 @@ tr[data-selected='true'] td {
 
 .blog-category {
 	font-weight: 600;
-	color: var(--color-accent);
+	color: var(--color-highlight);
 	text-transform: uppercase;
 	letter-spacing: 0.06em;
 	font-size: 16px;
@@ -4240,7 +4344,7 @@ tr[data-selected='true'] td {
 .blog-card-category {
 	font-size: var(--font-size-xs);
 	font-weight: 600;
-	color: var(--color-muted);
+	color: var(--color-highlight);
 	text-transform: uppercase;
 	letter-spacing: 0.1em;
 	text-decoration: none;
@@ -4265,13 +4369,17 @@ tr[data-selected='true'] td {
 
 .blog-card-excerpt {
 	font-size: var(--font-size-sm);
-	color: var(--color-body-text);
+	color: #b5b5b5;
 	line-height: 1.6;
 	display: -webkit-box;
 	-webkit-line-clamp: 2;
 	-webkit-box-orient: vertical;
 	overflow: hidden;
 	flex: 1;
+}
+
+.light .blog-card-excerpt {
+	color: #4a4a4a;
 }
 
 .blog-card-footer {
@@ -4294,7 +4402,7 @@ tr[data-selected='true'] td {
 	gap: 4px;
 	font-size: var(--font-size-xs);
 	font-weight: 600;
-	color: var(--color-accent);
+	color: var(--color-highlight);
 	text-transform: uppercase;
 	letter-spacing: 0.08em;
 	text-decoration: none;

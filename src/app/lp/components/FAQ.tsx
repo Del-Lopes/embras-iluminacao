@@ -48,7 +48,7 @@ export default function FAQ({ openForm }: FAQProps) {
               <br />
               <span className="dim">frequentes.</span>
             </h2>
-            <p className="lp-body" style={{ marginTop: 24, color: 'var(--color-muted)' }}>
+            <p className="body-lg" style={{ marginTop: 24 }}>
               Não encontrou sua dúvida? Fale com um especialista.
             </p>
             <button className="btn btn-sm" style={{ marginTop: 24 }} onClick={openForm}>

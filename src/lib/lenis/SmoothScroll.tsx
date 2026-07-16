@@ -19,6 +19,12 @@ export default function SmoothScroll({ children }: { children: ReactNode }) {
 			smoothWheel: true,
 			wheelMultiplier: 0.8,
 			touchMultiplier: 1.5,
+			// Links de âncora (#projetos, #produtos…) passam a ser conduzidos pelo
+			// Lenis. Sem isto o browser dá um salto seco: destoa do resto do site,
+			// que é todo suave, e — pior — scroll instantâneo não alimenta o
+			// ScrollTrigger (ele é atualizado pelo evento do Lenis), então a cena do
+			// hero ficaria com o estado desatualizado ao pular por cima dela.
+			anchors: true,
 		})
 
 		// Exposto para scroll programático suave (ex.: botão "Ver em 3D").
