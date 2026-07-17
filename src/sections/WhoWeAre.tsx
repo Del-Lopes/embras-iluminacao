@@ -7,8 +7,8 @@ import {
 
 export default function WhoWeAre() {
 	return (
-		<section id="quem-somos" className="py-36 px-8 md:px-12 bg-(--color-bg) relative">
-			<div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-24 items-center">
+		<section id="quem-somos" className="py-20 md:py-36 px-8 md:px-12 bg-(--color-bg) relative">
+			<div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-10 md:gap-24 items-center">
 				<div className="w-full md:w-[60%] relative aspect-4/3 md:aspect-auto md:h-[600px] border border-(--color-border) overflow-hidden">
 					<FragmentedImageReveal
 						src="/images/case-1.png"
@@ -18,7 +18,7 @@ export default function WhoWeAre() {
 					/>
 				</div>
 
-				<div className="w-full md:w-[40%] flex flex-col gap-12">
+				<div className="w-full md:w-[40%] flex flex-col gap-6 md:gap-12">
 					<div className="flex flex-col gap-4">
 						<AnimatedPill className="items-center justify-center md:items-start text-(--color-muted) uppercase w-fit">
 							QUem Somos

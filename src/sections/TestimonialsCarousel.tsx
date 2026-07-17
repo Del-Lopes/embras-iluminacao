@@ -151,7 +151,7 @@ export default function TestimonialsCarousel() {
 		// para o conteúdo ficar acima dele (o glow é absolute e vem antes no DOM).
 		// h-full: como item flex do backdrop (h-screen), ocupa a altura toda e o
 		// `items-center` centraliza o conteúdo dentro dela.
-		<section className="relative w-full h-full flex items-center justify-center overflow-hidden px-8 md:px-12">
+		<section className="relative w-full h-full flex items-center justify-center overflow-hidden px-8 md:px-12 py-16 md:py-0">
 			<div
 				ref={containerRef}
 				className="relative w-full max-w-7xl"
@@ -252,8 +252,11 @@ export default function TestimonialsCarousel() {
 					</div>
 				</div>
 
-				{/* Ticker inferior — nomes/segmentos repetidos */}
-				<div className="absolute -bottom-24 left-0 right-0 overflow-hidden opacity-[0.06] pointer-events-none">
+				{/* Ticker inferior — nomes/segmentos repetidos. Escondido no mobile:
+				    ele fica -bottom-24 (fora da seção de altura-de-conteúdo) e o
+				    overflow-hidden o cortava; é decorativo e quase invisível
+				    (opacity 0.06), então some sem perda no mobile. */}
+				<div className="hidden md:block absolute -bottom-24 left-0 right-0 overflow-hidden opacity-[0.06] pointer-events-none">
 					<div ref={tickerRef} className="flex whitespace-nowrap text-6xl font-bold tracking-tight text-(--color-accent)">
 						{[0, 1].map((dup) => (
 							<span key={dup} className="flex shrink-0">

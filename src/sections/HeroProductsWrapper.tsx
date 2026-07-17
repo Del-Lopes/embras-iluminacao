@@ -381,7 +381,7 @@ export default function HeroProductsWrapper() {
 
 				{/* HEADER ABSOLUTE INSIDE HERO */}
 				<header className="absolute top-0 left-0 w-full z-20">
-					<div className="flex items-center justify-between px-8 md:px-24 py-8">
+					<div className="flex items-center justify-between px-8 lg:px-24 py-8">
 						<div className="flex items-center">
 							<Link
 								href="/"
@@ -397,12 +397,12 @@ export default function HeroProductsWrapper() {
 								/>
 							</Link>
 						</div>
-						<nav className="hidden md:flex gap-10 items-center">
+						<nav className="hidden md:flex gap-5 lg:gap-10 items-center">
 							{navItems.map((item) =>
 								item.disabled ? (
 									<span
 										key={item.label}
-										className="text-[10px] uppercase tracking-[0.3em] text-white cursor-default"
+										className="text-[10px] uppercase tracking-[0.3em] text-white cursor-default whitespace-nowrap"
 									>
 										{item.label}
 									</span>
@@ -410,7 +410,7 @@ export default function HeroProductsWrapper() {
 									<a
 										key={item.label}
 										href={item.href}
-										className="text-[10px] uppercase tracking-[0.3em] text-white hover:text-white/50 transition-colors"
+										className="text-[10px] uppercase tracking-[0.3em] text-white hover:text-white/50 transition-colors whitespace-nowrap"
 									>
 										{item.label}
 									</a>
@@ -423,8 +423,12 @@ export default function HeroProductsWrapper() {
 
 				{/* CONTENT HIERARCHY - SIMPLE FLEX COLUMN */}
 				<div className="relative z-20 flex flex-col items-start px-8 md:px-24 w-full pointer-events-none">
-					<h1 className="text-[clamp(2.5rem,7vw,10rem)] md:text-[clamp(4rem,8.3vw,18rem)] whitespace-nowrap font-(--font-heading) leading-none tracking-tight text-[#f2e6cf] drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)] pt-[19vh] ml-[-0.03em]">
-						ILUMINAÇÃO <span className="text-white">PREMIUM</span>
+					{/* Mobile: quebra em duas linhas (o <br> só aparece < md) e fonte
+					    maior (14vw ~ preenche a largura com o padding px-8). Desktop:
+					    volta a linha única (md:whitespace-nowrap) com o clamp original. */}
+					<h1 className="text-[clamp(3rem,14vw,5.5rem)] md:text-[clamp(4rem,8.3vw,18rem)] md:whitespace-nowrap font-(--font-heading) leading-[0.95] md:leading-none tracking-tight text-[#f2e6cf] drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)] pt-[16vh] md:pt-[19vh] ml-[-0.03em]">
+						ILUMINAÇÃO <br className="md:hidden" />
+						<span className="text-white">PREMIUM</span>
 					</h1>
 
 					<div className="mt-8 flex flex-col items-start gap-8 max-w-[420px] pointer-events-auto">
@@ -459,8 +463,9 @@ export default function HeroProductsWrapper() {
 					/>
 				</div>
 
-				{/* RIGHT SCROLL INDICATOR */}
-				<div className="absolute top-1/2 -translate-y-1/2 right-8 md:right-12 z-20">
+				{/* RIGHT SCROLL INDICATOR — escondido no mobile: encostava no título
+				    de duas linhas e é uma affordância de desktop. */}
+				<div className="hidden md:block absolute top-1/2 -translate-y-1/2 right-8 md:right-12 z-20">
 					<div className="relative w-0.5 h-[120px] flex justify-center">
 						<div className="absolute inset-0 bg-[#474747]" />
 						<div

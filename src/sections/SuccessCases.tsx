@@ -17,6 +17,10 @@ export default function SuccessCases() {
 	const lineVRef = useRef<HTMLDivElement>(null)
 	const cardsRef = useRef<(HTMLDivElement | null)[]>([])
 	const [mounted, setMounted] = useState(false)
+	// Card ativo por CLIQUE — no touch (mobile/tablet) não há hover, então o tap
+	// reproduz o estado de hover (imagem colorida + infos). No desktop o hover
+	// continua funcionando; o clique é aditivo.
+	const [activeCard, setActiveCard] = useState<number | null>(null)
 
 	useEffect(() => {
 		setMounted(true)
@@ -141,9 +145,9 @@ export default function SuccessCases() {
 		<section
 			ref={sectionRef}
 			id="projetos"
-			className="py-36 px-8 md:px-12 max-w-7xl mx-auto bg-(--color-bg) overflow-hidden"
+			className="py-20 md:py-36 px-8 md:px-12 max-w-7xl mx-auto bg-(--color-bg) overflow-hidden"
 		>
-			<div className="mb-32 flex flex-col md:flex-row md:items-end md:justify-between gap-8">
+			<div className="mb-16 md:mb-32 flex flex-col md:flex-row md:items-end md:justify-between gap-8">
 				<div className="flex flex-col gap-4">
 					<AnimatedPill className="text-(--color-muted) uppercase w-fit">
 						Projetos
@@ -168,7 +172,7 @@ export default function SuccessCases() {
 			<div ref={gridRef} className="relative">
 				<div
 					ref={lineHRef}
-					className="absolute top-1/2 left-0 w-full h-px z-5 pointer-events-none"
+					className="hidden md:block absolute top-1/2 left-0 w-full h-px z-5 pointer-events-none"
 					style={{
 						backgroundColor: 'var(--color-border)',
 						transformOrigin: 'center',
@@ -178,7 +182,7 @@ export default function SuccessCases() {
 				/>
 				<div
 					ref={lineVRef}
-					className="absolute left-1/2 top-0 w-px h-full z-5 pointer-events-none"
+					className="hidden md:block absolute left-1/2 top-0 w-px h-full z-5 pointer-events-none"
 					style={{
 						backgroundColor: 'var(--color-border)',
 						transformOrigin: 'center',
@@ -188,7 +192,7 @@ export default function SuccessCases() {
 				/>
 				<div
 					ref={logoRef}
-					className="absolute top-1/2 left-1/2 z-10 pointer-events-none"
+					className="hidden md:block absolute top-1/2 left-1/2 z-10 pointer-events-none"
 					style={{
 						opacity: 0,
 						transform: 'translate(-50%, -50%) scale(0.85)',
@@ -207,25 +211,33 @@ export default function SuccessCases() {
 					</div>
 				</div>
 
-				<div className="grid grid-cols-2 gap-4 md:gap-24 relative z-20">
+				{/* 1 coluna no mobile (cada card em uma linha), 2 no desktop. */}
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-24 relative z-20">
 					{cases.map((project, index) => (
+						// data-active + onClick reproduzem o hover no touch: cada utility
+						// group-hover: ganha um par group-data-[active=true]:. O toggle
+						// deixa desmarcar tocando de novo; tocar em outro troca o ativo.
 						<div
 							key={project.id}
 							ref={(el) => {
 								cardsRef.current[index] = el
 							}}
+							data-active={activeCard === index ? 'true' : undefined}
+							onClick={() =>
+								setActiveCard((prev) => (prev === index ? null : index))
+							}
 							className="group cursor-pointer"
 						>
-							<div className="aspect-square bg-[#0f0f0f] border border-(--color-border) relative overflow-hidden transition-all duration-700 group-hover:border-white/30">
+							<div className="aspect-square bg-[#0f0f0f] border border-(--color-border) relative overflow-hidden transition-all duration-700 group-hover:border-white/30 group-data-[active=true]:border-white/30">
 								<Image
 									src={project.image}
 									alt={project.title}
 									fill
-									sizes="(max-width: 768px) 50vw, 33vw"
-									className="object-cover opacity-60 grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-1000"
+									sizes="(max-width: 768px) 100vw, 33vw"
+									className="object-cover opacity-60 grayscale group-hover:grayscale-0 group-hover:scale-105 group-data-[active=true]:grayscale-0 group-data-[active=true]:scale-105 transition-all duration-1000"
 								/>
-								<div className="absolute inset-0 bg-linear-to-br from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
-								<div className="absolute top-4 md:top-8 left-4 md:left-8 text-[11px] uppercase tracking-[2px] font-semibold text-white opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none">
+								<div className="absolute inset-0 bg-linear-to-br from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full group-data-[active=true]:translate-x-full transition-transform duration-1000 pointer-events-none" />
+								<div className="absolute top-4 md:top-8 left-4 md:left-8 text-[11px] uppercase tracking-[2px] font-semibold text-white opacity-0 group-hover:opacity-100 group-data-[active=true]:opacity-100 transition-opacity duration-500 z-10 pointer-events-none">
 									{project.location}
 								</div>
 								<div

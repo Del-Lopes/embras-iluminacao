@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import Image from 'next/image'
 import { gsap } from '@/lib/gsap'
 import { useGSAP } from '@gsap/react'
@@ -19,6 +19,24 @@ export default function ImageGallery({
 }: ImageGalleryProps) {
 	const rootRef = useRef<HTMLDivElement>(null)
 	const tlRef = useRef<gsap.core.Timeline | null>(null)
+	// Índice expandido por CLIQUE (mobile não tem hover). No desktop o hover
+	// continua expandindo via CSS; o clique é aditivo e funciona nos dois.
+	const [expanded, setExpanded] = useState<number | null>(null)
+
+	// Clique/toque FORA da galeria volta ao idle (colapsa). Só escuta enquanto há
+	// algo expandido. pointerdown (não click) para cobrir toque no mobile/tablet;
+	// dispara antes do onClick do item, mas o teste `contains` protege o toque
+	// dentro da galeria de resetar (só reseta quando o alvo está de fato fora).
+	useEffect(() => {
+		if (expanded === null) return
+		const onDown = (e: PointerEvent) => {
+			if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+				setExpanded(null)
+			}
+		}
+		document.addEventListener('pointerdown', onDown)
+		return () => document.removeEventListener('pointerdown', onDown)
+	}, [expanded])
 
 	// Constrói UMA timeline pausada na montagem (sem depender de `play`): estado
 	// inicial escondido → entrada com stagger. Não recria a cada toggle.
@@ -65,24 +83,41 @@ export default function ImageGallery({
 	)
 
 	return (
+		// DOIS MODOS por breakpoint:
+		// • Mobile (< md): carrossel de swipe horizontal — overflow-x-auto + snap,
+		//   sem scrollbar visível. Mantém as 5 imagens; arrasta pro lado pra ver
+		//   mais. pointer-events-auto (com play) para o container receber o toque
+		//   do arrasto.
+		// • md+ (tablet/desktop): o acordeão flex-grow de sempre (overflow visível,
+		//   sem snap).
 		<div
 			ref={rootRef}
-			className={`flex items-center gap-2 w-full h-full ${className}`}
+			className={`flex items-center gap-2 w-full h-full snap-x snap-mandatory md:snap-none overflow-x-auto md:overflow-x-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+				play ? 'pointer-events-auto' : 'pointer-events-none'
+			} ${className}`}
 		>
 			{images.map((src, i) => (
-				// transition-[width] e NÃO transition-all: o `all` transicionaria
-				// também o transform, brigando com o `y` que o GSAP escreve a cada
-				// frame na entrada. Aqui a largura é do CSS, o transform é do GSAP.
-				// pointer-events só depois de entrar: em repouso os itens ficam em
-				// opacity 0 E deslocados (y: -70), e opacity 0 não desliga hit-test —
-				// invisíveis e fora do lugar, eles capturavam o clique de quem estava
-				// atrás (o menu do hero).
+				// Mobile: largura fixa (70vw), shrink-0 e snap-center — os cards
+				// transbordam o container e viram um trilho arrastável; o card
+				// seguinte "espia" na borda, sinalizando que dá pra deslizar.
+				// md+: acordeão FLEX-GROW — basis-0 (todos partem iguais), grow (1) /
+				// grow-16 no ativo (~80%, espreme os demais), min-w-10 dá piso de 40px
+				// aos espremidos. transition só de flex-grow (não briga com o y/opacity
+				// da entrada do GSAP). hover:grow-16 no desktop; clique no
+				// tablet/desktop (o mobile é só swipe — ver onClick).
 				<div
 					key={i}
 					data-gallery-item
-					className={`relative grow w-56 h-full rounded-lg overflow-hidden opacity-0 transition-[width] duration-500 ease-out hover:w-full ${
-						play ? 'pointer-events-auto' : 'pointer-events-none'
-					}`}
+					onClick={() => {
+						// Expandir só no modo acordeão (md+). No mobile o clique não faz
+						// nada — a interação lá é o swipe do carrossel.
+						if (window.matchMedia('(min-width: 768px)').matches) {
+							setExpanded((prev) => (prev === i ? null : i))
+						}
+					}}
+					className={`relative h-full shrink-0 w-[70vw] snap-center rounded-lg overflow-hidden opacity-0 cursor-pointer md:w-auto md:shrink md:basis-0 md:min-w-10 md:transition-[flex-grow] md:duration-500 md:ease-out md:hover:grow-16 ${
+						expanded === i ? 'md:grow-16' : 'md:grow'
+					} ${play ? 'pointer-events-auto' : 'pointer-events-none'}`}
 				>
 					<Image
 						src={src}

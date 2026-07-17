@@ -46,9 +46,9 @@ export default function ProductLines({
   }, [activeTab])
 
   return (
-    <section id="produtos" className="py-36 px-8 bg-(--color-bg) w-full relative">
+    <section id="produtos" className="py-20 md:py-36 px-8 bg-(--color-bg) w-full relative">
       <div className="max-w-7xl mx-auto flex flex-col items-center">
-        <div className="flex flex-col items-center gap-4 mb-20 text-center">
+        <div className="flex flex-col items-center gap-4 mb-12 md:mb-20 text-center">
           <AnimatedPill className="text-(--color-muted) uppercase w-fit items-center">
             Linha de Produtos
           </AnimatedPill>
@@ -59,7 +59,7 @@ export default function ProductLines({
         </div>
 
         {/* Abas — Área Interna / Externa */}
-        <div className="flex flex-wrap justify-center gap-4 mb-24">
+        <div className="flex flex-wrap justify-center gap-4 mb-12 md:mb-24">
           {lines.map((line) => (
             <button
               key={line.id}
@@ -113,7 +113,7 @@ export default function ProductLines({
           )}
 
           {products.length > 0 && (
-            <div className="hidden md:flex justify-between absolute top-1/2 -translate-y-1/2 -left-16 -right-16 pointer-events-none">
+            <div className="hidden md:flex justify-between absolute top-1/2 -translate-y-1/2 -left-2 -right-2 xl:-left-16 xl:-right-16 pointer-events-none">
               <button
                 className="p-4 text-(--color-accent)/40 hover:text-(--color-accent) transition-colors pointer-events-auto cursor-pointer"
                 aria-label="Anterior"

@@ -217,21 +217,21 @@ export default function Manifesto() {
 
 			{/* GRID LAYOUT */}
 			<div className="flex w-full h-full items-start relative z-10">
-				{/* LEFT COLUMN (70%) */}
-				<div className="w-[70%] h-full flex flex-col justify-between pl-12 md:pl-24 pr-0 py-24 relative overflow-hidden">
-					<div className="flex-1 flex items-center relative pr-12 md:pr-24">
+				{/* LEFT COLUMN — full-width no mobile (o título vertical vira marca
+				    d'água atrás), 70% no desktop. z-10 para ficar sobre a marca. */}
+				<div className="w-full md:w-[70%] h-full flex flex-col justify-between pl-8 md:pl-24 pr-8 md:pr-0 py-16 md:py-24 relative z-10 overflow-hidden">
+					<div className="flex-1 flex items-center relative pr-4 md:pr-24">
 						{slides.map((slide) => (
 							<div
 								key={slide.id}
 								className="manifesto-left-text absolute inset-0 flex items-center"
 							>
+								{/* Fonte responsiva (era inline 36px, que não quebra por
+								    breakpoint): 21px no mobile cabe na altura pinada mesmo
+								    no slide mais longo; 36px no desktop. */}
 								<p
-									className="manifesto-p font-(--font-heading) text-(--color-accent) max-w-5xl"
-									style={{
-										fontSize: '36px',
-										lineHeight: '46px',
-										whiteSpace: 'pre-line',
-									}}
+									className="manifesto-p font-(--font-heading) text-(--color-accent) max-w-5xl text-[21px] leading-[29px] md:text-[36px] md:leading-[46px]"
+									style={{ whiteSpace: 'pre-line' }}
 								>
 									{slide.text}
 								</p>
@@ -252,29 +252,34 @@ export default function Manifesto() {
 					</div>
 				</div>
 
-				{/* DIVIDER */}
+				{/* DIVIDER — só desktop (no mobile o texto é full-width). */}
 				<div
 					ref={lineVRef}
-					className="w-px h-[75vh] shrink-0"
+					className="hidden md:block w-px h-[75vh] shrink-0"
 					style={{
 						background: `linear-gradient(to bottom, var(--color-muted) 0%, var(--color-muted) 60%, transparent 100%)`,
 					}}
 				/>
 
-				{/* RIGHT COLUMN (30%) */}
-				<div className="w-[30%] h-full relative overflow-hidden flex items-center justify-center bg-(--color-bg)">
+				{/* RIGHT COLUMN — no mobile é uma marca d'água atrás do texto:
+				    absoluta à direita, tênue (opacity-12) e sem fundo. No desktop
+				    volta a ser a coluna de 30% sólida ao lado do texto. */}
+				<div className="absolute right-0 inset-y-0 md:static w-[55%] md:w-[30%] h-full overflow-hidden flex items-center justify-center opacity-[0.12] md:opacity-100 bg-transparent md:bg-(--color-bg) pointer-events-none md:pointer-events-auto">
 					{slides.map((slide) => (
 						<div
 							key={slide.id}
 							className="manifesto-right-text absolute inset-0 flex items-center justify-center"
 						>
-							<div className="relative h-full flex items-center justify-center pl-12">
-								{/* Texto Principal com novo estilo Harmonious */}
+							{/* No mobile o texto sai do TOPO (items-start + folga de
+							    50px), em vez de centralizado — assim a marca d'água
+							    "desce" a partir do topo e a fonte pode voltar aos 156px
+							    originais sem transbordar dos dois lados. No md+ volta a
+							    centralizar na coluna lateral. */}
+							<div className="relative h-full flex items-start md:items-center justify-center pl-12 pt-[20px] md:pt-0">
 								<span
-									className="harmonious relative font-(--font-heading) uppercase select-none"
+									className="harmonious relative font-(--font-heading) uppercase select-none text-[140px] md:text-[min(20vh,40vw)]"
 									style={{
 										writingMode: 'vertical-rl',
-										fontSize: 'min(20vh, 40vw)',
 										lineHeight: 0.8,
 										transform: 'rotate(180deg)',
 									}}
