@@ -157,41 +157,117 @@ export default function Manifesto() {
 					gsap.to(bgRef.current, { opacity: 0, duration: 0.1, overwrite: 'auto' }),
 			})
 
-			// 2. Timeline com PIN + SCRUB — troca de slides (o "restante", como no original).
-			//    Apenas o reveal do texto é chamado de forma automática (não scrubbed).
-			const tl = gsap.timeline({
-				scrollTrigger: {
-					trigger: sectionRef.current,
-					start: 'top top',
-					end: '+=300%',
-					pin: true,
-					scrub: 1,
-				},
+			// 2. Troca de slides — comportamento por breakpoint (gsap.matchMedia
+			//    reverte/reaplica sozinho ao cruzar o breakpoint no resize).
+			const total = leftTexts.length
+			const mm = gsap.matchMedia()
+
+			// DESKTOP (lg+): PIN + SCRUB — o slide acompanha o scroll (original).
+			mm.add('(min-width: 1024px)', () => {
+				const tl = gsap.timeline({
+					scrollTrigger: {
+						trigger: sectionRef.current,
+						start: 'top top',
+						end: '+=300%',
+						pin: true,
+						scrub: 1,
+					},
+				})
+				tl.call(() => autoReveal(0), undefined, '+=0.1')
+				tl.to({}, { duration: 1.2 })
+				tl.fromTo(leftTexts[0], { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -50, duration: 0.5 }, '+=0.2')
+				tl.fromTo(rightTexts[0], { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -100, duration: 0.5 }, '<')
+				tl.fromTo(leftTexts[1], { autoAlpha: 0, y: 50 }, { autoAlpha: 1, y: 0, duration: 0.5 }, '+=0.1')
+				tl.fromTo(rightTexts[1], { autoAlpha: 0, y: 100 }, { autoAlpha: 1, y: 0, duration: 0.5 }, '<')
+				tl.call(() => autoReveal(1))
+				tl.to({}, { duration: 1.2 })
+				tl.fromTo(leftTexts[1], { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -50, duration: 0.5 }, '+=0.2')
+				tl.fromTo(rightTexts[1], { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -100, duration: 0.5 }, '<')
+				tl.fromTo(leftTexts[2], { autoAlpha: 0, y: 50 }, { autoAlpha: 1, y: 0, duration: 0.5 }, '+=0.1')
+				tl.fromTo(rightTexts[2], { autoAlpha: 0, y: 100 }, { autoAlpha: 1, y: 0, duration: 0.5 }, '<')
+				tl.call(() => autoReveal(2))
+				tl.to({}, { duration: 1.2 })
 			})
 
-			// Slide 0 — reveal automático (dispara uma vez ao entrar)
-			tl.call(() => autoReveal(0), undefined, '+=0.1')
-			tl.to({}, { duration: 1.2 })
+			// TABLET/MOBILE (<lg): CARROSSEL DISCRETO — sem scrub. A seção pina e
+			// cada passo de scroll troca o slide com uma transição que toca sozinha
+			// (não segue o dedo). O snap assenta em cada slide → "1 swipe = 1 slide".
+			mm.add('(max-width: 1023px)', () => {
+				let cur = 0
+				const show = (n: number) => {
+					if (n === cur) return
+					const dir = n > cur ? 1 : -1
+					autoReveal(n)
+					// sai o atual, entra o novo (cross-fade por tempo, não scrub)
+					gsap.to([leftTexts[cur], rightTexts[cur]], {
+						autoAlpha: 0,
+						y: dir > 0 ? -50 : 50,
+						duration: 0.4,
+						ease: 'power2.inOut',
+						overwrite: 'auto',
+					})
+					gsap.fromTo(
+						[leftTexts[n], rightTexts[n]],
+						{ autoAlpha: 0, y: dir > 0 ? 50 : -50 },
+						{ autoAlpha: 1, y: 0, duration: 0.5, ease: 'power2.out', overwrite: 'auto' }
+					)
+					cur = n
+				}
 
-			// Transição 0 → 1 (scrub)
-			tl.fromTo(leftTexts[0], { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -50, duration: 0.5 }, '+=0.2')
-			tl.fromTo(rightTexts[0], { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -100, duration: 0.5 }, '<')
-			tl.fromTo(leftTexts[1], { autoAlpha: 0, y: 50 }, { autoAlpha: 1, y: 0, duration: 0.5 }, '+=0.1')
-			tl.fromTo(rightTexts[1], { autoAlpha: 0, y: 100 }, { autoAlpha: 1, y: 0, duration: 0.5 }, '<')
+				const st = ScrollTrigger.create({
+					trigger: sectionRef.current,
+					start: 'top top',
+					end: '+=' + (total - 1) * 80 + '%', // ~0,8 tela por transição
+					pin: true,
+					onEnter: () => autoReveal(0),
+					onUpdate: (self) => show(Math.round(self.progress * (total - 1))),
+				})
 
-			// Slide 1 — reveal automático (dispara uma vez ao entrar)
-			tl.call(() => autoReveal(1))
-			tl.to({}, { duration: 1.2 })
+				// SNAP manual via Lenis: o snap nativo do ScrollTrigger briga com o
+				// Lenis (às vezes trava no meio do caminho). Aqui, ao PARAR o gesto,
+				// deslizamos até o slide mais próximo — cada swipe assenta em um
+				// slide. Nos extremos (0 e último) não faz nada → o scroll segue para
+				// a seção vizinha, soltando o pin.
+				const lenis = (
+					window as unknown as {
+						__lenis?: {
+							scrollTo: (t: number, o?: { duration?: number }) => void
+							velocity: number
+						}
+					}
+				).__lenis
+				let timer: number | null = null
+				const snap = () => {
+					if (!st.isActive || !lenis) return
+					// Espera o momentum do Lenis assentar: se ainda desliza, a
+					// `progress` lida seria a do meio do caminho e snaparia de volta.
+					if (Math.abs(lenis.velocity) > 0.4) {
+						timer = window.setTimeout(snap, 80)
+						return
+					}
+					const p = st.progress
+					const nearest = Math.round(p * (total - 1)) / (total - 1)
+					if (Math.abs(nearest - p) < 0.02) return // já assentado
+					lenis.scrollTo(st.start + nearest * (st.end - st.start), {
+						duration: 0.5,
+					})
+				}
+				const onInput = () => {
+					if (timer !== null) clearTimeout(timer)
+					timer = window.setTimeout(snap, 150)
+				}
+				window.addEventListener('wheel', onInput, { passive: true })
+				window.addEventListener('touchmove', onInput, { passive: true })
 
-			// Transição 1 → 2 (scrub)
-			tl.fromTo(leftTexts[1], { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -50, duration: 0.5 }, '+=0.2')
-			tl.fromTo(rightTexts[1], { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -100, duration: 0.5 }, '<')
-			tl.fromTo(leftTexts[2], { autoAlpha: 0, y: 50 }, { autoAlpha: 1, y: 0, duration: 0.5 }, '+=0.1')
-			tl.fromTo(rightTexts[2], { autoAlpha: 0, y: 100 }, { autoAlpha: 1, y: 0, duration: 0.5 }, '<')
+				return () => {
+					st.kill()
+					if (timer !== null) clearTimeout(timer)
+					window.removeEventListener('wheel', onInput)
+					window.removeEventListener('touchmove', onInput)
+				}
+			})
 
-			// Slide 2 — reveal automático (dispara uma vez ao entrar)
-			tl.call(() => autoReveal(2))
-			tl.to({}, { duration: 1.2 })
+			return () => mm.revert()
 		},
 		{ dependencies: [mounted], scope: sectionRef }
 	)
@@ -220,17 +296,23 @@ export default function Manifesto() {
 				{/* LEFT COLUMN — full-width no mobile (o título vertical vira marca
 				    d'água atrás), 70% no desktop. z-10 para ficar sobre a marca. */}
 				<div className="w-full md:w-[70%] h-full flex flex-col justify-between pl-8 md:pl-24 pr-8 md:pr-0 py-16 md:py-24 relative z-10 overflow-hidden">
-					<div className="flex-1 flex items-center relative pr-4 md:pr-24">
+					<div className="flex-1 flex items-center relative">
 						{slides.map((slide) => (
+							// pr no próprio manifesto-left-text (e não no pai): como ele
+							// é absolute inset-0, um padding no pai é coberto por ele — o
+							// texto encostava na divisória. Aqui o padding afasta o texto
+							// da linha no desktop, em todas as larguras.
 							<div
 								key={slide.id}
-								className="manifesto-left-text absolute inset-0 flex items-center"
+								className="manifesto-left-text absolute inset-0 flex items-center md:pr-20"
 							>
-								{/* Fonte responsiva (era inline 36px, que não quebra por
-								    breakpoint): 21px no mobile cabe na altura pinada mesmo
-								    no slide mais longo; 36px no desktop. */}
+								{/* font-size/line-height vêm da regra .manifesto-p no
+								    globals.css (media queries): valores arbitrários do
+								    Tailwind (text-[]/[] e min-[1401px]:) não aplicavam de
+								    forma confiável aqui. Até 1400px levemente menor; acima,
+								    tamanho cheio. */}
 								<p
-									className="manifesto-p font-(--font-heading) text-(--color-accent) max-w-5xl text-[21px] leading-[29px] md:text-[36px] md:leading-[46px]"
+									className="manifesto-p font-(--font-heading) text-(--color-accent) max-w-5xl"
 									style={{ whiteSpace: 'pre-line' }}
 								>
 									{slide.text}
@@ -264,7 +346,7 @@ export default function Manifesto() {
 				{/* RIGHT COLUMN — no mobile é uma marca d'água atrás do texto:
 				    absoluta à direita, tênue (opacity-12) e sem fundo. No desktop
 				    volta a ser a coluna de 30% sólida ao lado do texto. */}
-				<div className="absolute right-0 inset-y-0 md:static w-[55%] md:w-[30%] h-full overflow-hidden flex items-center justify-center opacity-[0.12] md:opacity-100 bg-transparent md:bg-(--color-bg) pointer-events-none md:pointer-events-auto">
+				<div className="absolute right-0 inset-y-0 md:relative md:inset-auto w-[55%] md:w-[30%] h-full overflow-hidden flex items-center justify-center opacity-[0.12] md:opacity-100 bg-transparent md:bg-(--color-bg) pointer-events-none md:pointer-events-auto">
 					{slides.map((slide) => (
 						<div
 							key={slide.id}

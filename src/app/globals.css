@@ -3906,6 +3906,28 @@ tr[data-selected='true'] td {
 	background: rgba(90, 90, 90, 0.25);
 }
 
+/* Parágrafo do Manifesto — font-size/line-height responsivos aqui (e não em
+   utilities do Tailwind): os valores arbitrários (text-[]/[], min-[1401px]:)
+   não aplicavam o line-height de forma confiável. Mobile menor; desktop até
+   1400px levemente reduzido; acima de 1400px, tamanho cheio. Cascateia para os
+   .char do SplitText. */
+.manifesto-p {
+	font-size: 21px;
+	line-height: 30px;
+}
+@media (min-width: 768px) {
+	.manifesto-p {
+		font-size: 32px;
+		line-height: 42px;
+	}
+}
+@media (min-width: 1401px) {
+	.manifesto-p {
+		font-size: 38px;
+		line-height: 50px;
+	}
+}
+
 .blog-header-nav {
 	display: flex;
 	align-items: center;

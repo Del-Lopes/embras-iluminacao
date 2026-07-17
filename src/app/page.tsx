@@ -8,6 +8,7 @@ import TestimonialsCarousel from '@/sections/TestimonialsCarousel'
 import TestimonialsBackdrop from '@/sections/TestimonialsBackdrop'
 import ContactSection from '@/sections/ContactSection'
 import Footer from '@/components/layout/Footer'
+import Header from '@/components/layout/Header'
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
 import type { LineProduct } from '@/sections/ProductLineCard'
 
@@ -45,7 +46,10 @@ export default async function Home() {
   const lines = await getAreaLines()
 
   return (
-    <main className="min-h-screen bg-(--color-bg)">
+    <main className="relative min-h-screen bg-(--color-bg)">
+      {/* Header sobre o hero, transparente. `relative` no main ancora o
+          posicionamento absoluto do header no topo da página. */}
+      <Header variant="overlay" />
       <div id="project-preview">
         <HeroProductsWrapper />
         <ProductLines lines={lines} defaultActive="externo" />

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { BlogHeader } from '@/components/blog/BlogHeader'
+import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { EditorJsContent } from '@/components/blog/EditorJsContent'
 import { PostCard } from '@/components/blog/PostCard'
@@ -111,7 +111,7 @@ export default async function BlogPostPage({ params }: Props) {
 
   return (
     <main className="min-h-screen bg-(--color-bg)">
-      <BlogHeader />
+      <Header variant="solid" />
 
       <article>
         {/* ── Cover image ── */}

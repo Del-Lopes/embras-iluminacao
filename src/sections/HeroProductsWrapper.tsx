@@ -2,11 +2,8 @@
 
 import { useRef, useState, useEffect } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
 import { gsap, ScrollTrigger } from '@/lib/gsap'
 import { useGSAP } from '@gsap/react'
-import ThemeToggle from '@/components/common/ThemeToggle'
-import { navItems } from '@/config/navigation'
 import SparklesCore from '@/components/common/SparklesCore'
 import ImageGallery from '@/components/common/ImageGallery'
 import CascadeText from '@/components/common/CascadeText'
@@ -379,54 +376,15 @@ export default function HeroProductsWrapper() {
 					}}
 				/>
 
-				{/* HEADER ABSOLUTE INSIDE HERO */}
-				<header className="absolute top-0 left-0 w-full z-20">
-					<div className="flex items-center justify-between px-8 lg:px-24 py-8">
-						<div className="flex items-center">
-							<Link
-								href="/"
-								aria-label="Ir para a home"
-								className="w-[120px] h-8 relative block"
-							>
-								<Image
-									src="/images/embras-logo-w.png"
-									alt="Embras"
-									fill
-									sizes="120px"
-									className="object-contain"
-								/>
-							</Link>
-						</div>
-						<nav className="hidden md:flex gap-5 lg:gap-10 items-center">
-							{navItems.map((item) =>
-								item.disabled ? (
-									<span
-										key={item.label}
-										className="text-[10px] uppercase tracking-[0.3em] text-white cursor-default whitespace-nowrap"
-									>
-										{item.label}
-									</span>
-								) : (
-									<a
-										key={item.label}
-										href={item.href}
-										className="text-[10px] uppercase tracking-[0.3em] text-white hover:text-white/50 transition-colors whitespace-nowrap"
-									>
-										{item.label}
-									</a>
-								)
-							)}
-						</nav>
-						<ThemeToggle />
-					</div>
-				</header>
+				{/* O header foi extraído para <Header> (renderizado na página).
+				    Antes vivia aqui dentro do hero. */}
 
 				{/* CONTENT HIERARCHY - SIMPLE FLEX COLUMN */}
 				<div className="relative z-20 flex flex-col items-start px-8 md:px-24 w-full pointer-events-none">
 					{/* Mobile: quebra em duas linhas (o <br> só aparece < md) e fonte
 					    maior (14vw ~ preenche a largura com o padding px-8). Desktop:
 					    volta a linha única (md:whitespace-nowrap) com o clamp original. */}
-					<h1 className="text-[clamp(3rem,14vw,5.5rem)] md:text-[clamp(4rem,8.3vw,18rem)] md:whitespace-nowrap font-(--font-heading) leading-[0.95] md:leading-none tracking-tight text-[#f2e6cf] drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)] pt-[16vh] md:pt-[19vh] ml-[-0.03em]">
+					<h1 className="text-[clamp(3.25rem,15.5vw,6rem)] md:text-[clamp(4rem,8.3vw,18rem)] md:whitespace-nowrap font-(--font-heading) leading-[1.05] md:leading-none tracking-tight text-[#f2e6cf] drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)] pt-[16vh] md:pt-[19vh] ml-[-0.03em]">
 						ILUMINAÇÃO <br className="md:hidden" />
 						<span className="text-white">PREMIUM</span>
 					</h1>

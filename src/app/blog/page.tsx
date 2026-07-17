@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { BlogHeader } from '@/components/blog/BlogHeader'
+import Header from '@/components/layout/Header'
 import { BlogSidebar } from '@/components/blog/BlogSidebar'
 import { BlogControls } from '@/components/blog/BlogControls'
 import Footer from '@/components/layout/Footer'
@@ -107,7 +107,7 @@ export default async function BlogPage({ searchParams }: { searchParams: SearchP
 
   return (
     <main className="min-h-screen bg-(--color-bg)">
-      <BlogHeader />
+      <Header variant="solid" />
 
       {/* ── Hero ── */}
       <div

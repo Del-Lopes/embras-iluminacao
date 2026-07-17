@@ -101,8 +101,8 @@ export default function ImageGallery({
 				// transbordam o container e viram um trilho arrastável; o card
 				// seguinte "espia" na borda, sinalizando que dá pra deslizar.
 				// md+: acordeão FLEX-GROW — basis-0 (todos partem iguais), grow (1) /
-				// grow-16 no ativo (~80%, espreme os demais), min-w-10 dá piso de 40px
-				// aos espremidos. transition só de flex-grow (não briga com o y/opacity
+				// grow-4 no ativo (~50% da galeria: 4/(4+4 outros)), min-w-10 dá piso
+				// de 40px aos demais. transition só de flex-grow (não briga com o y/opacity
 				// da entrada do GSAP). hover:grow-16 no desktop; clique no
 				// tablet/desktop (o mobile é só swipe — ver onClick).
 				<div
@@ -115,8 +115,8 @@ export default function ImageGallery({
 							setExpanded((prev) => (prev === i ? null : i))
 						}
 					}}
-					className={`relative h-full shrink-0 w-[70vw] snap-center rounded-lg overflow-hidden opacity-0 cursor-pointer md:w-auto md:shrink md:basis-0 md:min-w-10 md:transition-[flex-grow] md:duration-500 md:ease-out md:hover:grow-16 ${
-						expanded === i ? 'md:grow-16' : 'md:grow'
+					className={`relative h-full shrink-0 w-[70vw] snap-center rounded-lg overflow-hidden opacity-0 cursor-pointer md:w-auto md:shrink md:basis-0 md:min-w-10 md:transition-[flex-grow] md:duration-500 md:ease-out md:hover:grow-4 ${
+						expanded === i ? 'md:grow-4' : 'md:grow'
 					} ${play ? 'pointer-events-auto' : 'pointer-events-none'}`}
 				>
 					<Image

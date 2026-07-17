@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { BlogHeader } from '@/components/blog/BlogHeader'
+import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { CatalogSidebar } from '@/components/catalog/CatalogSidebar'
 import { CatalogControls } from '@/components/catalog/CatalogControls'
@@ -228,7 +228,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
 
   return (
     <main className="min-h-screen bg-(--color-bg)">
-      <BlogHeader />
+      <Header variant="solid" />
 
       {/* ── Hero ── */}
       <div
