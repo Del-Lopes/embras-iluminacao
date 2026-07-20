@@ -89,7 +89,7 @@ export default function LineCard({
 
       {/* Categoria e nome — sem link */}
       <span className="lp-line-cat">{category}</span>
-      <h3 className="text-[19px] font-(family-name:--font-heading) font-semibold uppercase text-(--color-accent) tracking-[-0.02em] leading-none mb-6">
+      <h3 className="text-[16px] font-(family-name:--font-heading) font-semibold uppercase text-(--color-accent) tracking-[-0.02em] leading-none mb-6">
         {product.name}
       </h3>
 

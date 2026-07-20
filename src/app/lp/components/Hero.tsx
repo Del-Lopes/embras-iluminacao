@@ -40,59 +40,16 @@ export default function Hero({ copy, headline, openForm }: HeroProps) {
       <div className="hero-radial" />
       <div className="hero-grid-bg" />
 
-      {/* Decorative silhouette of pole towers */}
-      <svg
-        className="hero-silhouette"
-        viewBox="0 0 320 900"
-        fill="none"
-        preserveAspectRatio="xMidYMax meet"
-      >
-        <defs>
-          <linearGradient id="poleG" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#c9a86a" stopOpacity="0.15" />
-            <stop offset="0.5" stopColor="#ffffff" stopOpacity="0.2" />
-            <stop offset="1" stopColor="#ffffff" stopOpacity="0.05" />
-          </linearGradient>
-        </defs>
-        {/* Pole 1 — decorative public lighting pole */}
-        <g stroke="url(#poleG)" strokeWidth="1.2" fill="none">
-          <line x1="60" y1="120" x2="60" y2="900" />
-          <path d="M60 140 Q 60 100 90 100 L 130 100" />
-          <circle cx="138" cy="100" r="8" />
-          <path d="M60 170 Q 60 140 35 140 L 10 140" />
-          <circle cx="5" cy="140" r="6" />
-          <rect x="52" y="860" width="16" height="40" />
-        </g>
-        {/* Pole 2 — industrial tall */}
-        <g stroke="url(#poleG)" strokeWidth="1.2" fill="none">
-          <line x1="180" y1="80" x2="180" y2="900" />
-          <line x1="180" y1="90" x2="180" y2="95" strokeWidth="4" />
-          <rect x="150" y="95" width="60" height="8" />
-          <line x1="160" y1="103" x2="160" y2="120" />
-          <line x1="200" y1="103" x2="200" y2="120" />
-          <circle cx="160" cy="128" r="4" />
-          <circle cx="200" cy="128" r="4" />
-          <rect x="172" y="860" width="16" height="40" />
-        </g>
-        {/* Pole 3 — curved decorative */}
-        <g stroke="url(#poleG)" strokeWidth="1.2" fill="none">
-          <line x1="270" y1="180" x2="270" y2="900" />
-          <path d="M270 200 Q 270 150 240 150 Q 210 150 210 170" />
-          <circle cx="210" cy="175" r="6" />
-          <rect x="262" y="860" width="16" height="40" />
-        </g>
-        {/* Ground line */}
-        <line x1="0" y1="895" x2="320" y2="895" stroke="#ffffff" strokeOpacity="0.12" strokeWidth="1" />
-      </svg>
-
       <div className="hero-inner">
         <HeroPill text="Fabricante nacional com padrão industrial" />
 
         <h1 className="hero-headline">
           {h.top}
+          {' '}
           <br />
           <span className="dim">{h.mid}</span>
           {h.midWhite && <span>{h.midWhite}</span>}
+          {' '}
           <br />
           {renderBottom()}
         </h1>

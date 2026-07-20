@@ -151,10 +151,10 @@ export default function TestimonialsCarousel() {
 		// para o conteúdo ficar acima dele (o glow é absolute e vem antes no DOM).
 		// h-full: como item flex do backdrop (h-screen), ocupa a altura toda e o
 		// `items-center` centraliza o conteúdo dentro dela.
-		<section className="relative w-full h-full flex items-center justify-center overflow-hidden px-8 md:px-12 py-16 md:py-0">
+		<section className="relative w-full h-full flex items-center justify-center overflow-hidden py-16 lg:py-0">
 			<div
 				ref={containerRef}
-				className="relative w-full max-w-7xl"
+				className="relative w-full max-w-7xl px-6 md:px-8 lg:px-12"
 				onMouseMove={handleMouseMove}
 			>
 				{/* Número gigante (paralaxe) — sangra pela esquerda */}
@@ -256,7 +256,7 @@ export default function TestimonialsCarousel() {
 				    ele fica -bottom-24 (fora da seção de altura-de-conteúdo) e o
 				    overflow-hidden o cortava; é decorativo e quase invisível
 				    (opacity 0.06), então some sem perda no mobile. */}
-				<div className="hidden md:block absolute -bottom-24 left-0 right-0 overflow-hidden opacity-[0.06] pointer-events-none">
+				<div className="hidden lg:block absolute -bottom-24 left-0 right-0 overflow-hidden opacity-[0.06] pointer-events-none">
 					<div ref={tickerRef} className="flex whitespace-nowrap text-6xl font-bold tracking-tight text-(--color-accent)">
 						{[0, 1].map((dup) => (
 							<span key={dup} className="flex shrink-0">

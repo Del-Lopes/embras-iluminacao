@@ -20,11 +20,17 @@ const GALLERY_IMAGES = [
 ]
 const GALLERY_TOP = '8vh'
 const GALLERY_H = '42vh'
-// Largura útil do container da galeria (`w-full max-w-5xl px-4`): capada em
-// 1024px menos 32px de padding. Ou seja, ela NÃO cresce com o viewport — daí o
-// texto EMBRAS derivar deste mesmo valor, e não de vw (ver EMBRAS_FONT_CSS).
-const GALLERY_W_CSS = 'min(100vw - 32px, 992px)'
-const galleryWidthPx = () => Math.min(window.innerWidth - 32, 992)
+// Largura útil do container da galeria (`w-full max-w-7xl px-6 md:px-8 lg:px-12`):
+// padrão do site — no máximo 1280px menos o padding (24px de cada lado no mobile,
+// 32px no tablet, 48px no desktop → 1184px úteis). O texto EMBRAS deriva desta
+// mesma largura (via a var CSS --emb-gallery-w, definida no wrapper) para casar
+// com a galeria.
+const galleryWidthPx = () => {
+	const w = window.innerWidth
+	if (w >= 1024) return Math.min(w - 96, 1184)
+	if (w >= 768) return w - 64
+	return w - 48
+}
 
 // --- Tema light: depois dos 100%, a cena vira clara ---
 // A transição de entrada (escurecer + subir o texto) NÃO muda: ela continua indo
@@ -83,11 +89,11 @@ const DARKEN_END = 'top 50%'
 // Em `calc` e não em vw: a galeria é capada em 1024px, então num monitor largo o
 // texto em vw cresceria além dela. Aqui os dois param juntos.
 const EMBRAS_W_PER_FONT = 4.214
-const EMBRAS_FONT_CSS = `calc(${GALLERY_W_CSS} / ${EMBRAS_W_PER_FONT})`
+const EMBRAS_FONT_CSS = `calc(var(--emb-gallery-w) / ${EMBRAS_W_PER_FONT})`
 const embrasFontPx = () => galleryWidthPx() / EMBRAS_W_PER_FONT
 // Posição FINAL: centro do texto a 70vh (= 20% abaixo do centro da tela).
 // centro = 100vh − bottom − fonte/2  →  bottom = 30vh − fonte/2
-const EMBRAS_BOTTOM = `calc(30vh - ${GALLERY_W_CSS} / ${EMBRAS_W_PER_FONT} / 2)`
+const EMBRAS_BOTTOM = `calc(30vh - var(--emb-gallery-w) / ${EMBRAS_W_PER_FONT} / 2)`
 // Posição INICIAL: a mesma de antes (base no rodapé + sangramento de 22%), cujo
 // centro ficava em 100vh − 0.28×fonte. Como o repouso agora é 70vh, o deslocamento
 // inicial é: 30vh − 0.28×fonte. Em px, para o GSAP animar até 0.
@@ -337,7 +343,7 @@ export default function HeroProductsWrapper() {
 
 	// z-10 no wrapper: mantém a cena acima da seção seguinte no empilhamento.
 	return (
-		<div className="relative z-10 w-full bg-black">
+		<div className="relative z-10 w-full bg-black [--emb-gallery-w:calc(100vw-48px)] md:[--emb-gallery-w:calc(100vw-64px)] lg:[--emb-gallery-w:min(100vw-96px,1184px)]">
 			{/* --- HERO SECTION (STICKY) --- */}
 			<section
 				ref={heroRef}
@@ -380,12 +386,14 @@ export default function HeroProductsWrapper() {
 				    Antes vivia aqui dentro do hero. */}
 
 				{/* CONTENT HIERARCHY - SIMPLE FLEX COLUMN */}
-				<div className="relative z-20 flex flex-col items-start px-8 md:px-24 w-full pointer-events-none">
-					{/* Mobile: quebra em duas linhas (o <br> só aparece < md) e fonte
-					    maior (14vw ~ preenche a largura com o padding px-8). Desktop:
-					    volta a linha única (md:whitespace-nowrap) com o clamp original. */}
-					<h1 className="text-[clamp(3.25rem,15.5vw,6rem)] md:text-[clamp(4rem,8.3vw,18rem)] md:whitespace-nowrap font-(--font-heading) leading-[1.05] md:leading-none tracking-tight text-[#f2e6cf] drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)] pt-[16vh] md:pt-[19vh] ml-[-0.03em]">
-						ILUMINAÇÃO <br className="md:hidden" />
+				<div className="relative z-20 flex flex-col items-start px-6 md:px-8 lg:px-12 w-full pointer-events-none">
+					{/* Quebra em duas linhas no mobile E tablet (< lg); só no desktop
+					    (lg+) vira linha única (lg:whitespace-nowrap). Fonte por faixa:
+					    mobile 15.5vw, tablet 11vw (maior, 2 linhas), desktop 8.3vw
+					    (1 linha). px-8 alinhado ao logo no tablet (era px-24, indentava
+					    demais). */}
+					<h1 className="text-[calc((100vw-52px)*0.17565)] md:text-[calc((100vw-64px)*0.17565)] lg:text-[calc((100vw-146px)*0.098213)] lg:whitespace-nowrap font-(--font-heading) leading-[1.05] lg:leading-none tracking-tight text-[#f2e6cf] drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)] pt-[16vh] md:pt-[19vh] lg:ml-[-0.03em]">
+						ILUMINAÇÃO <br className="lg:hidden" />
 						<span className="text-white">PREMIUM</span>
 					</h1>
 
@@ -423,7 +431,7 @@ export default function HeroProductsWrapper() {
 
 				{/* RIGHT SCROLL INDICATOR — escondido no mobile: encostava no título
 				    de duas linhas e é uma affordância de desktop. */}
-				<div className="hidden md:block absolute top-1/2 -translate-y-1/2 right-8 md:right-12 z-20">
+				<div className="hidden lg:block absolute top-1/2 -translate-y-1/2 right-8 md:right-12 z-20">
 					<div className="relative w-0.5 h-[120px] flex justify-center">
 						<div className="absolute inset-0 bg-[#474747]" />
 						<div
@@ -556,7 +564,7 @@ export default function HeroProductsWrapper() {
 			<div className="absolute inset-0 z-30 pointer-events-none">
 				<div className="sticky top-0 h-screen w-full">
 					<div
-						className="absolute left-1/2 -translate-x-1/2 w-full max-w-5xl px-4"
+						className="absolute left-1/2 -translate-x-1/2 w-full max-w-7xl px-0 md:px-8 lg:px-12"
 						style={{ top: GALLERY_TOP, height: GALLERY_H }}
 					>
 						<ImageGallery images={GALLERY_IMAGES} play={revealed} />

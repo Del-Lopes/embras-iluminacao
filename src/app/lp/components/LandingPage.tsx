@@ -80,7 +80,7 @@ export default function LandingPage({ lines }: { lines: CarouselLine[] }) {
 
   return (
     <>
-      <Nav openForm={openForm} />
+      <Nav />
       <Hero copy={copy} headline={headline} openForm={openForm} />
       <Pain copy={copy} />
       <Solution copy={copy} openForm={openForm} />

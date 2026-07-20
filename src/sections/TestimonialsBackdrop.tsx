@@ -59,7 +59,7 @@ export default function TestimonialsBackdrop({
 	return (
 		<section
 			ref={sectionRef}
-			className="h-auto md:h-screen w-full bg-(--color-bg) relative flex flex-row z-10"
+			className="h-auto lg:h-screen w-full bg-(--color-bg) relative flex flex-row z-10"
 		>
 			{/* Background Glow Effect — a cor sai da classe testimonials-glow, que
 			    muda por tema (globals.css). No dark é branco a 5% (clareia o preto);

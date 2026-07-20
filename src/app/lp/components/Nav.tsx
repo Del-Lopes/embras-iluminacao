@@ -1,11 +1,19 @@
 import Link from 'next/link'
+import type { NavItem } from '@/types'
 import ThemeToggle from '@/components/common/ThemeToggle'
+import MobileMenu from '@/components/common/MobileMenu'
 
-interface NavProps {
-  openForm: () => void
-}
+// Home leva à página principal (/); os demais são âncoras das seções da LP.
+const LP_NAV: NavItem[] = [
+  { label: 'Home', href: '/' },
+  { label: 'Cenário', href: '#dores' },
+  { label: 'Solução', href: '#solucao' },
+  { label: 'Produtos', href: '#produtos' },
+  { label: 'Projetos', href: '#prova' },
+  { label: 'FAQ', href: '#faq' },
+]
 
-export default function Nav({ openForm }: NavProps) {
+export default function Nav() {
   return (
     <nav className="lp-nav">
       <div className="nav-brand">
@@ -14,15 +22,21 @@ export default function Nav({ openForm }: NavProps) {
         </Link>
       </div>
       <div className="nav-links">
-        <a className="m-link" href="#dores">Cenário</a>
-        <a className="m-link" href="#produtos">Produtos</a>
-        <a className="m-link" href="#prova">Projetos</a>
-        <a className="m-link" href="#faq">FAQ</a>
-        <a className="m-link" href="#contato">Contato</a>
+        {LP_NAV.map((item) =>
+          item.href.startsWith('#') ? (
+            <a key={item.label} className="m-link" href={item.href}>
+              {item.label}
+            </a>
+          ) : (
+            <Link key={item.label} className="m-link" href={item.href}>
+              {item.label}
+            </Link>
+          )
+        )}
       </div>
       <div className="nav-cta">
         <ThemeToggle themed />
-        <button className="btn btn-sm" onClick={openForm}>Orçamento</button>
+        <MobileMenu items={LP_NAV} barClass="bg-(--color-accent)" />
       </div>
     </nav>
   )

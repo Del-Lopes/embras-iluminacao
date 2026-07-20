@@ -92,7 +92,7 @@ export default function ImageGallery({
 		//   sem snap).
 		<div
 			ref={rootRef}
-			className={`flex items-center gap-2 w-full h-full snap-x snap-mandatory md:snap-none overflow-x-auto md:overflow-x-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+			className={`flex items-center gap-2 w-full h-full px-6 scroll-px-6 md:px-0 md:scroll-px-0 snap-x snap-mandatory md:snap-none overflow-x-auto md:overflow-x-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
 				play ? 'pointer-events-auto' : 'pointer-events-none'
 			} ${className}`}
 		>

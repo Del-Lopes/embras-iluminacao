@@ -145,7 +145,7 @@ export default function SuccessCases() {
 		<section
 			ref={sectionRef}
 			id="projetos"
-			className="py-20 md:py-36 px-8 md:px-12 max-w-7xl mx-auto bg-(--color-bg) overflow-hidden"
+			className="py-20 md:py-36 px-6 md:px-8 lg:px-12 max-w-7xl mx-auto bg-(--color-bg) overflow-hidden"
 		>
 			<div className="mb-16 md:mb-32 flex flex-col md:flex-row md:items-end md:justify-between gap-8">
 				<div className="flex flex-col gap-4">

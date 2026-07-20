@@ -3,8 +3,8 @@ import { socialLinks } from '@/config/navigation'
 
 export default function Footer() {
 	return (
-		<footer className="py-20 px-8 border-t border-(--color-surface) bg-(--color-bg)">
-			<div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+		<footer className="py-20 border-t border-(--color-surface) bg-(--color-bg)">
+			<div className="w-full px-6 md:px-8 lg:px-12 flex flex-col md:flex-row justify-between items-center gap-8">
 				<div className="flex items-center gap-2">
 					<div className="footer-logo-wrap relative h-8 w-[120px]">
 						<Image

@@ -7,9 +7,9 @@ import {
 
 export default function WhoWeAre() {
 	return (
-		<section id="quem-somos" className="py-20 md:py-36 px-8 md:px-12 bg-(--color-bg) relative">
-			<div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-10 md:gap-24 items-center">
-				<div className="w-full md:w-[60%] relative aspect-4/3 md:aspect-auto md:h-[600px] border border-(--color-border) overflow-hidden">
+		<section id="quem-somos" className="py-20 md:py-36 bg-(--color-bg) relative">
+			<div className="max-w-7xl mx-auto w-full px-6 md:px-8 lg:px-12 flex flex-col lg:flex-row gap-10 lg:gap-24 items-center">
+				<div className="w-full lg:w-[60%] relative aspect-4/3 lg:aspect-auto lg:h-[600px] border border-(--color-border) overflow-hidden">
 					<FragmentedImageReveal
 						src="/images/case-1.png"
 						alt="Who We Are"
@@ -18,20 +18,20 @@ export default function WhoWeAre() {
 					/>
 				</div>
 
-				<div className="w-full md:w-[40%] flex flex-col gap-6 md:gap-12">
+				<div className="w-full lg:w-[40%] flex flex-col gap-6 md:gap-12">
 					<div className="flex flex-col gap-4">
-						<AnimatedPill className="items-center justify-center md:items-start text-(--color-muted) uppercase w-fit">
+						<AnimatedPill className="items-center justify-center lg:items-start text-(--color-muted) uppercase w-fit mx-auto lg:mx-0">
 							QUem Somos
 						</AnimatedPill>
 						<AnimatedHeading
-							className="text-5xl md:text-7xl font-(--font-heading) uppercase leading-tight md:leading-[82px] tracking-tighter"
+							className="text-5xl md:text-7xl font-(--font-heading) uppercase leading-tight md:leading-[82px] tracking-tighter text-center lg:text-left"
 							direction="left"
 						>
 							Tradição em <br /> esculpir o <br />{' '}
 							<span className="text-(--color-highlight)">invisível.</span>
 						</AnimatedHeading>
 					</div>
-					<div className="flex flex-col gap-6 max-w-lg">
+					<div className="flex flex-col gap-6 max-w-none lg:max-w-lg">
 						<AnimatedParagraph>
 							Com mais de uma década de experiência no mercado, a Embras se destaca como uma empresa inovadora no mercado de iluminação, atuando como fabricante e distribuidora de uma ampla gama de produtos de alta qualidade. Nós transformamos espaços através de um olhar técnico e artístico sobre a luz.
 						</AnimatedParagraph>

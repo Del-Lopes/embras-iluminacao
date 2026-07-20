@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { navItems } from '@/config/navigation'
+import type { NavItem } from '@/types'
 import { cn } from '@/lib/utils/cn'
 
 type Lenis = {
@@ -23,8 +24,11 @@ export default function MobileMenu({
 	// Cor das barras do hambúrguer: branco sobre o hero (overlay), theme-aware
 	// (--color-accent) sobre o header sólido das demais páginas.
 	barClass = 'bg-white',
+	// Links do menu. Padrão: nav do site. A LP passa os seus próprios.
+	items = navItems,
 }: {
 	barClass?: string
+	items?: NavItem[]
 }) {
 	const [open, setOpen] = useState(false)
 	// Portal só após montar (document não existe no SSR).
@@ -59,9 +63,14 @@ export default function MobileMenu({
 			const hash = href.includes('#') ? href.split('#')[1] : ''
 			if (hash) {
 				e.preventDefault()
-				requestAnimationFrame(() =>
-					lenis?.scrollTo('#' + hash, { duration: 1.2 })
-				)
+				requestAnimationFrame(() => {
+					// Com Lenis (home), scroll suave dele; sem Lenis (LP), nativo.
+					if (lenis) lenis.scrollTo('#' + hash, { duration: 1.2 })
+					else
+						document
+							.getElementById(hash)
+							?.scrollIntoView({ behavior: 'smooth' })
+				})
 			}
 		}
 
@@ -101,7 +110,7 @@ export default function MobileMenu({
 							Fechar
 						</button>
 
-						{navItems.map((item) =>
+						{items.map((item) =>
 							item.disabled ? (
 								<span
 									key={item.label}

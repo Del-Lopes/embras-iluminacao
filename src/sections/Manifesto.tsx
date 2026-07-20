@@ -295,7 +295,7 @@ export default function Manifesto() {
 			<div className="flex w-full h-full items-start relative z-10">
 				{/* LEFT COLUMN — full-width no mobile (o título vertical vira marca
 				    d'água atrás), 70% no desktop. z-10 para ficar sobre a marca. */}
-				<div className="w-full md:w-[70%] h-full flex flex-col justify-between pl-8 md:pl-24 pr-8 md:pr-0 py-16 md:py-24 relative z-10 overflow-hidden">
+				<div className="w-full md:w-[70%] h-full flex flex-col justify-between pl-6 md:pl-8 lg:pl-12 pr-6 md:pr-0 py-16 md:py-24 relative z-10 overflow-hidden">
 					<div className="flex-1 flex items-center relative">
 						{slides.map((slide) => (
 							// pr no próprio manifesto-left-text (e não no pai): como ele
@@ -350,16 +350,16 @@ export default function Manifesto() {
 					{slides.map((slide) => (
 						<div
 							key={slide.id}
-							className="manifesto-right-text absolute inset-0 flex items-center justify-center"
+							className="manifesto-right-text absolute inset-0 flex items-center justify-end md:justify-center pr-6 md:pr-0"
 						>
 							{/* No mobile o texto sai do TOPO (items-start + folga de
 							    50px), em vez de centralizado — assim a marca d'água
 							    "desce" a partir do topo e a fonte pode voltar aos 156px
 							    originais sem transbordar dos dois lados. No md+ volta a
 							    centralizar na coluna lateral. */}
-							<div className="relative h-full flex items-start md:items-center justify-center pl-12 pt-[20px] md:pt-0">
+							<div className="relative h-full flex items-start md:items-center justify-center pt-[20px] md:pt-0 -mr-6 md:mr-0">
 								<span
-									className="harmonious relative font-(--font-heading) uppercase select-none text-[140px] md:text-[min(20vh,40vw)]"
+									className="harmonious relative font-(--font-heading) uppercase select-none text-[140px] md:text-[min(15vh,18vw)] lg:text-[min(20vh,40vw)]"
 									style={{
 										writingMode: 'vertical-rl',
 										lineHeight: 0.8,

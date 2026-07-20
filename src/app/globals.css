@@ -240,6 +240,22 @@ p {
 	opacity: 1;
 }
 
+/* Transição de página do carrossel de produtos: cada página (re-montada por
+   `key={currentPage}`) entra com um fade sutil. */
+@keyframes pl-page-in {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+.pl-page {
+	animation: pl-page-in 0.45s ease both;
+}
+
 .harmonious {
 	font-weight: 100;
 	letter-spacing: 2px;
@@ -4068,6 +4084,34 @@ tr[data-selected='true'] td {
 	position: relative;
 	z-index: 1;
 	width: 100%;
+	/* Mesmo box-model do .blog-index-body: max-width 1280 (herdado) + margin auto +
+	   padding horizontal dentro do limite. Assim o texto do banner alinha com o
+	   conteúdo do corpo (sidebar/grid) em qualquer largura. */
+	box-sizing: border-box;
+	padding-left: 48px;
+	padding-right: 48px;
+}
+
+/* O padding horizontal do banner é do inner (acima); o wrapper vai full-width.
+   Especificidade dupla p/ vencer as media queries de .blog-index-hero. */
+.blog-index-hero.blog-index-hero--banner {
+	padding-left: 0;
+	padding-right: 0;
+}
+
+/* Padding do inner acompanha o do corpo por breakpoint: 48 / 32 / 24. */
+@media (max-width: 1024px) {
+	.blog-index-hero--banner .blog-index-hero-inner {
+		padding-left: 32px;
+		padding-right: 32px;
+	}
+}
+
+@media (max-width: 768px) {
+	.blog-index-hero--banner .blog-index-hero-inner {
+		padding-left: 24px;
+		padding-right: 24px;
+	}
 }
 
 /* Sobre a imagem escura, o texto é sempre claro (independente do tema) */
