@@ -1400,6 +1400,20 @@ p {
 	border: 1px solid var(--color-border);
 }
 
+/* Só no tablet: foto de exibição menor (no estado de coluna única a galeria
+   ficava gigante) e thumbnails maiores. Colocado APÓS as regras base para
+   vencê-las por ordem de origem. */
+@media (min-width: 768px) and (max-width: 1024px) {
+	.product-gallery--has-thumbs {
+		max-width: 560px;
+	}
+
+	.product-gallery-thumb {
+		width: 92px;
+		height: 92px;
+	}
+}
+
 /* Botão "Ver em 3D" (canto inferior direito da imagem) — preto fixo em qualquer tema */
 .gallery-3d-btn {
 	position: absolute;
