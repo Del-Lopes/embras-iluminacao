@@ -4724,8 +4724,35 @@ tr[data-selected='true'] td {
 		grid-template-columns: repeat(2, 1fr);
 	}
 
+	/* Slug (tablet/mobile): cover e corpo do artigo seguem o gutter padrão
+	   (32px tablet / 24px mobile — este último no bloco <=767), mantendo a
+	   largura de leitura de 720px onde couber. */
+	.blog-cover,
+	.blog-container {
+		max-width: min(720px, 100% - 64px);
+		padding-left: 0;
+		padding-right: 0;
+	}
+
+	/* Posts relacionados viram CARROSSEL: rolagem horizontal com snap.
+	   Tablet mostra 2 por tela; mobile 1 (no bloco <=767). */
 	.blog-related-grid {
-		grid-template-columns: repeat(2, 1fr);
+		display: flex;
+		grid-template-columns: none;
+		gap: 16px;
+		overflow-x: auto;
+		scroll-snap-type: x mandatory;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+	}
+
+	.blog-related-grid::-webkit-scrollbar {
+		display: none;
+	}
+
+	.blog-related-grid > * {
+		flex: 0 0 calc((100% - 16px) / 2);
+		scroll-snap-align: start;
 	}
 
 	.blog-related {
@@ -4773,18 +4800,19 @@ tr[data-selected='true'] td {
 		padding: 48px 24px 56px;
 	}
 
-	.blog-related-grid {
-		grid-template-columns: repeat(2, 1fr);
+	/* Cover e corpo do artigo com gutter de 24px no mobile */
+	.blog-cover,
+	.blog-container {
+		max-width: min(720px, 100% - 48px);
+	}
+
+	/* Carrossel de relacionados: 1 por tela no mobile */
+	.blog-related-grid > * {
+		flex: 0 0 100%;
 	}
 
 	.blog-share {
 		flex-wrap: wrap;
 		gap: 12px;
-	}
-}
-
-@media (max-width: 480px) {
-	.blog-related-grid {
-		grid-template-columns: 1fr;
 	}
 }
