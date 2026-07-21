@@ -1034,6 +1034,56 @@ p {
 	text-decoration: underline;
 }
 
+/* ── Filtros em modal/drawer (SÓ no catálogo) ──
+   Desktop: os filtros ficam inline na sidebar (o botão, o cabeçalho e o
+   backdrop ficam ocultos). Tablet/mobile (<=1024): o botão FILTROS abre um
+   drawer que desliza da esquerda ocupando 85% da tela. */
+
+/* Botão FILTROS — oculto no desktop, aparece <=1024 (regra na media query). */
+.catalog-filter-btn {
+	display: none;
+	align-items: center;
+	gap: 10px;
+	align-self: flex-start;
+	padding: 12px 20px;
+	border: 1px solid var(--color-border);
+	background: none;
+	color: var(--color-accent);
+	font-family: var(--font-body);
+	font-size: var(--font-size-xs);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.12em;
+	cursor: pointer;
+	transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.catalog-filter-btn:hover {
+	border-color: var(--color-accent);
+	background-color: var(--color-surface);
+}
+
+.catalog-filter-btn svg {
+	flex-shrink: 0;
+}
+
+/* Backdrop e cabeçalho do drawer — inexistentes no desktop */
+.catalog-filter-backdrop {
+	display: none;
+}
+
+.catalog-filters-head {
+	display: none;
+}
+
+/* Container dos filtros: no desktop é apenas o empilhamento normal (a sidebar
+   já tem gap 36px entre a busca e este bloco). */
+.catalog-filters-scroll {
+	display: flex;
+	flex-direction: column;
+	gap: 36px;
+}
+
 /* Grid view */
 .catalog-grid {
 	display: grid;
@@ -4895,5 +4945,108 @@ tr[data-selected='true'] td {
 	.blog-share {
 		flex-wrap: wrap;
 		gap: 12px;
+	}
+}
+
+/* ================================================================
+   CATÁLOGO — DRAWER DE FILTROS (tablet/mobile <=1024)
+   No desktop os filtros ficam inline na sidebar; aqui viram um botão
+   FILTROS que abre um drawer deslizando da esquerda (85% da tela).
+   ================================================================ */
+@media (max-width: 1024px) {
+	/* Sidebar do catálogo: só busca + botão FILTROS, empilhados. */
+	.catalog-sidebar {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 20px;
+	}
+
+	.catalog-filter-btn {
+		display: inline-flex;
+	}
+
+	/* Backdrop cobrindo a tela; clicar fora fecha. */
+	.catalog-filter-backdrop {
+		display: block;
+		position: fixed;
+		inset: 0;
+		z-index: 199;
+		background-color: rgba(0, 0, 0, 0.55);
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 0.32s ease;
+	}
+
+	.catalog-filter-backdrop.is-open {
+		opacity: 1;
+		pointer-events: auto;
+	}
+
+	/* Drawer: entra da esquerda, 85% da largura, altura total. */
+	.catalog-filters {
+		position: fixed;
+		top: 0;
+		left: 0;
+		z-index: 200;
+		display: flex;
+		flex-direction: column;
+		width: 85vw;
+		max-width: none;
+		height: 100dvh;
+		background-color: var(--color-bg);
+		border-right: 1px solid var(--color-border);
+		box-shadow: 8px 0 40px rgba(0, 0, 0, 0.35);
+		transform: translateX(-100%);
+		transition: transform 0.32s ease;
+	}
+
+	.catalog-filters.is-open {
+		transform: translateX(0);
+	}
+
+	/* Cabeçalho do drawer (título FILTROS + X), fixo no topo. */
+	.catalog-filters-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-shrink: 0;
+		padding: 20px 24px;
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.catalog-filters-title {
+		font-family: var(--font-heading);
+		font-size: var(--font-size-sm);
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.14em;
+		color: var(--color-accent);
+	}
+
+	.catalog-filter-close {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 36px;
+		height: 36px;
+		border: none;
+		background: none;
+		color: var(--color-accent);
+		cursor: pointer;
+	}
+
+	/* Filtros posicionados no topo do drawer, com rolagem própria. */
+	.catalog-filters-scroll {
+		flex: 1;
+		overflow-y: auto;
+		gap: 28px;
+		padding: 24px;
+	}
+
+	/* Dentro do drawer, as listas de filtro ficam empilhadas (uma por linha),
+	   desfazendo o flow em row herdado do blog. */
+	.catalog-filters .blog-sidebar-cats ul {
+		flex-direction: column;
+		gap: 0;
 	}
 }
