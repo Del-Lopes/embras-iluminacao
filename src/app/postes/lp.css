@@ -492,12 +492,20 @@ html.light .lp-page .nav-logo {
 }
 
 /* Header (nav) da LP: 4px a menos do padrão só no tablet → 28px horizontal
-   (o padrão do tablet é 32px). O mobile já fica 24px via --lp-pad-x. Não
-   afeta as demais seções (que seguem usando --lp-pad-x). */
+   (o padrão do tablet é 32px). Não afeta as demais seções (que seguem
+   usando --lp-pad-x). */
 @media (min-width: 769px) and (max-width: 1024px) {
 	.lp-page .lp-nav {
 		padding-left: 28px;
 		padding-right: 28px;
+	}
+}
+
+/* Header (nav) da LP no mobile: 20px horizontal (padrão é 24px). */
+@media (max-width: 768px) {
+	.lp-page .lp-nav {
+		padding-left: 20px;
+		padding-right: 20px;
 	}
 }
 

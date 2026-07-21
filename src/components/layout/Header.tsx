@@ -36,7 +36,7 @@ export default function Header({
 					: 'relative bg-(--color-bg) border-b border-(--color-border)'
 			)}
 		>
-			<div className="flex items-center justify-between px-6 md:px-7 lg:px-12 py-6">
+			<div className="flex items-center justify-between px-5 md:px-7 lg:px-12 py-6">
 				{/* Logo (asset branco). No overlay fica branco; nas páginas sólidas,
 				    invertido para preto quando o tema é claro. */}
 				<Link
