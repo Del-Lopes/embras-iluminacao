@@ -1400,17 +1400,18 @@ p {
 	border: 1px solid var(--color-border);
 }
 
-/* Só no tablet: foto de exibição menor (no estado de coluna única a galeria
-   ficava gigante) e thumbnails maiores. Colocado APÓS as regras base para
-   vencê-las por ordem de origem. */
+/* Só no tablet: a galeria preenche toda a largura disponível (sem cap, para
+   não sobrar vão de borda) — a foto principal cresce até o limite mantendo-se
+   quadrada (aspect-ratio 1/1). Thumbnails levemente maiores. Colocado APÓS as
+   regras base para vencê-las por ordem de origem. */
 @media (min-width: 768px) and (max-width: 1024px) {
 	.product-gallery--has-thumbs {
-		max-width: 560px;
+		max-width: none;
 	}
 
 	.product-gallery-thumb {
-		width: 92px;
-		height: 92px;
+		width: 104px;
+		height: 104px;
 	}
 }
 
