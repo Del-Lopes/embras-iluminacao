@@ -135,12 +135,15 @@ export default function Manifesto() {
 				0.25
 			)
 
-			// 1.5 Linha horizontal (scrub)
+			// 1.5 Linha horizontal (scrub) — precisa estar COMPLETA quando a seção
+			// atinge 100vh (top top). Por isso o end é 'top top' (e não 'top -30%',
+			// que só completava depois de a seção já ter passado do enquadramento).
+			// Vale para todas as telas: no desktop 'top top' é onde o pin começa.
 			const lineHTl = gsap.timeline({
 				scrollTrigger: {
 					trigger: sectionRef.current,
-					start: 'top 30%',
-					end: 'top -30%',
+					start: 'top 60%',
+					end: 'top top',
 					scrub: 1,
 				},
 			})
