@@ -1075,7 +1075,7 @@ p {
 	border: none;
 	padding: 0;
 	font-size: var(--font-size-sm);
-	color: var(--color-accent);
+	color: var(--color-highlight);
 	cursor: pointer;
 	text-decoration: underline;
 }
