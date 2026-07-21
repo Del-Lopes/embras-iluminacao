@@ -1223,7 +1223,9 @@ p {
 .product-detail {
 	max-width: 1100px;
 	margin: 0 auto;
-	padding: 48px 24px 0;
+	/* padding-bottom garante respiro antes do rodapé (ou dos relacionados),
+	   inclusive quando a última seção é o visualizador 3D, que encostava. */
+	padding: 48px 24px 72px;
 }
 
 .product-detail-top {
@@ -1336,9 +1338,10 @@ p {
 
 .product-info-category {
 	font-size: var(--font-size-xs);
+	font-weight: 600;
 	text-transform: uppercase;
 	letter-spacing: 0.08em;
-	color: var(--color-muted);
+	color: var(--color-highlight);
 	text-decoration: none;
 }
 
@@ -1365,7 +1368,7 @@ a.product-info-category:hover {
 	margin: 16px 0 0;
 	font-size: var(--font-size-base);
 	line-height: 1.6;
-	color: var(--color-muted);
+	color: var(--color-body-text);
 }
 
 /* Sections */
@@ -1572,6 +1575,23 @@ a.product-info-category:hover {
 	margin: 0;
 	font-size: var(--font-size-sm);
 	color: #1a1a1a;
+}
+
+/* Instrução de AR — logo abaixo do bloco do model-viewer */
+.product-3d-ar-note {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	margin: 16px 0 0;
+	font-size: var(--font-size-sm);
+	line-height: 1.55;
+	color: var(--color-muted);
+}
+
+.product-3d-ar-note-icon {
+	flex-shrink: 0;
+	margin-top: 1px;
+	color: var(--color-highlight);
 }
 
 /* Toasts (sonner): título em negrito + descrição cinza, sem ícone de tipo */
@@ -4524,19 +4544,30 @@ tr[data-selected='true'] td {
 	gap: 12px;
 }
 
-/* Produto: compartilhar abaixo da linha (hr no topo) e alinhado à esquerda */
+/* Produto: compartilhar dentro de um bloco com bordas, alinhado à esquerda,
+   SEM separador acima (o border-top foi removido). */
 .product-share-wrap {
 	align-items: flex-start;
+	gap: 14px;
+	margin-top: 28px;
 	margin-bottom: 0;
-	padding-bottom: 0;
-	border-bottom: none;
-	margin-top: 40px;
-	padding-top: 40px;
-	border-top: 1px solid var(--color-border);
+	padding: 20px 22px;
+	border: 1px solid var(--color-border);
+	border-radius: 12px;
 }
 
 .product-share-wrap .blog-share {
 	justify-content: flex-start;
+}
+
+/* Separador entre o bloco superior (galeria/info) e as seções (specs/descrição).
+   Vive dentro de .product-detail (max-width 1100 + padding 24px), então ocupa a
+   largura do conteúdo sem constraints próprias. */
+.product-detail-divider {
+	margin: 56px 0 0;
+	padding: 0;
+	border: 0;
+	border-top: 1px solid var(--color-border);
 }
 
 .blog-share-icon {

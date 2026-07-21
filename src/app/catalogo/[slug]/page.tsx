@@ -167,7 +167,7 @@ export default async function ProductDetailPage({ params }: Props) {
               <p className="product-info-short-desc">{product.short_description}</p>
             )}
 
-            {/* Share — abaixo da linha, alinhado à esquerda */}
+            {/* Share — bloco com bordas, sem separador acima, alinhado à esquerda */}
             <div className="blog-share-wrap product-share-wrap">
               <p className="blog-share-label">Compartilhar</p>
               <div className="blog-share">
@@ -188,6 +188,14 @@ export default async function ProductDetailPage({ params }: Props) {
           </div>
         </div>
 
+        {/* Separador entre o bloco superior (galeria/info) e as seções abaixo */}
+        <hr className="product-detail-divider" />
+
+        {/* Technical specs (vêm ANTES da descrição) */}
+        <div className="product-section">
+          <ProductSpecs product={product} characteristics={characteristics} />
+        </div>
+
         {/* Description */}
         {hasDescription && (
           <div className="product-section">
@@ -196,25 +204,46 @@ export default async function ProductDetailPage({ params }: Props) {
           </div>
         )}
 
-        {/* Technical specs */}
-        <div className="product-section">
-          <ProductSpecs product={product} characteristics={characteristics} />
-        </div>
-
         {/* 3D model (model-viewer) */}
         {product.has_3d_model && (
           <div className="product-section" id="produto-3d-viewer" style={{ scrollMarginTop: 90 }}>
             <h2 className="product-section-title">Visualização 3D</h2>
             {product.model_3d_url ? (
-              <ProductModelViewer
-                src={product.model_3d_url}
-                poster={product.model_3d_poster}
-                alt={product.model_3d_alt}
-                variations={product.model_3d_variations}
-                materialLabels={product.model_3d_material_labels}
-                objectType={product.model_3d_object_type}
-                arScale={product.model_3d_ar_scale}
-              />
+              <>
+                <ProductModelViewer
+                  src={product.model_3d_url}
+                  poster={product.model_3d_poster}
+                  alt={product.model_3d_alt}
+                  variations={product.model_3d_variations}
+                  materialLabels={product.model_3d_material_labels}
+                  objectType={product.model_3d_object_type}
+                  arScale={product.model_3d_ar_scale}
+                />
+                {/* Instrução de AR — logo abaixo do bloco do model-viewer */}
+                <p className="product-3d-ar-note">
+                  <svg
+                    className="product-3d-ar-note-icon"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  <span>
+                    No celular/tablet clique no ícone do canto direito para abrir o
+                    AR, com a câmera posicione o objeto para ver em realidade
+                    aumentada.
+                  </span>
+                </p>
+              </>
             ) : (
               <div className="product-3d-placeholder">
                 <p>Visualização 3D deste produto em breve.</p>
