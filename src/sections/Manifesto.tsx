@@ -27,6 +27,19 @@ const slides = [
 // cada caractere). É o único número a mexer para acelerar/desacelerar o efeito.
 const REVEAL_SPREAD_S = 1.6
 
+// --- Centralizador (touch) ---
+// Mesmo sistema da HeroProducts: quando o scroll ASSENTA perto da seção, ela
+// encaixa (centraliza) na viewport — sem sequestrar a rolagem, só arrematando o
+// enquadramento. Como a seção é h-screen, snapar o topo em 0 = tela cheia = a
+// seção "pinada" na tela. Alcance maior na entrada (aciona mais cedo) e curto na
+// saída (só corrige o excesso, sem prender quem quer seguir).
+const SNAP_ENTER_REACH = 0.55
+const SNAP_EXIT_REACH = 0.15
+// Tempo após o usuário PARAR de rolar (último gesto) para o encaixe disparar.
+const SNAP_DELAY_MS = 800
+// Duração do deslize até a posição enquadrada.
+const SNAP_DURATION_S = 1.0
+
 export default function Manifesto() {
 	const { theme } = useTheme()
 	const isDark = theme === 'dark'
@@ -43,6 +56,52 @@ export default function Manifesto() {
 	useEffect(() => {
 		setMounted(true)
 	}, [])
+
+	// --- Centralizador (só touch < lg): encaixa a seção no centro quando o scroll
+	// para perto dela. Espera o scroll ASSENTAR (debounce) e só então corrige, e
+	// apenas se já estiver perto (reach). Não sequestra a rolagem — o usuário
+	// conduz, o encaixe só arremata. No desktop (>= lg) NÃO age: lá a seção tem o
+	// próprio pin+scrub, e snapar brigaria com ele. Portado da HeroProducts.
+	useEffect(() => {
+		if (!mounted) return
+		const lenis = (
+			window as unknown as {
+				__lenis?: {
+					scrollTo: (t: HTMLElement, o?: { duration?: number }) => void
+				}
+			}
+		).__lenis
+		if (!lenis) return
+
+		let timer: number | null = null
+		const settle = () => {
+			if (window.innerWidth >= 1024) return // desktop: pin+scrub próprio
+			const el = sectionRef.current
+			if (!el) return
+			const delta = el.getBoundingClientRect().top
+			const vh = window.innerHeight
+			// delta > 0: seção ainda abaixo (entrando) → aciona mais cedo.
+			// delta < 0: já passou (saindo) → alcance menor, só corrige o excesso.
+			const reach = vh * (delta > 0 ? SNAP_ENTER_REACH : SNAP_EXIT_REACH)
+			if (Math.abs(delta) > 2 && Math.abs(delta) < reach) {
+				lenis.scrollTo(el, { duration: SNAP_DURATION_S })
+			}
+		}
+
+		// Conta a partir do GESTO do usuário (roda/toque), não do 'scroll' do Lenis,
+		// que segue emitindo durante todo o easing dele.
+		const onInput = () => {
+			if (timer !== null) clearTimeout(timer)
+			timer = window.setTimeout(settle, SNAP_DELAY_MS)
+		}
+		window.addEventListener('wheel', onInput, { passive: true })
+		window.addEventListener('touchmove', onInput, { passive: true })
+		return () => {
+			window.removeEventListener('wheel', onInput)
+			window.removeEventListener('touchmove', onInput)
+			if (timer !== null) clearTimeout(timer)
+		}
+	}, [mounted])
 
 	useGSAP(
 		() => {
