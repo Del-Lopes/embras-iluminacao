@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { EditorJsContent } from '@/components/blog/EditorJsContent'
-import { PostCard } from '@/components/blog/PostCard'
+import { BlogRelatedCarousel } from '@/components/blog/BlogRelatedCarousel'
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
 import type { PostCardData } from '@/components/blog/PostCard'
 
@@ -184,18 +184,7 @@ export default async function BlogPostPage({ params }: Props) {
       </article>
 
       {/* ── Related posts ── */}
-      {relatedPosts.length > 0 && (
-        <section className="blog-related">
-          <div className="blog-related-inner">
-            <h2 className="blog-related-title">Posts Relacionados</h2>
-            <div className="blog-related-grid">
-              {relatedPosts.map((rp) => (
-                <PostCard key={rp.id} {...rp} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      {relatedPosts.length > 0 && <BlogRelatedCarousel posts={relatedPosts} />}
 
       <Footer />
     </main>

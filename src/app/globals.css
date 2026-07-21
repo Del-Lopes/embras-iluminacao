@@ -4683,6 +4683,81 @@ tr[data-selected='true'] td {
 	gap: 20px;
 }
 
+/* Cabeçalho do bloco (título + setas). No desktop as setas/dots ficam ocultos
+   (grid de 4 colunas, sem carrossel); aparecem só no tablet/mobile (<=1024). */
+.blog-related-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	margin-bottom: 32px;
+}
+
+.blog-related-head .blog-related-title {
+	margin-bottom: 0;
+}
+
+.blog-related-controls {
+	display: none;
+	align-items: center;
+	gap: 8px;
+}
+
+.blog-related-arrow {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	border: 1px solid var(--color-border);
+	background: none;
+	color: var(--color-accent);
+	cursor: pointer;
+	transition:
+		background-color var(--transition-fast),
+		border-color var(--transition-fast),
+		opacity var(--transition-fast);
+}
+
+.blog-related-arrow:hover:not(:disabled) {
+	background-color: var(--color-surface);
+	border-color: var(--color-accent);
+}
+
+.blog-related-arrow:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+
+.blog-related-dots {
+	display: none;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	margin-top: 24px;
+}
+
+.blog-related-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 999px;
+	border: none;
+	padding: 0;
+	background-color: var(--color-muted);
+	opacity: 0.5;
+	cursor: pointer;
+	transition:
+		width var(--transition-fast),
+		opacity var(--transition-fast),
+		background-color var(--transition-fast);
+}
+
+.blog-related-dot.is-active {
+	width: 24px;
+	opacity: 1;
+	background-color: var(--color-accent);
+}
+
 /* ================================================================
    BLOG RESPONSIVE
    ================================================================ */
@@ -4753,6 +4828,12 @@ tr[data-selected='true'] td {
 	.blog-related-grid > * {
 		flex: 0 0 calc((100% - 16px) / 2);
 		scroll-snap-align: start;
+	}
+
+	/* Controles do carrossel visíveis no tablet/mobile */
+	.blog-related-controls,
+	.blog-related-dots {
+		display: flex;
 	}
 
 	.blog-related {
