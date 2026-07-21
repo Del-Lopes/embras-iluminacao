@@ -1023,6 +1023,52 @@ p {
 	color: var(--color-accent);
 }
 
+/* Chips dos filtros ativos — abaixo da linha de controles. Vivem no wrapper
+   .catalog-toolbar junto dos controles; o espaço acima vem do margin-bottom
+   dos controles (24px), e o espaço até o grid vem do gap da seção. */
+.catalog-active-filters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.catalog-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 5px 5px 5px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: 999px;
+	font-size: var(--font-size-xs);
+	color: var(--color-body-text);
+}
+
+.catalog-chip-label {
+	line-height: 1.1;
+}
+
+.catalog-chip-remove {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	flex-shrink: 0;
+	border: none;
+	border-radius: 50%;
+	background-color: var(--color-surface);
+	color: var(--color-muted);
+	cursor: pointer;
+	transition:
+		background-color var(--transition-fast),
+		color var(--transition-fast);
+}
+
+.catalog-chip-remove:hover {
+	background-color: var(--color-border);
+	color: var(--color-accent);
+}
+
 .catalog-clear-filters {
 	margin-top: 8px;
 	background: none;

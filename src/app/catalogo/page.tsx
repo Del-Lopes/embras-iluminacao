@@ -5,6 +5,7 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { CatalogSidebar } from '@/components/catalog/CatalogSidebar'
 import { CatalogControls } from '@/components/catalog/CatalogControls'
+import { CatalogActiveFilters } from '@/components/catalog/CatalogActiveFilters'
 import { ProductCard } from '@/components/catalog/ProductCard'
 import { flattenCategoryTree } from '@/lib/utils/category-tree'
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
@@ -259,9 +260,25 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
         </Suspense>
 
         <section className="blog-grid-section">
-          <Suspense fallback={<div className="catalog-controls" />}>
-            <CatalogControls total={total} currentSort={sort} currentView={view} />
-          </Suspense>
+          <div className="catalog-toolbar">
+            <Suspense fallback={<div className="catalog-controls" />}>
+              <CatalogControls total={total} currentSort={sort} currentView={view} />
+            </Suspense>
+
+            {/* Chips dos filtros ativos — abaixo da linha de controles */}
+            <Suspense fallback={null}>
+              <CatalogActiveFilters
+                q={q}
+                environment={environment}
+                tipo={tipo}
+                material={material}
+                soquete={soquete}
+                categories={categories.map((c) => ({ slug: c.slug, name: c.name }))}
+                materials={materials}
+                soquetes={soquetes}
+              />
+            </Suspense>
+          </div>
 
           {products.length === 0 ? (
             <p className="blog-grid-empty">Nenhum produto encontrado.</p>
