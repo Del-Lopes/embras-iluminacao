@@ -4969,6 +4969,13 @@ tr[data-selected='true'] td {
 		gap: 20px;
 	}
 
+	/* A sidebar é coluna, então o flex-basis 200px herdado do blog (pensado p/
+	   row) virava ALTURA e esticava a busca. Reset: altura natural, largura 100%. */
+	.catalog-sidebar .blog-sidebar-search {
+		flex: none;
+		width: 100%;
+	}
+
 	.catalog-filter-bar {
 		display: flex;
 	}
