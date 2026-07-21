@@ -64,6 +64,7 @@ html.light .lp-page .lp-body,
 html.light .lp-page .hero-sub p,
 html.light .lp-page .guar-text p,
 html.light .lp-page .cta-final .body-lg,
+html.light .lp-page .lp-modal-sub,
 html.light .lp-page .footer-tag {
 	color: #1a1a1a;
 }
@@ -1969,7 +1970,8 @@ html.light .lp-page .footer-logo {
 }
 .lp-modal-sub {
 	font-size: 14px;
-	color: var(--color-muted, #6a6a6a);
+	/* mesma cor do texto descritivo do site (.body-lg) */
+	color: #e5e5e5;
 	margin-bottom: 32px;
 }
 .lp-modal-field {
@@ -2035,7 +2037,8 @@ html.light .lp-page .footer-logo {
 	color: var(--color-accent, #fff);
 }
 .lp-modal-opt .sub {
-	font-family: var(--font-mono);
+	/* mesma fonte do texto descritivo do site (.sol-feature-v = fonte do corpo) */
+	font-family: var(--font-body);
 	font-size: 10px;
 	letter-spacing: 0.2em;
 	color: var(--color-muted, #6a6a6a);
