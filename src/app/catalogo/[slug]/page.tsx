@@ -240,9 +240,9 @@ export default async function ProductDetailPage({ params }: Props) {
                     <line x1="12" y1="8" x2="12.01" y2="8" />
                   </svg>
                   <span>
-                    No celular/tablet clique no ícone do canto direito para abrir o
-                    AR, com a câmera posicione o objeto para vê-lo em realidade
-                    aumentada.
+                    No celular/tablet clique no ícone no canto inferior direito para
+                    abrir o AR, com a câmera posicione o objeto para vê-lo em
+                    realidade aumentada.
                   </span>
                 </p>
               </>
