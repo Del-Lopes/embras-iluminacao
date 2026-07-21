@@ -241,8 +241,8 @@ export default async function ProductDetailPage({ params }: Props) {
                   </svg>
                   <span>
                     No celular/tablet clique no ícone no canto inferior direito para
-                    abrir o AR, com a câmera posicione o objeto para vê-lo em
-                    realidade aumentada.
+                    abrir o AR, com a câmera ligada, aponte para o ambiente e
+                    posicione o objeto para vê-lo em realidade aumentada.
                   </span>
                 </p>
               </>
