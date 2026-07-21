@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Header from '@/components/layout/Header'
 import { BlogSidebar } from '@/components/blog/BlogSidebar'
 import { BlogControls } from '@/components/blog/BlogControls'
+import { BlogActiveFilters } from '@/components/blog/BlogActiveFilters'
 import Footer from '@/components/layout/Footer'
 import { PostCard } from '@/components/blog/PostCard'
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
@@ -135,9 +136,20 @@ export default async function BlogPage({ searchParams }: { searchParams: SearchP
 
         {/* Grid + pagination */}
         <section className="blog-grid-section">
-          <Suspense fallback={<div className="catalog-controls" />}>
-            <BlogControls total={total} currentSort={sort} />
-          </Suspense>
+          <div className="catalog-toolbar">
+            <Suspense fallback={<div className="catalog-controls" />}>
+              <BlogControls total={total} currentSort={sort} />
+            </Suspense>
+
+            {/* Chips dos filtros ativos — abaixo da linha de controles */}
+            <Suspense fallback={null}>
+              <BlogActiveFilters
+                q={q}
+                categorySlug={categorySlug}
+                categories={categories.map((c) => ({ slug: c.slug, name: c.name }))}
+              />
+            </Suspense>
+          </div>
 
           {posts.length === 0 ? (
             <p className="blog-grid-empty">Nenhum post encontrado.</p>

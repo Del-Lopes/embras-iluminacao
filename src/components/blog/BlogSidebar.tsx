@@ -46,6 +46,8 @@ export function BlogSidebar({ categories, currentQ, currentCategorySlug }: Props
     updateParams({ category: next.join(',') })
   }
 
+  const hasFilters = !!currentQ || !!currentCategorySlug
+
   return (
     <aside className="blog-sidebar">
       {/* Search */}
@@ -82,6 +84,16 @@ export function BlogSidebar({ categories, currentQ, currentCategorySlug }: Props
             })}
           </ul>
         </nav>
+      )}
+
+      {hasFilters && (
+        <button
+          type="button"
+          className="catalog-clear-filters"
+          onClick={() => updateParams({ q: '', category: '' })}
+        >
+          Limpar filtros
+        </button>
       )}
     </aside>
   )
