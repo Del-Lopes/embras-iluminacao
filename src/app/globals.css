@@ -1039,6 +1039,14 @@ p {
    backdrop ficam ocultos). Tablet/mobile (<=1024): o botão FILTROS abre um
    drawer que desliza da esquerda ocupando 85% da tela. */
 
+/* Barra FILTROS + Limpar — oculta no desktop (os filtros ficam inline),
+   aparece como linha <=1024 (regra na media query). */
+.catalog-filter-bar {
+	display: none;
+	align-items: center;
+	gap: 20px;
+}
+
 /* Botão FILTROS — oculto no desktop, aparece <=1024 (regra na media query). */
 .catalog-filter-btn {
 	display: none;
@@ -4961,8 +4969,17 @@ tr[data-selected='true'] td {
 		gap: 20px;
 	}
 
+	.catalog-filter-bar {
+		display: flex;
+	}
+
 	.catalog-filter-btn {
 		display: inline-flex;
+	}
+
+	/* "Limpar filtros" ao lado do botão FILTROS (fora do modal) */
+	.catalog-clear-filters--bar {
+		margin-top: 0;
 	}
 
 	/* Backdrop cobrindo a tela; clicar fora fecha. */

@@ -207,19 +207,34 @@ export function CatalogSidebar({
         />
       </form>
 
-      {/* Botão FILTROS — abaixo da busca (visível só no tablet/mobile via CSS) */}
-      <button
-        type="button"
-        className="catalog-filter-btn"
-        onClick={() => setOpen(true)}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-        </svg>
-        Filtros
-      </button>
+      {/* Botão FILTROS + Limpar filtros — abaixo da busca (linha visível só no
+          tablet/mobile via CSS). O "Limpar" só aparece quando há filtros ativos. */}
+      <div className="catalog-filter-bar">
+        <button
+          type="button"
+          className="catalog-filter-btn"
+          onClick={() => setOpen(true)}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+          </svg>
+          Filtros
+        </button>
+
+        {hasFilters && (
+          <button
+            type="button"
+            className="catalog-clear-filters catalog-clear-filters--bar"
+            onClick={() =>
+              updateParams({ q: '', environment: '', tipo: '', material: '', soquete: '' })
+            }
+          >
+            Limpar filtros
+          </button>
+        )}
+      </div>
 
       {/* Backdrop — clicar fora fecha (só overlay no tablet/mobile) */}
       <div
