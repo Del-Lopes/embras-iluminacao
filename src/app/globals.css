@@ -5074,3 +5074,23 @@ tr[data-selected='true'] td {
 		gap: 0;
 	}
 }
+
+/* Catálogo — mobile: select de ordenação compacto para caber na mesma linha
+   que "Exibindo X produtos" (antes quebrava por poucos px). */
+@media (max-width: 767px) {
+	.catalog-controls {
+		flex-wrap: nowrap;
+		gap: 10px;
+	}
+
+	.catalog-controls-right {
+		flex-shrink: 0;
+		gap: 8px;
+	}
+
+	.catalog-controls .toolbar-select {
+		min-width: 0;
+		padding: 0 8px;
+		font-size: var(--font-size-xs);
+	}
+}
