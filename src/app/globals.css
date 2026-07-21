@@ -5075,22 +5075,16 @@ tr[data-selected='true'] td {
 	}
 }
 
-/* Catálogo — mobile: select de ordenação compacto para caber na mesma linha
-   que "Exibindo X produtos" (antes quebrava por poucos px). */
+/* Catálogo — mobile: o toggle grade/lista não cabe (sem espaço), então é
+   ocultado; o select de ordenação mantém o tamanho original ao lado do
+   "Exibindo X produtos". */
 @media (max-width: 767px) {
 	.catalog-controls {
 		flex-wrap: nowrap;
 		gap: 10px;
 	}
 
-	.catalog-controls-right {
-		flex-shrink: 0;
-		gap: 8px;
-	}
-
-	.catalog-controls .toolbar-select {
-		min-width: 0;
-		padding: 0 8px;
-		font-size: var(--font-size-xs);
+	.catalog-view-toggle {
+		display: none;
 	}
 }
