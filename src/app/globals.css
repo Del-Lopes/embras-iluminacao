@@ -4139,7 +4139,7 @@ tr[data-selected='true'] td {
 	}
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
 	.blog-index-hero--banner .blog-index-hero-inner {
 		padding-left: 24px;
 		padding-right: 24px;
@@ -4688,10 +4688,28 @@ tr[data-selected='true'] td {
    ================================================================ */
 
 @media (max-width: 1024px) {
+	/* Tablet (768–1024): sidebar em LINHA no topo (busca + categorias lado a
+	   lado), corpo em coluna única e posts em 2 colunas. Padding padrão 32px. */
 	.blog-index-body {
-		grid-template-columns: 180px 1fr;
+		grid-template-columns: 1fr;
 		gap: 40px;
 		padding: 48px 32px 80px;
+	}
+
+	.blog-sidebar {
+		position: static;
+		flex-direction: row;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		gap: 32px;
+	}
+
+	.blog-sidebar-search {
+		flex: 1 1 240px;
+	}
+
+	.blog-sidebar-cats {
+		flex: 1 1 240px;
 	}
 
 	.blog-grid {
@@ -4707,7 +4725,7 @@ tr[data-selected='true'] td {
 	}
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
 	.blog-index-hero {
 		padding: 140px 24px 56px;
 	}
