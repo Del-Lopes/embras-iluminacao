@@ -1415,6 +1415,20 @@ p {
 	}
 }
 
+/* Só no mobile: o oposto do tablet — foto principal maior e thumbnails
+   levemente menores (elas dividem a largura da galeria, então reduzi-las
+   aumenta a principal). Gap um pouco menor dá mais espaço à foto. */
+@media (max-width: 767px) {
+	.product-gallery--has-thumbs {
+		gap: 10px;
+	}
+
+	.product-gallery-thumb {
+		width: 48px;
+		height: 48px;
+	}
+}
+
 /* Botão "Ver em 3D" (canto inferior direito da imagem) — preto fixo em qualquer tema */
 .gallery-3d-btn {
 	position: absolute;
