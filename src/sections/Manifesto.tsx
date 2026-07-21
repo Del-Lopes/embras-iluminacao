@@ -210,9 +210,16 @@ export default function Manifesto() {
 			// depois o fade-in, ainda vivo, puxa a opacidade de volta pra 1, deixando
 			// o glow preso aceso. Como nenhum tem delay, overwrite basta (mata o
 			// concorrente que está renderizando; não precisa de killTweensOf).
+			// 'top top+=4' e não 'top top': o centralizador (touch) pousa EXATAMENTE
+			// em 'top top', e o último evento de scroll do Lenis chega em ~899,97 —
+			// ainda antes do gatilho. A seção assenta nos 900 sem emitir mais nada, e
+			// sem novo evento o onEnter nunca é avaliado → o glow não acendia. Os 4px
+			// tiram o gatilho de cima da borda (dispara a ~99,6%). Mesma correção da
+			// HeroProducts. No desktop o scrub cruza o ponto naturalmente, então os
+			// 4px são imperceptíveis.
 			ScrollTrigger.create({
 				trigger: sectionRef.current,
-				start: 'top top',
+				start: 'top top+=4',
 				onEnter: () =>
 					gsap.to(bgRef.current, { opacity: 1, duration: 0.8, ease: 'power2.out', overwrite: 'auto' }),
 				onLeaveBack: () =>
