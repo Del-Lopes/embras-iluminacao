@@ -134,7 +134,7 @@ export default async function ProductDetailPage({ params }: Props) {
   const hasDescription = !!product.description && product.description.replace(/<[^>]*>/g, '').trim().length > 0
 
   return (
-    <main className="min-h-screen bg-(--color-bg)">
+    <main className="product-detail-page min-h-screen bg-(--color-bg)">
       <Header variant="solid" />
 
       <article className="product-detail">
@@ -241,7 +241,7 @@ export default async function ProductDetailPage({ params }: Props) {
                   </svg>
                   <span>
                     No celular/tablet clique no ícone do canto direito para abrir o
-                    AR, com a câmera posicione o objeto para ver em realidade
+                    AR, com a câmera posicione o objeto para vê-lo em realidade
                     aumentada.
                   </span>
                 </p>

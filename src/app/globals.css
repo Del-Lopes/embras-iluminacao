@@ -1223,9 +1223,14 @@ p {
 .product-detail {
 	max-width: 1100px;
 	margin: 0 auto;
-	/* padding-bottom garante respiro antes do rodapé (ou dos relacionados),
-	   inclusive quando a última seção é o visualizador 3D, que encostava. */
-	padding: 48px 24px 72px;
+	padding: 48px 24px 0;
+}
+
+/* Respiro antes do rodapé — escopado à página de produto para não afetar o
+   Footer nas demais páginas. Cobre os dois casos: quando a última seção é o
+   conteúdo (article → footer) e quando há relacionados (coluna → footer). */
+.product-detail-page > footer {
+	margin-top: 80px;
 }
 
 .product-detail-top {
@@ -1336,9 +1341,15 @@ p {
 	gap: 12px;
 }
 
+/* Categoria dourada: fonte levemente maior (sm), peso 700, e MENOS espaço até o
+   título (o container tem gap 12px; a margem negativa aperta só esse par). */
+.product-info-cat {
+	margin-bottom: -6px;
+}
+
 .product-info-category {
-	font-size: var(--font-size-xs);
-	font-weight: 600;
+	font-size: var(--font-size-sm);
+	font-weight: 700;
 	text-transform: uppercase;
 	letter-spacing: 0.08em;
 	color: var(--color-highlight);
@@ -1351,17 +1362,18 @@ a.product-info-category:hover {
 
 .product-info-name {
 	font-family: var(--font-heading);
-	font-size: var(--font-size-2xl);
+	font-size: var(--font-size-xl);
 	font-weight: 600;
 	color: var(--color-accent);
 	line-height: 1.2;
 	margin: 0;
 }
 
+/* Menos espaço entre o título e o SKU */
 .product-info-sku {
 	font-size: var(--font-size-sm);
 	color: var(--color-muted);
-	margin: 0;
+	margin: -6px 0 0;
 }
 
 .product-info-short-desc {
