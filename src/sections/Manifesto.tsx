@@ -36,6 +36,9 @@ export default function Manifesto() {
 	const lineVRef = useRef<HTMLDivElement>(null)
 	const bgRef = useRef<HTMLDivElement>(null)
 	const [mounted, setMounted] = useState(false)
+	// Touch (< lg): slide atual (para os dots) + navegação exposta aos dots.
+	const [current, setCurrent] = useState(0)
+	const goToRef = useRef<(n: number) => void>(() => {})
 
 	useEffect(() => {
 		setMounted(true)
@@ -189,81 +192,74 @@ export default function Manifesto() {
 				tl.to({}, { duration: 1.2 })
 			})
 
-			// TABLET/MOBILE (<lg): CARROSSEL DISCRETO — sem scrub. A seção pina e
-			// cada passo de scroll troca o slide com uma transição que toca sozinha
-			// (não segue o dedo). O snap assenta em cada slide → "1 swipe = 1 slide".
+			// TABLET/MOBILE (< lg): CARROSSEL DE SWIPE — sem pin, sem scrub, sem
+			// Lenis. O antigo hijack do scroll (pin + scrub + snap via Lenis) travava
+			// no touch: o momentum do Lenis brigava com o snap e o slide "prendia e
+			// depois pulava vários de uma vez". Aqui a seção rola normalmente e os
+			// slides trocam por SWIPE horizontal (ou tocando nos dots) — resposta
+			// imediata, 1 swipe = 1 slide.
 			mm.add('(max-width: 1023px)', () => {
 				let cur = 0
 				const show = (n: number) => {
+					n = Math.max(0, Math.min(total - 1, n))
 					if (n === cur) return
 					const dir = n > cur ? 1 : -1
 					autoReveal(n)
-					// sai o atual, entra o novo (cross-fade por tempo, não scrub)
 					gsap.to([leftTexts[cur], rightTexts[cur]], {
 						autoAlpha: 0,
-						y: dir > 0 ? -50 : 50,
-						duration: 0.4,
+						y: dir > 0 ? -40 : 40,
+						duration: 0.35,
 						ease: 'power2.inOut',
 						overwrite: 'auto',
 					})
 					gsap.fromTo(
 						[leftTexts[n], rightTexts[n]],
-						{ autoAlpha: 0, y: dir > 0 ? 50 : -50 },
-						{ autoAlpha: 1, y: 0, duration: 0.5, ease: 'power2.out', overwrite: 'auto' }
+						{ autoAlpha: 0, y: dir > 0 ? 40 : -40 },
+						{ autoAlpha: 1, y: 0, duration: 0.45, ease: 'power2.out', overwrite: 'auto' }
 					)
 					cur = n
+					setCurrent(n)
 				}
+				// Exposto para os dots (renderizados no JSX) navegarem.
+				goToRef.current = show
 
-				const st = ScrollTrigger.create({
+				// Revela o slide 0 quando a seção entra na viewport (sem pin).
+				const revealST = ScrollTrigger.create({
 					trigger: sectionRef.current,
-					start: 'top top',
-					end: '+=' + (total - 1) * 80 + '%', // ~0,8 tela por transição
-					pin: true,
+					start: 'top 70%',
 					onEnter: () => autoReveal(0),
-					onUpdate: (self) => show(Math.round(self.progress * (total - 1))),
 				})
 
-				// SNAP manual via Lenis: o snap nativo do ScrollTrigger briga com o
-				// Lenis (às vezes trava no meio do caminho). Aqui, ao PARAR o gesto,
-				// deslizamos até o slide mais próximo — cada swipe assenta em um
-				// slide. Nos extremos (0 e último) não faz nada → o scroll segue para
-				// a seção vizinha, soltando o pin.
-				const lenis = (
-					window as unknown as {
-						__lenis?: {
-							scrollTo: (t: number, o?: { duration?: number }) => void
-							velocity: number
-						}
-					}
-				).__lenis
-				let timer: number | null = null
-				const snap = () => {
-					if (!st.isActive || !lenis) return
-					// Espera o momentum do Lenis assentar: se ainda desliza, a
-					// `progress` lida seria a do meio do caminho e snaparia de volta.
-					if (Math.abs(lenis.velocity) > 0.4) {
-						timer = window.setTimeout(snap, 80)
-						return
-					}
-					const p = st.progress
-					const nearest = Math.round(p * (total - 1)) / (total - 1)
-					if (Math.abs(nearest - p) < 0.02) return // já assentado
-					lenis.scrollTo(st.start + nearest * (st.end - st.start), {
-						duration: 0.5,
-					})
+				// Swipe horizontal: p/ esquerda = próximo, p/ direita = anterior.
+				// Só troca em gesto predominantemente horizontal, para não atrapalhar
+				// o scroll vertical normal da página.
+				const el = sectionRef.current as HTMLElement
+				let sx = 0
+				let sy = 0
+				let tracking = false
+				const onStart = (e: TouchEvent) => {
+					const t = e.touches[0]
+					sx = t.clientX
+					sy = t.clientY
+					tracking = true
 				}
-				const onInput = () => {
-					if (timer !== null) clearTimeout(timer)
-					timer = window.setTimeout(snap, 150)
+				const onEnd = (e: TouchEvent) => {
+					if (!tracking) return
+					tracking = false
+					const t = e.changedTouches[0]
+					const dx = t.clientX - sx
+					const dy = t.clientY - sy
+					if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+						show(cur + (dx < 0 ? 1 : -1))
+					}
 				}
-				window.addEventListener('wheel', onInput, { passive: true })
-				window.addEventListener('touchmove', onInput, { passive: true })
+				el.addEventListener('touchstart', onStart, { passive: true })
+				el.addEventListener('touchend', onEnd, { passive: true })
 
 				return () => {
-					st.kill()
-					if (timer !== null) clearTimeout(timer)
-					window.removeEventListener('wheel', onInput)
-					window.removeEventListener('touchmove', onInput)
+					revealST.kill()
+					el.removeEventListener('touchstart', onStart)
+					el.removeEventListener('touchend', onEnd)
 				}
 			})
 
@@ -372,6 +368,25 @@ export default function Manifesto() {
 						</div>
 					))}
 				</div>
+			</div>
+
+			{/* Navegação de slides (dots) — só touch (< lg). No desktop o scroll
+			    controla os slides; aqui, com swipe horizontal ou toque nos dots. */}
+			<div className="lg:hidden absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3">
+				{slides.map((s, i) => (
+					<button
+						key={s.id}
+						type="button"
+						onClick={() => goToRef.current(i)}
+						aria-label={`Ir para ${s.title}`}
+						aria-current={current === i}
+						className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+							current === i
+								? 'w-7 bg-(--color-accent)'
+								: 'w-2.5 bg-(--color-muted)'
+						}`}
+					/>
+				))}
 			</div>
 		</section>
 	)
