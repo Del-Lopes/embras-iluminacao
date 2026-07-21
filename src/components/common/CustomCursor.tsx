@@ -11,7 +11,7 @@ export default function CustomCursor() {
 	// Catálogo + página de produto (slug) — sem cursor customizado
 	const isCatalog = pathname.startsWith('/catalogo')
 	// Landing page de postes — sem cursor customizado
-	const isLp = pathname.startsWith('/lp')
+	const isLp = pathname.startsWith('/postes')
 	const { theme } = useTheme()
 	const isDark = theme === 'dark'
 	const cursorRef = useRef<HTMLDivElement>(null)

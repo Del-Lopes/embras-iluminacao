@@ -148,7 +148,7 @@ html.light .lp-page .proof-metric-d {
 /* Abas do carrossel — estilo do botão "Ver em 3D" + seta/hover + canto ativo */
 .lp-page .lp-tab {
 	position: relative;
-	overflow: hidden;
+	overflow: visible;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -169,11 +169,13 @@ html.light .lp-page .proof-metric-d {
 		border-color var(--transition-base);
 }
 
-/* Preenchimento branco que entra da esquerda para a direita no hover */
+/* Preenchimento branco que entra da esquerda para a direita no hover.
+   inset: -1px cobre também o anel da borda (box-sizing border-box faz o
+   inset:0 parar na caixa de padding, deixando a borda de fora). */
 .lp-page .lp-tab::before {
 	content: '';
 	position: absolute;
-	inset: 0;
+	inset: -1px;
 	background: var(--color-accent);
 	transform: scaleX(0);
 	transform-origin: left center;
@@ -1898,10 +1900,11 @@ html.light .lp-page .footer-logo {
 }
 .lp-modal {
 	width: 100%;
-	max-width: 640px;
+	max-width: 680px;
 	background: var(--color-surface, #0f0f0f);
 	border: 1px solid var(--color-border-hi, rgba(255, 255, 255, 0.28));
-	padding: 48px;
+	/* top maior para as linhas de etapas ficarem abaixo do botão de fechar */
+	padding: 68px 48px 48px;
 	position: relative;
 	animation: lpSlideUp 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
 }

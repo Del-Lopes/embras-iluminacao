@@ -84,7 +84,7 @@ export default function LandingPage({ lines }: { lines: CarouselLine[] }) {
       <Hero copy={copy} headline={headline} openForm={openForm} />
       <Pain copy={copy} />
       <Solution copy={copy} openForm={openForm} />
-      <Products openForm={openForm} lines={lines} />
+      <Products lines={lines} />
       <Proof />
       <ObjectionsAndGuarantee />
       <FAQ openForm={openForm} />

@@ -11,6 +11,7 @@ const LP_NAV: NavItem[] = [
   { label: 'Produtos', href: '#produtos' },
   { label: 'Projetos', href: '#prova' },
   { label: 'FAQ', href: '#faq' },
+  { label: 'Contato', href: '#contato' },
 ]
 
 export default function Nav() {

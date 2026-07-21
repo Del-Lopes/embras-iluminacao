@@ -4,9 +4,10 @@ export const navItems: NavItem[] = [
   { label: 'Projetos', href: '/#projetos' },
   { label: 'Quem Somos', href: '/#quem-somos' },
   { label: 'Manifesto', href: '/#manifesto' },
+  { label: 'Postes', href: '/postes' },
   { label: 'Catálogo', href: '/catalogo' },
   { label: 'Blog', href: '/blog' },
-  { label: 'Contato', href: '', disabled: true },
+  { label: 'Contato', href: '/#contato' },
 ]
 
 export const socialLinks: NavItem[] = [

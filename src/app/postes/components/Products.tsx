@@ -1,9 +1,9 @@
+import Link from 'next/link'
 import HeroPill from './HeroPill'
 import LineCarousel from './LineCarousel'
 import type { CarouselLine } from './LineCarousel'
 
 interface ProductsProps {
-  openForm: () => void
   lines: CarouselLine[]
 }
 
@@ -72,7 +72,7 @@ function PoleSVGAlum() {
   )
 }
 
-export default function Products({ openForm, lines }: ProductsProps) {
+export default function Products({ lines }: ProductsProps) {
   return (
     <section className="section" id="produtos">
       <div className="section-inner">
@@ -177,9 +177,14 @@ export default function Products({ openForm, lines }: ProductsProps) {
         <LineCarousel lines={lines} />
 
         <div style={{ marginTop: 56, display: 'flex', justifyContent: 'center', gap: 12 }}>
-          <button className="btn" onClick={openForm}>
+          <Link
+            className="btn"
+            href="/catalogo?tipo=postes"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Ver linha completa
-          </button>
+          </Link>
         </div>
       </div>
     </section>

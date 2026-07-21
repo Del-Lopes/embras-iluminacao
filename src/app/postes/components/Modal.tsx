@@ -39,6 +39,18 @@ const INITIAL_DATA: FormData = {
   telefone: '',
 }
 
+// Máscara de telefone BR: (11) 99999-9999 / (11) 9999-9999 (fixo).
+const maskPhone = (v: string) => {
+  const d = v.replace(/\D/g, '').slice(0, 11)
+  if (d.length <= 2) return d.replace(/^(\d*)/, '($1')
+  if (d.length <= 6) return d.replace(/^(\d{2})(\d*)/, '($1) $2')
+  if (d.length <= 10) return d.replace(/^(\d{2})(\d{4})(\d*)/, '($1) $2-$3')
+  return d.replace(/^(\d{2})(\d{5})(\d*)/, '($1) $2-$3')
+}
+
+// "Máscara" de e-mail: remove espaços e força minúsculas.
+const maskEmail = (v: string) => v.replace(/\s+/g, '').toLowerCase()
+
 export default function Modal({ open, onClose }: ModalProps) {
   const [step, setStep] = useState(0)
   const [data, setData] = useState<FormData>(INITIAL_DATA)
@@ -212,8 +224,10 @@ export default function Modal({ open, onClose }: ModalProps) {
                   <div className="lp-modal-field">
                     <label>Telefone</label>
                     <input
+                      type="tel"
+                      inputMode="numeric"
                       value={data.telefone}
-                      onChange={(e) => setData({ ...data, telefone: e.target.value })}
+                      onChange={(e) => setData({ ...data, telefone: maskPhone(e.target.value) })}
                       placeholder="(11) 99999-9999"
                     />
                   </div>
@@ -221,8 +235,10 @@ export default function Modal({ open, onClose }: ModalProps) {
                 <div className="lp-modal-field">
                   <label>E-mail</label>
                   <input
+                    type="email"
+                    inputMode="email"
                     value={data.email}
-                    onChange={(e) => setData({ ...data, email: e.target.value })}
+                    onChange={(e) => setData({ ...data, email: maskEmail(e.target.value) })}
                     placeholder="nome@empresa.com.br"
                   />
                 </div>
