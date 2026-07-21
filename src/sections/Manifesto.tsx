@@ -33,7 +33,7 @@ const REVEAL_SPREAD_S = 1.6
 // enquadramento. Como a seção é h-screen, snapar o topo em 0 = tela cheia = a
 // seção "pinada" na tela. Alcance maior na entrada (aciona mais cedo) e curto na
 // saída (só corrige o excesso, sem prender quem quer seguir).
-const SNAP_ENTER_REACH = 0.55
+const SNAP_ENTER_REACH = 0.3
 const SNAP_EXIT_REACH = 0.15
 // Tempo após o usuário PARAR de rolar (último gesto) para o encaixe disparar.
 const SNAP_DELAY_MS = 800
