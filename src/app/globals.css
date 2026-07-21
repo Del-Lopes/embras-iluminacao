@@ -4759,6 +4759,12 @@ tr[data-selected='true'] td {
 		flex: 1 1 200px;
 	}
 
+	/* Categorias empilhadas (uma por linha) no mobile — desfaz o row do tablet. */
+	.blog-sidebar-cats ul {
+		flex-direction: column;
+		gap: 0;
+	}
+
 	.blog-grid {
 		grid-template-columns: 1fr;
 	}
