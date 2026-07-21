@@ -1885,7 +1885,8 @@ html.light .lp-page .footer-logo {
 	height: 20px;
 }
 
-/* Tablet e mobile: só o ícone (esconde o texto e vira um botão quadrado). */
+/* Tablet e mobile: só o ícone (esconde o texto e vira um botão quadrado),
+   posicionado a 20px do fundo e da direita. */
 @media (max-width: 1024px) {
 	.lp-page .wa-fab-label {
 		display: none;
@@ -1893,6 +1894,8 @@ html.light .lp-page .footer-logo {
 	.lp-page .wa-fab {
 		padding: 16px;
 		gap: 0;
+		bottom: 20px;
+		right: 20px;
 	}
 }
 
