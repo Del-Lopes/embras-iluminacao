@@ -1330,6 +1330,14 @@ p {
 	padding: 48px 24px 0;
 }
 
+/* Gutter padrão no tablet (32px); mobile e desktop mantêm 24px (base). */
+@media (min-width: 768px) and (max-width: 1024px) {
+	.product-detail {
+		padding-left: 32px;
+		padding-right: 32px;
+	}
+}
+
 /* Respiro antes do rodapé — escopado à página de produto para não afetar o
    Footer nas demais páginas. Cobre os dois casos: quando a última seção é o
    conteúdo (article → footer) e quando há relacionados (coluna → footer). */
@@ -1488,10 +1496,12 @@ a.product-info-category:hover {
 }
 
 /* Sections */
+/* As seções vivem dentro de .product-detail (que já dá max-width 1100 + gutter).
+   Sem padding/max-width próprios elas alinham com o bloco superior (galeria/info)
+   — antes o padding extra as jogava 24px mais para dentro. */
 .product-section {
-	max-width: 1100px;
-	margin: 48px auto 0;
-	padding: 0 24px;
+	margin: 48px 0 0;
+	padding: 0;
 }
 
 .product-section-title {
