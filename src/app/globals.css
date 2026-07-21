@@ -4977,6 +4977,14 @@ tr[data-selected='true'] td {
 		gap: 0;
 	}
 
+	/* "Limpar filtros" ocupa a linha inteira → cai ABAIXO das categorias
+	   (a sidebar do blog é row-wrap no mobile). Só no blog: o catálogo tem o
+	   clear no drawer/barra, não como filho direto da sidebar. */
+	.blog-sidebar:not(.catalog-sidebar) > .catalog-clear-filters {
+		flex-basis: 100%;
+		text-align: left;
+	}
+
 	.blog-grid {
 		grid-template-columns: 1fr;
 	}
