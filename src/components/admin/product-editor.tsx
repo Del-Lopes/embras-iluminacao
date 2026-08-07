@@ -238,7 +238,7 @@ export const ProductEditor = ({
     )
 
   const handleAiDescription = () => {
-    toast.info('Geração de descrição por IA será habilitada em uma próxima etapa.')
+    toast.info('Esta é uma sugestão de função para o futuro.')
   }
 
   // Monta o payload a partir dos valores do form + seleções de taxonomia.
