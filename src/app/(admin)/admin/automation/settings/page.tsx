@@ -1,23 +1,11 @@
-import { redirect } from 'next/navigation'
-import { createSupabaseServerClient } from '@/lib/db/supabase-server'
+import { requireAdmin } from '@/lib/auth/guards'
 import { getAutomationSettings } from '@/server/automation.actions'
 import { AutomationSettingsForm } from '@/components/admin/automation-settings-form'
 
 export const metadata = { title: 'Automação — Configurações | Embras Admin' }
 
 export default async function AutomationSettingsPage() {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) redirect('/admin/login')
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (profile?.role !== 'admin') redirect('/admin/dashboard')
+  await requireAdmin()
 
   const settings = await getAutomationSettings()
 

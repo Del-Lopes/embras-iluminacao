@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
+import { requireUser } from '@/lib/auth/guards'
 import { CategoriesManager } from '@/components/admin/categories-manager'
 
 export const metadata: Metadata = {
@@ -9,10 +10,11 @@ export const metadata: Metadata = {
 }
 
 export default async function CategoriesPage() {
+  const session = await requireUser()
   const supabase = await createSupabaseServerClient()
   const { data: categories } = await supabase
     .from('categories')
-    .select('id, name, slug, description, created_at')
+    .select('id, name, slug, description, created_by, created_at')
     .order('name')
 
   return (
@@ -23,7 +25,11 @@ export default async function CategoriesPage() {
         <p className="dashboard-subtitle">Gerencie as categorias dos posts</p>
       </div>
 
-      <CategoriesManager categories={categories ?? []} />
+      <CategoriesManager
+        categories={categories ?? []}
+        currentUserId={session.id}
+        currentUserRole={session.role}
+      />
     </div>
   )
 }

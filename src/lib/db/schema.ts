@@ -47,6 +47,7 @@ export type Profile = {
   avatar_url: string | null
   role: UserRole
   bio: string | null
+  is_active: boolean
   created_at: string
   updated_at: string
 }
@@ -56,6 +57,9 @@ export type Category = {
   name: string
   slug: string
   description: string | null
+  // NULL = categoria pré-existente à migration 013. O editor não
+  // pode excluir essas; só as que ele mesmo criou.
+  created_by: string | null
   created_at: string
 }
 
@@ -185,7 +189,11 @@ export type ProductCharacteristicMap = {
 // ----------------------------------------------------------------
 export type InsertPost = Omit<Post, 'id' | 'created_at' | 'updated_at'>
 
-export type InsertCategory = Omit<Category, 'id' | 'created_at'>
+// created_by é opcional: a coluna aceita NULL e nem todo caminho de
+// criação tem um usuário (a automação insere categorias sem sessão).
+export type InsertCategory = Omit<Category, 'id' | 'created_at' | 'created_by'> & {
+  created_by?: string | null
+}
 
 export type InsertAiLog = Omit<AiAutomationLog, 'id' | 'generation_date'>
 
@@ -293,7 +301,10 @@ export type Database = {
     Tables: {
       profiles: {
         Row: Profile
-        Insert: Omit<Profile, 'created_at' | 'updated_at'>
+        // avatar_url, bio e is_active têm default no banco — exigi-los
+        // no insert obrigaria todo chamador a repetir null/true.
+        Insert: Omit<Profile, 'created_at' | 'updated_at' | 'avatar_url' | 'bio' | 'is_active'> &
+          Partial<Pick<Profile, 'avatar_url' | 'bio' | 'is_active'>>
         Update: Partial<Omit<Profile, 'id'>>
         Relationships: []
       }

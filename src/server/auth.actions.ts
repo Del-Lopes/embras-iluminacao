@@ -66,16 +66,24 @@ export const loginAction = async (
 
   if (error || !data.user) return INVALID
 
-  // Verify role — must be admin or editor
+  // Verify role — must be admin or editor, e a conta precisa estar ativa
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, is_active')
     .eq('id', data.user.id)
     .single()
 
   if (!profile || !['admin', 'editor'].includes(profile.role)) {
     await supabase.auth.signOut()
     return INVALID
+  }
+
+  // Conta desativada pelo admin. Mensagem própria: aqui o usuário
+  // acertou a senha, e devolver "credenciais inválidas" só geraria
+  // chamado de suporte.
+  if (!profile.is_active) {
+    await supabase.auth.signOut()
+    return { error: 'Esta conta está desativada. Procure um administrador.' }
   }
 
   // Successful login — reset rate limiter

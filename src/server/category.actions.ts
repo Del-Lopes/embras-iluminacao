@@ -1,6 +1,7 @@
 'use server'
 
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
+import { guardUser, isGuardFailure } from '@/lib/auth/guards'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
@@ -25,6 +26,9 @@ export type CreateCategoryResult = { error: string } | { ok: true }
 export const createCategoryAction = async (
   formData: FormData
 ): Promise<CreateCategoryResult> => {
+  const session = await guardUser()
+  if (isGuardFailure(session)) return session
+
   const raw = {
     name: (formData.get('name') as string | null) ?? '',
     description: (formData.get('description') as string | null) ?? '',
@@ -50,9 +54,16 @@ export const createCategoryAction = async (
     return { error: 'Já existe uma categoria com esse nome (slug duplicado)' }
   }
 
+  // created_by carimba a autoria: é o que depois permite ao editor
+  // excluir esta categoria e nenhuma das pré-existentes.
   const { error } = await supabase
     .from('categories')
-    .insert({ name, slug, description: description || null })
+    .insert({
+      name,
+      slug,
+      description: description || null,
+      created_by: session.id,
+    })
 
   if (error) return { error: 'Erro ao criar categoria: ' + error.message }
 
@@ -70,7 +81,28 @@ export const deleteCategoryAction = async (
 ): Promise<DeleteCategoryResult> => {
   if (!id) return { error: 'ID inválido' }
 
+  const session = await guardUser()
+  if (isGuardFailure(session)) return session
+
   const supabase = await createSupabaseServerClient()
+
+  // Autoria: o editor só exclui o que ele mesmo criou. As categorias
+  // anteriores à migration 013 têm created_by NULL e ficam com o admin.
+  if (session.role !== 'admin') {
+    const { data: category } = await supabase
+      .from('categories')
+      .select('created_by')
+      .eq('id', id)
+      .single()
+
+    if (!category) return { error: 'Categoria não encontrada' }
+
+    if (category.created_by !== session.id) {
+      return {
+        error: 'Esta categoria não foi criada por você. Peça a um administrador.',
+      }
+    }
+  }
 
   // Block deletion if posts are linked
   const { count } = await supabase

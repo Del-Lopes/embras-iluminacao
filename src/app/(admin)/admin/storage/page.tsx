@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { requireAdmin } from '@/lib/auth/guards'
 import { StorageManager } from '@/components/admin/storage-manager'
 
 export const metadata: Metadata = {
@@ -8,6 +9,8 @@ export const metadata: Metadata = {
 }
 
 export default async function StoragePage() {
+  await requireAdmin()
+
   return (
     <div className="editor-page">
       <div className="editor-header">

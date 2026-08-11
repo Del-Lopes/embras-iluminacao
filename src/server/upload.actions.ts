@@ -95,6 +95,27 @@ const requireStaff = async () => {
   return user
 }
 
+// Gate mais estrito para as operações do gerenciador de Storage
+// (listar / excluir arquivos e pastas), que passou a ser admin-only.
+// O upload em si continua em requireStaff: o editor precisa dele para
+// anexar imagens ao criar posts e produtos.
+const requireAdminStaff = async () => {
+  const supabase = await createSupabaseServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, is_active')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile || profile.role !== 'admin' || !profile.is_active) return null
+  return user
+}
+
 // ================================================================
 // getProductUploadUrl — issue a short-lived presigned PUT URL
 // ================================================================
@@ -179,7 +200,7 @@ const isDeletableKey = (k: string) =>
 export const deleteProductObject = async (
   key: string
 ): Promise<DeleteObjectResult> => {
-  const user = await requireStaff()
+  const user = await requireAdminStaff()
   if (!user) return { error: 'Não autorizado' }
 
   if (!isDeletableKey(key)) return { error: 'Chave inválida' }
@@ -201,7 +222,7 @@ export const deleteProductObject = async (
 export const deleteProductObjects = async (
   keys: string[]
 ): Promise<DeleteObjectResult> => {
-  const user = await requireStaff()
+  const user = await requireAdminStaff()
   if (!user) return { error: 'Não autorizado' }
 
   const valid = keys.filter(isDeletableKey)
@@ -222,7 +243,7 @@ export const deleteProductObjects = async (
 export type DeleteFolderResult = { error: string } | { ok: true; deleted: number }
 
 export const deleteR2Folder = async (prefix: string): Promise<DeleteFolderResult> => {
-  const user = await requireStaff()
+  const user = await requireAdminStaff()
   if (!user) return { error: 'Não autorizado' }
 
   // A folder prefix must be non-empty and end with '/'. Never allow '' (bucket root).
@@ -259,7 +280,7 @@ export type R2Listing = { folders: string[]; files: R2Object[] }
 export type ListR2Result = { error: string } | R2Listing
 
 export const listR2Objects = async (prefix = ''): Promise<ListR2Result> => {
-  const user = await requireStaff()
+  const user = await requireAdminStaff()
   if (!user) return { error: 'Não autorizado' }
 
   // Normalize: strip leading slashes; ensure a trailing slash when non-empty

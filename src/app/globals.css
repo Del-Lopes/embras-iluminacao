@@ -2212,6 +2212,19 @@ a.product-info-category:hover {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
+	align-items: flex-start;
+	background: none;
+	border: none;
+	padding: 4px 6px;
+	margin-left: -6px;
+	border-radius: 4px;
+	cursor: pointer;
+	text-align: left;
+	transition: background-color var(--transition-fast);
+}
+
+.sidebar-user:hover {
+	background: var(--color-border);
 }
 
 .sidebar-user-name {
@@ -2239,6 +2252,198 @@ a.product-info-category:hover {
 
 .sidebar-logout:hover {
 	color: var(--color-accent);
+}
+
+/* ---- Painel "Minha conta" ---- */
+/* z-index abaixo do confirm-dialog (100/101) de propósito: uma
+   confirmação disparada de dentro do painel precisa ficar por cima. */
+.account-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 98;
+	background-color: rgba(0, 0, 0, 0.5);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 16px;
+	animation: confirm-fade 0.15s ease;
+}
+
+.account-panel {
+	width: min(480px, 100%);
+	max-height: calc(100vh - 32px);
+	display: flex;
+	flex-direction: column;
+	background-color: var(--color-surface);
+	border-radius: 12px;
+	box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
+	animation: confirm-pop 0.15s ease;
+}
+
+.account-panel-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 20px 20px 16px;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.account-panel-title {
+	margin: 0;
+	font-size: 1.05rem;
+	font-weight: 600;
+	color: var(--color-accent);
+}
+
+.account-panel-subtitle {
+	margin: 2px 0 0;
+	font-size: var(--font-size-xs);
+	color: var(--color-muted);
+}
+
+.account-panel-close {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: var(--color-muted);
+	padding: 4px;
+	border-radius: 4px;
+	display: flex;
+	transition: color var(--transition-fast);
+}
+
+.account-panel-close:hover {
+	color: var(--color-accent);
+}
+
+/* O corpo rola sozinho para o cabeçalho não sair de vista em telas baixas. */
+.account-panel-body {
+	padding: 20px;
+	overflow-y: auto;
+}
+
+.account-section {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.account-section-title {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 0;
+	font-size: var(--font-size-sm);
+	font-weight: 600;
+	color: var(--color-accent);
+}
+
+.account-section-actions {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.account-divider {
+	height: 1px;
+	background-color: var(--color-border);
+	margin: 20px 0;
+}
+
+.account-hint {
+	margin: 0;
+	font-size: var(--font-size-xs);
+	color: var(--color-muted);
+}
+
+/* ---- Categoria protegida (editor sem permissão de excluir) ---- */
+.cat-locked {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	font-size: var(--font-size-xs);
+	color: var(--color-muted);
+	white-space: nowrap;
+	cursor: default;
+}
+
+/* ---- Gestão de usuários ---- */
+.user-cell {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.user-cell-name {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-weight: 500;
+	color: var(--color-accent);
+}
+
+.user-cell-email {
+	font-size: var(--font-size-xs);
+	color: var(--color-muted);
+}
+
+.user-self-tag {
+	font-size: 0.65rem;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	padding: 1px 6px;
+	border-radius: 999px;
+	background-color: rgba(0, 0, 0, 0.06);
+	color: var(--color-muted);
+}
+
+.user-role-static {
+	font-size: var(--font-size-sm);
+	color: var(--color-muted);
+}
+
+.editor-select--sm {
+	padding: 4px 8px;
+	font-size: var(--font-size-sm);
+}
+
+.user-status {
+	display: inline-flex;
+	align-items: center;
+	font-size: var(--font-size-xs);
+	font-weight: 500;
+	padding: 2px 8px;
+	border-radius: 999px;
+	white-space: nowrap;
+}
+
+.user-status--on {
+	background-color: rgba(22, 163, 74, 0.12);
+	color: #15803d;
+}
+
+.user-status--off {
+	background-color: rgba(0, 0, 0, 0.06);
+	color: var(--color-muted);
+}
+
+.user-reset-form {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	margin-top: 8px;
+	padding-top: 8px;
+	border-top: 1px dashed var(--color-border);
+}
+
+.user-reset-form input[type='password'] {
+	max-width: 200px;
+}
+
+.user-reset-form .form-error {
+	flex-basis: 100%;
+	margin: 0;
 }
 
 /* ---- Login ---- */

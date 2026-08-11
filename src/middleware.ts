@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { isAdminOnlyPath, FALLBACK_PATH } from '@/lib/auth/permissions'
 
 export const middleware = async (request: NextRequest) => {
   let supabaseResponse = NextResponse.next({ request })
@@ -53,6 +54,32 @@ export const middleware = async (request: NextRequest) => {
   // Protect all /admin/* except /admin/login
   if (!user && !isLoginPage && pathname.startsWith('/admin')) {
     return NextResponse.redirect(new URL('/admin/login', request.url))
+  }
+
+  // Perfil: papel + status. Uma busca por chave primária por navegação
+  // no admin — o preço de "desativado" significar alguma coisa de fato.
+  if (user && !isLoginPage && pathname.startsWith('/admin')) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, is_active')
+      .eq('id', user.id)
+      .single()
+
+    // Conta desativada (ou perfil sumido) com sessão ainda válida no
+    // cookie: encerra a sessão em vez de só redirecionar. Sem isso o
+    // middleware devolveria para /admin/login, que por já ter usuário
+    // autenticado manda de volta para /admin/products — um laço.
+    if (!profile || !profile.is_active) {
+      const response = NextResponse.redirect(new URL('/admin/login', request.url))
+      for (const cookie of request.cookies.getAll()) {
+        if (cookie.name.startsWith('sb-')) response.cookies.delete(cookie.name)
+      }
+      return response
+    }
+
+    if (profile.role !== 'admin' && isAdminOnlyPath(pathname)) {
+      return NextResponse.redirect(new URL(FALLBACK_PATH, request.url))
+    }
   }
 
   return supabaseResponse

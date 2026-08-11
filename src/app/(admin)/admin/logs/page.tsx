@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
+import { requireAdmin } from '@/lib/auth/guards'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { DeleteLogButton, DeleteAllLogsButton } from '@/components/admin/delete-log-buttons'
 
@@ -47,6 +48,8 @@ export default async function LogsPage({
 }: {
   searchParams: Promise<{ page?: string }>
 }) {
+  await requireAdmin()
+
   const params = await searchParams
   const supabase = await createSupabaseServerClient()
 

@@ -1,15 +1,22 @@
 'use client'
 
 import { useRef, useState, useTransition } from 'react'
+import { Lock } from 'lucide-react'
 import { createCategoryAction, deleteCategoryAction } from '@/server/category.actions'
 import { Input } from '@/components/ui/input'
-import type { Category } from '@/lib/db/schema'
+import type { Category, UserRole } from '@/lib/db/schema'
 
 type Props = {
   categories: Category[]
+  currentUserId: string
+  currentUserRole: UserRole
 }
 
-export function CategoriesManager({ categories }: Props) {
+export function CategoriesManager({
+  categories,
+  currentUserId,
+  currentUserRole,
+}: Props) {
   const nameRef = useRef<HTMLInputElement>(null)
   const descRef = useRef<HTMLInputElement>(null)
   const [createError, setCreateError] = useState<string | null>(null)
@@ -35,6 +42,11 @@ export function CategoriesManager({ categories }: Props) {
       }
     })
   }
+
+  // Admin exclui qualquer uma. Editor, só as que ele criou —
+  // created_by NULL são as pré-existentes, que ficam travadas.
+  const canDelete = (cat: Category) =>
+    currentUserRole === 'admin' || cat.created_by === currentUserId
 
   const handleDelete = async (id: string) => {
     setDeletingId(id)
@@ -139,14 +151,24 @@ export function CategoriesManager({ categories }: Props) {
                         {deleteErrors[cat.id] && (
                           <span className="cat-delete-error">{deleteErrors[cat.id]}</span>
                         )}
-                        <button
-                          type="button"
-                          className="action-btn action-btn--delete"
-                          onClick={() => handleDelete(cat.id)}
-                          disabled={deletingId === cat.id}
-                        >
-                          {deletingId === cat.id ? 'Excluindo…' : 'Excluir'}
-                        </button>
+                        {canDelete(cat) ? (
+                          <button
+                            type="button"
+                            className="action-btn action-btn--delete"
+                            onClick={() => handleDelete(cat.id)}
+                            disabled={deletingId === cat.id}
+                          >
+                            {deletingId === cat.id ? 'Excluindo…' : 'Excluir'}
+                          </button>
+                        ) : (
+                          <span
+                            className="cat-locked"
+                            title="Somente um administrador pode excluir categorias que você não criou"
+                          >
+                            <Lock size={12} strokeWidth={1.5} />
+                            Protegida
+                          </span>
+                        )}
                       </div>
                     </td>
                   </tr>
