@@ -349,6 +349,18 @@ export type AutomationCityHistory = {
 export type UpdateAutomationSettings = Omit<AutomationSettings, 'id' | 'updated_at'>
 
 // ----------------------------------------------------------------
+// SITE SETTINGS — configurações gerais do site (linha única, id=1)
+// ----------------------------------------------------------------
+export type SiteSettings = {
+  id: number
+  catalog_url: string | null // URL pública (R2) do PDF do catálogo
+  catalog_filename: string | null // nome original do arquivo enviado
+  updated_at: string
+}
+
+export type UpdateSiteSettings = Partial<Pick<SiteSettings, 'catalog_url' | 'catalog_filename'>>
+
+// ----------------------------------------------------------------
 // SUPABASE DATABASE SHAPE (for createClient generic)
 // Must include Views, Functions, CompositeTypes for full type inference.
 // ----------------------------------------------------------------
@@ -447,6 +459,12 @@ export type Database = {
         Row: ProjectImage
         Insert: InsertProjectImage
         Update: Partial<InsertProjectImage>
+        Relationships: []
+      }
+      site_settings: {
+        Row: SiteSettings
+        Insert: Partial<SiteSettings> & { id?: number }
+        Update: Partial<Omit<SiteSettings, 'id'>>
         Relationships: []
       }
     }

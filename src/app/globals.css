@@ -5593,3 +5593,31 @@ tr[data-selected='true'] td {
 		gap: 14px;
 	}
 }
+
+/* ---- Botão "Baixar catálogo" (hero da página /catalogo) ---- */
+.catalog-download-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 24px;
+	padding: 13px 28px;
+	border: 1px solid rgba(255, 255, 255, 0.35);
+	border-radius: 999px;
+	font-size: 11px;
+	letter-spacing: 0.25em;
+	text-transform: uppercase;
+	color: #fff;
+	text-decoration: none;
+	background-color: rgba(255, 255, 255, 0.06);
+	transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.catalog-download-btn:hover {
+	background-color: #fff;
+	color: #0a0a0a;
+	border-color: #fff;
+}
+
+.catalog-download-btn svg {
+	flex-shrink: 0;
+}

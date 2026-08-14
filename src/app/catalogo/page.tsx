@@ -9,6 +9,7 @@ import { CatalogActiveFilters } from '@/components/catalog/CatalogActiveFilters'
 import { ProductCard } from '@/components/catalog/ProductCard'
 import { flattenCategoryTree } from '@/lib/utils/category-tree'
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
+import { getSiteSettings } from '@/server/site-settings.actions'
 import type { ProductCardData } from '@/components/catalog/ProductCard'
 import type { ProductCategory } from '@/lib/db/schema'
 
@@ -50,6 +51,9 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
   const view: 'grid' | 'list' = params.view === 'list' ? 'list' : 'grid'
 
   const supabase = await createSupabaseServerClient()
+
+  // Configurações do site (PDF do catálogo para download).
+  const siteSettings = await getSiteSettings()
 
   // Filter sources: árvore de categorias + materiais + soquetes (características)
   const [{ data: catData }, { data: matData }, { data: soqData }] = await Promise.all([
@@ -241,6 +245,22 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
           <p className="blog-index-desc">
             Soluções de iluminação Embras para áreas internas e externas.
           </p>
+          {siteSettings?.catalog_url && (
+            <a
+              href={siteSettings.catalog_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              download
+              className="catalog-download-btn"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Baixar catálogo
+            </a>
+          )}
         </div>
       </div>
 

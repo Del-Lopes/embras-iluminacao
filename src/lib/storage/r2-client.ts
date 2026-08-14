@@ -62,7 +62,7 @@ export const r2KeyFromPublicUrl = (url: string): string | null => {
   // layout written by upload.actions.ts: produtos/<slug>/…, modelos_3d/<slug>/…
   // (models, posters and texture variations) and projetos/<slug>/… (álbum).
   if (!key || key.endsWith('/')) return null
-  return /^(produtos|modelos_3d|projetos)\//.test(key) ? key : null
+  return /^(produtos|modelos_3d|projetos|catalogo)\//.test(key) ? key : null
 }
 
 // Recursively list every object key under a prefix (no delimiter), paging

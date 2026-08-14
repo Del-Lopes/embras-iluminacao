@@ -35,20 +35,28 @@ const MODEL_MIME: Record<string, string> = {
   'model/gltf-binary': 'glb',
 }
 
+// Documentos (ex.: catálogo em PDF) — mesmo fluxo presigned.
+const DOC_MIME: Record<string, string> = {
+  'application/pdf': 'pdf',
+}
+
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024 // 5 MB — mirrors image-upload.tsx
 const MAX_MODEL_BYTES = 50 * 1024 * 1024 // 50 MB — .glb
+const MAX_DOC_BYTES = 30 * 1024 * 1024 // 30 MB — PDF
 
 const PRESIGN_TTL_SECONDS = 60
 
-export type UploadKind = 'image' | 'model'
-// Destino no R2: 'product' → produtos/, 'model' → modelos_3d/, 'project' → projetos/
-export type UploadGroup = 'product' | 'model' | 'project'
+export type UploadKind = 'image' | 'model' | 'document'
+// Destino no R2: 'product' → produtos/, 'model' → modelos_3d/, 'project' → projetos/,
+// 'catalog' → catalogo/
+export type UploadGroup = 'product' | 'model' | 'project' | 'catalog'
 
 // Pasta-base por grupo. Cada item ganha uma subpasta com o nome (slug).
 const GROUP_BASE: Record<UploadGroup, string> = {
   product: 'produtos',
   model: 'modelos_3d',
   project: 'projetos',
+  catalog: 'catalogo',
 }
 
 // Sanitiza o nome do produto em um segmento de pasta seguro (nunca confiar no
@@ -128,12 +136,19 @@ export const getProductUploadUrl = async (
   if (!user) return { error: 'Não autorizado' }
 
   // 2. Resolve allowlist + size cap by kind
-  const isImage = input.kind === 'image'
-  const mimeMap = isImage ? IMAGE_MIME : MODEL_MIME
-  const maxBytes = isImage ? MAX_IMAGE_BYTES : MAX_MODEL_BYTES
-  // Destino: imagens do produto → produtos/, qualquer asset 3D → modelos_3d/.
+  const mimeMap =
+    input.kind === 'image' ? IMAGE_MIME : input.kind === 'model' ? MODEL_MIME : DOC_MIME
+  const maxBytes =
+    input.kind === 'image'
+      ? MAX_IMAGE_BYTES
+      : input.kind === 'model'
+        ? MAX_MODEL_BYTES
+        : MAX_DOC_BYTES
+  // Destino: imagens do produto → produtos/, asset 3D → modelos_3d/, PDF → catalogo/.
   // O grupo é explícito (o poster 3D é uma imagem que vai em modelos_3d/).
-  const group: UploadGroup = input.group ?? (input.kind === 'model' ? 'model' : 'product')
+  const group: UploadGroup =
+    input.group ??
+    (input.kind === 'model' ? 'model' : input.kind === 'document' ? 'catalog' : 'product')
   const base = GROUP_BASE[group]
   const folder = sanitizeFolder(input.folder ?? '')
 
@@ -141,9 +156,12 @@ export const getProductUploadUrl = async (
   const ext = mimeMap[input.contentType]
   if (!ext) {
     return {
-      error: isImage
-        ? 'Tipo de imagem não permitido (use JPG, PNG ou WebP)'
-        : 'Tipo de modelo não permitido (use .glb)',
+      error:
+        input.kind === 'image'
+          ? 'Tipo de imagem não permitido (use JPG, PNG ou WebP)'
+          : input.kind === 'model'
+            ? 'Tipo de modelo não permitido (use .glb)'
+            : 'Tipo de arquivo não permitido (use PDF)',
     }
   }
 
@@ -252,7 +270,12 @@ export const deleteR2Folder = async (prefix: string): Promise<DeleteFolderResult
   if (!clean || !clean.endsWith('/')) return { error: 'Pasta inválida' }
 
   // Pastas-base do sistema não podem ser excluídas (subpastas dentro delas sim).
-  if (clean === 'modelos_3d/' || clean === 'produtos/' || clean === 'projetos/') {
+  if (
+    clean === 'modelos_3d/' ||
+    clean === 'produtos/' ||
+    clean === 'projetos/' ||
+    clean === 'catalogo/'
+  ) {
     return { error: 'Esta pasta do sistema não pode ser excluída' }
   }
 
