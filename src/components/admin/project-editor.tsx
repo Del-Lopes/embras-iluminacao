@@ -199,7 +199,7 @@ export const ProjectEditor = ({ project, projectImages = [] }: Props) => {
             <div className="editor-row editor-row--2">
               <div className="field-group">
                 <Label htmlFor="name">Nome *</Label>
-                <Input id="name" placeholder="Nome do projeto" aria-invalid={!!errors.name} {...register('name')} />
+                <Input id="name" placeholder="Obra do projeto" aria-invalid={!!errors.name} {...register('name')} />
                 {errors.name && <span className="field-error">{errors.name.message}</span>}
                 {slugTaken && (
                   <span className="field-warning">
