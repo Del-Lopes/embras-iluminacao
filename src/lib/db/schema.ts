@@ -185,6 +185,38 @@ export type ProductCharacteristicMap = {
 }
 
 // ----------------------------------------------------------------
+// PORTFOLIO — Project tables (galeria de projetos exibida na home)
+// ----------------------------------------------------------------
+export type ProjectStatus = 'draft' | 'published'
+
+export type Project = {
+  id: string
+  name: string
+  slug: string
+  location: string | null // ex.: "São Paulo"
+  description: string | null // texto explicativo (plain text)
+  cover_image: string | null
+  status: ProjectStatus
+  // Destaque na home: os projetos marcados aparecem no grid principal da
+  // seção "Projetos" (limitado a 4). Os demais viram cards menores / listagem.
+  is_featured: boolean
+  author_id: string
+  published_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+// Álbum de fotos do projeto — mesma forma de ProductImage.
+export type ProjectImage = {
+  id: string
+  project_id: string
+  url: string
+  alt: string | null
+  sort_order: number
+  created_at: string
+}
+
+// ----------------------------------------------------------------
 // INSERT PAYLOADS (omit DB-generated fields)
 // ----------------------------------------------------------------
 export type InsertPost = Omit<Post, 'id' | 'created_at' | 'updated_at'>
@@ -231,6 +263,23 @@ export type InsertProductCharacteristic = Omit<
   sort_order?: number
 }
 
+// status e is_featured têm default no banco → opcionais no insert.
+export type InsertProject = Omit<
+  Project,
+  'id' | 'created_at' | 'updated_at' | 'status' | 'is_featured'
+> & {
+  status?: ProjectStatus
+  is_featured?: boolean
+}
+
+// sort_order has a DB default → optional on insert.
+export type InsertProjectImage = Omit<
+  ProjectImage,
+  'id' | 'created_at' | 'sort_order'
+> & {
+  sort_order?: number
+}
+
 // ----------------------------------------------------------------
 // UPDATE PAYLOADS (all fields optional except discriminator)
 // ----------------------------------------------------------------
@@ -239,6 +288,8 @@ export type UpdatePost = Partial<InsertPost>
 export type UpdateProduct = Partial<InsertProduct>
 
 export type UpdateProductCategory = Partial<InsertProductCategory>
+
+export type UpdateProject = Partial<InsertProject>
 
 // ----------------------------------------------------------------
 // JOINED / ENRICHED TYPES (used in UI)
@@ -252,6 +303,11 @@ export type ProductWithRelations = Product & {
   author: Pick<Profile, 'id' | 'full_name' | 'avatar_url'>
   categories: Pick<ProductCategory, 'id' | 'name' | 'slug'>[]
   images: Pick<ProductImage, 'id' | 'url' | 'alt' | 'sort_order'>[]
+}
+
+export type ProjectWithRelations = Project & {
+  author: Pick<Profile, 'id' | 'full_name' | 'avatar_url'>
+  images: Pick<ProjectImage, 'id' | 'url' | 'alt' | 'sort_order'>[]
 }
 
 // ----------------------------------------------------------------
@@ -381,6 +437,18 @@ export type Database = {
         Update: Partial<ProductCharacteristicMap>
         Relationships: []
       }
+      projects: {
+        Row: Project
+        Insert: InsertProject
+        Update: UpdateProject
+        Relationships: []
+      }
+      project_images: {
+        Row: ProjectImage
+        Insert: InsertProjectImage
+        Update: Partial<InsertProjectImage>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -391,6 +459,7 @@ export type Database = {
       product_status: ProductStatus
       product_environment: ProductEnvironment
       product_characteristic_type: ProductCharacteristicType
+      project_status: ProjectStatus
     }
   }
 }

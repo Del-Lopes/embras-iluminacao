@@ -41,13 +41,14 @@ const MAX_MODEL_BYTES = 50 * 1024 * 1024 // 50 MB — .glb
 const PRESIGN_TTL_SECONDS = 60
 
 export type UploadKind = 'image' | 'model'
-// Destino no R2: 'product' → produtos/, 'model' → modelos_3d/
-export type UploadGroup = 'product' | 'model'
+// Destino no R2: 'product' → produtos/, 'model' → modelos_3d/, 'project' → projetos/
+export type UploadGroup = 'product' | 'model' | 'project'
 
-// Pasta-base por grupo. Cada produto ganha uma subpasta com o nome (slug).
+// Pasta-base por grupo. Cada item ganha uma subpasta com o nome (slug).
 const GROUP_BASE: Record<UploadGroup, string> = {
   product: 'produtos',
   model: 'modelos_3d',
+  project: 'projetos',
 }
 
 // Sanitiza o nome do produto em um segmento de pasta seguro (nunca confiar no
@@ -251,7 +252,7 @@ export const deleteR2Folder = async (prefix: string): Promise<DeleteFolderResult
   if (!clean || !clean.endsWith('/')) return { error: 'Pasta inválida' }
 
   // Pastas-base do sistema não podem ser excluídas (subpastas dentro delas sim).
-  if (clean === 'modelos_3d/' || clean === 'produtos/') {
+  if (clean === 'modelos_3d/' || clean === 'produtos/' || clean === 'projetos/') {
     return { error: 'Esta pasta do sistema não pode ser excluída' }
   }
 

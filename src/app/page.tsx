@@ -10,6 +10,7 @@ import ContactSection from '@/sections/ContactSection'
 import Footer from '@/components/layout/Footer'
 import Header from '@/components/layout/Header'
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
+import { getFeaturedProjects, getRecentProjects } from '@/server/project.actions'
 import type { LineProduct } from '@/sections/ProductLineCard'
 
 const AREAS = [
@@ -43,7 +44,11 @@ async function getAreaLines(): Promise<ProductLine[]> {
 }
 
 export default async function Home() {
-  const lines = await getAreaLines()
+  const [lines, featuredProjects, recentProjects] = await Promise.all([
+    getAreaLines(),
+    getFeaturedProjects(4),
+    getRecentProjects(8),
+  ])
 
   return (
     <main className="relative min-h-screen bg-(--color-bg)">
@@ -53,7 +58,7 @@ export default async function Home() {
       <div id="project-preview">
         <HeroProductsWrapper />
         <ProductLines lines={lines} defaultActive="externo" />
-        <SuccessCases />
+        <SuccessCases featured={featuredProjects} recent={recentProjects} />
         <Manifesto />
         <WhoWeAre />
         <TestimonialsHeader />

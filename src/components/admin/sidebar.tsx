@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, FileText, Sparkles, Tag, LogOut, Zap, ShoppingBag, Bot, Settings, HardDrive, ScrollText, PackagePlus, SlidersHorizontal, Users } from 'lucide-react'
+import { LayoutDashboard, FileText, Sparkles, Tag, LogOut, Zap, ShoppingBag, Bot, Settings, HardDrive, ScrollText, PackagePlus, SlidersHorizontal, Users, FolderPlus } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { logoutAction } from '@/server/auth.actions'
 import { AreaSwitcher } from '@/components/admin/area-switcher'
@@ -65,6 +65,15 @@ const PRODUCT_STORAGE_NAV: NavItem[] = [
   { label: 'Arquivos (R2)', href: '/admin/products/storage', icon: HardDrive },
 ]
 
+// ---- Projetos area nav (portfólio, isolado) ----
+const PROJECT_MAIN_NAV: NavItem[] = [
+  { label: 'Dashboard', href: '/admin/projects', icon: LayoutDashboard, exact: true },
+]
+
+const PROJECT_CREATE_NAV: NavItem[] = [
+  { label: 'Novo Projeto', href: '/admin/projects/new', icon: FolderPlus },
+]
+
 const ROLE_LABEL: Record<UserRole, string> = {
   admin: 'Administrador',
   editor: 'Editor',
@@ -74,9 +83,11 @@ const ROLE_LABEL: Record<UserRole, string> = {
 export const Sidebar = ({ userName, userEmail, userRole }: SidebarProps) => {
   const pathname = usePathname()
   const [accountOpen, setAccountOpen] = useState(false)
-  const area: 'blog' | 'products' = pathname.startsWith('/admin/products')
+  const area: 'blog' | 'products' | 'projects' = pathname.startsWith('/admin/products')
     ? 'products'
-    : 'blog'
+    : pathname.startsWith('/admin/projects')
+      ? 'projects'
+      : 'blog'
 
   // Espelha ADMIN_ONLY_PREFIXES de lib/auth/permissions. O middleware
   // é quem bloqueia de fato; aqui é só para não exibir um link que
@@ -126,6 +137,15 @@ export const Sidebar = ({ userName, userEmail, userRole }: SidebarProps) => {
                 {PRODUCT_STORAGE_NAV.map(renderLink)}
               </>
             )}
+          </>
+        ) : area === 'projects' ? (
+          <>
+            {PROJECT_MAIN_NAV.map(renderLink)}
+
+            <div className="sidebar-divider" />
+
+            <span className="sidebar-section-label">Criação</span>
+            {PROJECT_CREATE_NAV.map(renderLink)}
           </>
         ) : (
           <>

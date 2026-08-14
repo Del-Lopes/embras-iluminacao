@@ -13,14 +13,16 @@ const MAX_BYTES = 5 * 1024 * 1024 // 5 MB
 type Props = {
   value: GalleryImage[]
   onChange: (images: GalleryImage[]) => void
-  // Subpasta no R2 (nome do produto). Vazio = upload bloqueado.
+  // Subpasta no R2 (nome do item). Vazio = upload bloqueado.
   folder?: string
+  // Destino no R2: 'product' → produtos/, 'project' → projetos/
+  group?: 'product' | 'project'
 }
 
 // Carousel image manager. Each file is uploaded straight to R2 via a
 // presigned PUT (same secure flow as r2-upload.tsx). Order is the carousel
 // order (persisted as sort_order on save).
-export const ProductImageGallery = ({ value, onChange, folder = '' }: Props) => {
+export const ProductImageGallery = ({ value, onChange, folder = '', group = 'product' }: Props) => {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -36,7 +38,7 @@ export const ProductImageGallery = ({ value, onChange, folder = '' }: Props) => 
     }
     const result = await getProductUploadUrl({
       kind: 'image',
-      group: 'product',
+      group,
       folder,
       contentType: file.type,
       contentLength: file.size,
@@ -96,7 +98,7 @@ export const ProductImageGallery = ({ value, onChange, folder = '' }: Props) => 
         <Alert variant="warning">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Informe o nome do produto antes de enviar imagens.
+            Informe o nome antes de enviar imagens.
           </AlertDescription>
         </Alert>
       )}

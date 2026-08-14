@@ -22,9 +22,10 @@ const MAX_BYTES = 5 * 1024 * 1024 // 5 MB
 type Props = {
   value: string
   onChange: (url: string) => void
-  // Destino no R2: 'product' → produtos/<folder>, 'model' → modelos_3d/<folder>
-  group?: 'product' | 'model'
-  // Subpasta (nome do produto). Vazio = upload bloqueado até nomear o produto.
+  // Destino no R2: 'product' → produtos/<folder>, 'model' → modelos_3d/<folder>,
+  // 'project' → projetos/<folder>
+  group?: 'product' | 'model' | 'project'
+  // Subpasta (nome do item). Vazio = upload bloqueado até nomear o item.
   folder?: string
 }
 

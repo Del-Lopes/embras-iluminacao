@@ -1,5 +1,6 @@
 'use client'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRef, useState, useEffect } from 'react'
 import { gsap, ScrollTrigger } from '@/lib/gsap'
 import { useGSAP } from '@gsap/react'
@@ -8,14 +9,38 @@ import {
 	AnimatedParagraph,
 	AnimatedPill,
 } from '@/components/common/AnimatedTypography'
+import type { ProjectCardData } from '@/server/project.actions'
 
-export default function SuccessCases() {
+type CaseCard = {
+	title: string
+	location: string
+	image: string
+	// slug != null → o card leva à página do projeto (/projetos/[slug]).
+	slug: string | null
+}
+
+// Projetos-destaque de fallback (usados enquanto não há projetos cadastrados no
+// admin marcados como destaque). Mantêm o visual histórico da seção.
+const FALLBACK_CASES: CaseCard[] = [
+	{ title: 'Mansão Alpha', location: 'São Paulo', image: '/images/case-1.png', slug: null },
+	{ title: 'Fazenda Aurora', location: 'Minas Gerais', image: '/images/hero.png', slug: null },
+	{ title: 'Apartamento Garden', location: 'Rio de Janeiro', image: '/images/case-1.png', slug: null },
+	{ title: 'Residência Moderna', location: 'Curitiba', image: '/images/hero.png', slug: null },
+]
+
+type Props = {
+	featured?: ProjectCardData[]
+	recent?: ProjectCardData[]
+}
+
+export default function SuccessCases({ featured = [], recent = [] }: Props) {
 	const sectionRef = useRef<HTMLElement>(null)
 	const gridRef = useRef<HTMLDivElement>(null)
 	const logoRef = useRef<HTMLDivElement>(null)
 	const lineHRef = useRef<HTMLDivElement>(null)
 	const lineVRef = useRef<HTMLDivElement>(null)
-	const cardsRef = useRef<(HTMLDivElement | null)[]>([])
+	// Aceita div (fallback) ou anchor (Link) — a animação do GSAP usa HTMLElement.
+	const cardsRef = useRef<(HTMLElement | null)[]>([])
 	const [mounted, setMounted] = useState(false)
 	// Card ativo por CLIQUE — no touch (mobile/tablet) não há hover, então o tap
 	// reproduz o estado de hover (imagem colorida + infos). No desktop o hover
@@ -26,32 +51,15 @@ export default function SuccessCases() {
 		setMounted(true)
 	}, [])
 
-	const cases = [
-		{
-			id: 1,
-			title: 'Mansão Alpha',
-			location: 'São Paulo',
-			image: '/images/case-1.png',
-		},
-		{
-			id: 2,
-			title: 'Fazenda Aurora',
-			location: 'Minas Gerais',
-			image: '/images/hero.png',
-		},
-		{
-			id: 3,
-			title: 'Apartamento Garden',
-			location: 'Rio de Janeiro',
-			image: '/images/case-1.png',
-		},
-		{
-			id: 4,
-			title: 'Residência Moderna',
-			location: 'Curitiba',
-			image: '/images/hero.png',
-		},
-	]
+	// Grid principal: 4 destaques vindos do admin (is_featured). Preenche com os
+	// fallbacks quando há menos de 4, para manter o layout/animação de 4 cards.
+	const featuredCases: CaseCard[] = featured.map((p) => ({
+		title: p.name,
+		location: p.location ?? '',
+		image: p.cover_image || '/images/case-1.png',
+		slug: p.slug,
+	}))
+	const cases: CaseCard[] = [...featuredCases, ...FALLBACK_CASES].slice(0, 4)
 
 	useGSAP(
 		() => {
@@ -213,21 +221,9 @@ export default function SuccessCases() {
 
 				{/* 1 coluna no mobile (cada card em uma linha), 2 no desktop. */}
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-24 relative z-20">
-					{cases.map((project, index) => (
-						// data-active + onClick reproduzem o hover no touch: cada utility
-						// group-hover: ganha um par group-data-[active=true]:. O toggle
-						// deixa desmarcar tocando de novo; tocar em outro troca o ativo.
-						<div
-							key={project.id}
-							ref={(el) => {
-								cardsRef.current[index] = el
-							}}
-							data-active={activeCard === index ? 'true' : undefined}
-							onClick={() =>
-								setActiveCard((prev) => (prev === index ? null : index))
-							}
-							className="group cursor-pointer"
-						>
+					{cases.map((project, index) => {
+						// Conteúdo visual do card (compartilhado entre link e div).
+						const inner = (
 							<div className="aspect-square bg-[#0f0f0f] border border-(--color-border) relative overflow-hidden transition-all duration-700 group-hover:border-white/30 group-data-[active=true]:border-white/30">
 								<Image
 									src={project.image}
@@ -248,10 +244,74 @@ export default function SuccessCases() {
 									{project.title}
 								</div>
 							</div>
-						</div>
-					))}
+						)
+
+						// Com slug → o card inteiro leva à página do projeto. Sem slug
+						// (fallback) → mantém o toggle de hover no touch (data-active).
+						return project.slug ? (
+							<Link
+								key={`${project.slug}-${index}`}
+								href={`/projetos/${project.slug}`}
+								ref={(el) => {
+									cardsRef.current[index] = el
+								}}
+								className="group cursor-pointer block"
+							>
+								{inner}
+							</Link>
+						) : (
+							<div
+								key={`fallback-${index}`}
+								ref={(el) => {
+									cardsRef.current[index] = el
+								}}
+								data-active={activeCard === index ? 'true' : undefined}
+								onClick={() =>
+									setActiveCard((prev) => (prev === index ? null : index))
+								}
+								className="group cursor-pointer"
+							>
+								{inner}
+							</div>
+						)
+					})}
 				</div>
 			</div>
+
+			{/* Botão "Ver mais projetos" → listagem paginada */}
+			<div className="mt-16 md:mt-24 flex justify-center">
+				<Link href="/projetos" className="success-cases-more-btn">
+					Ver mais projetos
+				</Link>
+			</div>
+
+			{/* Faixa de cards menores dos projetos cadastrados no admin */}
+			{recent.length > 0 && (
+				<div className="success-cases-strip">
+					{recent.map((project) => (
+						<Link
+							key={project.id}
+							href={`/projetos/${project.slug}`}
+							className="success-cases-strip-card group"
+						>
+							<div className="success-cases-strip-img">
+								{project.cover_image ? (
+									// eslint-disable-next-line @next/next/no-img-element
+									<img src={project.cover_image} alt={project.name} loading="lazy" />
+								) : (
+									<span className="success-cases-strip-img-empty" aria-hidden="true" />
+								)}
+							</div>
+							<div className="success-cases-strip-info">
+								<span className="success-cases-strip-name">{project.name}</span>
+								{project.location && (
+									<span className="success-cases-strip-loc">{project.location}</span>
+								)}
+							</div>
+						</Link>
+					))}
+				</div>
+			)}
 		</section>
 	)
 }
