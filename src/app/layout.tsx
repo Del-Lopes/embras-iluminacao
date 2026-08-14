@@ -41,7 +41,7 @@ export default function RootLayout({
 	return (
 		<html lang="pt-BR" suppressHydrationWarning>
 			<head>
-				<script dangerouslySetInnerHTML={{ __html: `(function(){try{if(localStorage.getItem('theme')==='light')document.documentElement.classList.add('light')}catch(e){}})()` }} />
+				<script dangerouslySetInnerHTML={{ __html: `(function(){try{if(localStorage.getItem('theme')!=='dark')document.documentElement.classList.add('light')}catch(e){}})()` }} />
 			</head>
 			<body
 				className={`${inter.variable} ${outfit.variable} ${playfair.variable} antialiased`}

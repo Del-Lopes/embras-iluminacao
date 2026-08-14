@@ -18,7 +18,7 @@ export const useTheme = () => {
 }
 
 export default function ThemeProvider({ children }: { children: ReactNode }) {
-	const [theme, setTheme] = useState<Theme>('dark')
+	const [theme, setTheme] = useState<Theme>('light')
 
 	useEffect(() => {
 		setTheme(document.documentElement.classList.contains('light') ? 'light' : 'dark')
