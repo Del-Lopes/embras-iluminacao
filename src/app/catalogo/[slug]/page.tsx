@@ -5,10 +5,11 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { EditorJsContent } from '@/components/blog/EditorJsContent'
 import { ProductGallery } from '@/components/catalog/ProductGallery'
-import { ProductSpecs } from '@/components/catalog/ProductSpecs'
+import { ProductTabs, type ProductTabFile, type SpecRow } from '@/components/catalog/ProductTabs'
 import { RelatedProducts } from '@/components/catalog/RelatedProducts'
 import { ProductModelViewer } from '@/components/catalog/ProductModelViewer'
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
+import { LEAD_FILE_LABEL } from '@/lib/leads'
 import type { Product, ProductCharacteristic } from '@/lib/db/schema'
 import type { ProductCardData } from '@/components/catalog/ProductCard'
 
@@ -133,6 +134,30 @@ export default async function ProductDetailPage({ params }: Props) {
 
   const hasDescription = !!product.description && product.description.replace(/<[^>]*>/g, '').trim().length > 0
 
+  // ---- Aba "Informações Técnicas": specs base + linhas flexíveis (tech_specs) ----
+  const ENV_LABEL: Record<string, string> = { interno: 'Área interna', externo: 'Área externa' }
+  const baseRows: SpecRow[] = [
+    { label: 'Área de uso', value: ENV_LABEL[product.environment] ?? product.environment },
+  ]
+  if (product.height_cm != null) baseRows.push({ label: 'Altura', value: `${product.height_cm} cm` })
+  if (product.width_cm != null) baseRows.push({ label: 'Largura', value: `${product.width_cm} cm` })
+  if (product.depth_cm != null) baseRows.push({ label: 'Profundidade', value: `${product.depth_cm} cm` })
+  if (product.weight_kg != null) baseRows.push({ label: 'Peso', value: `${product.weight_kg} kg` })
+  const materiais = characteristics.filter((c) => c.type === 'material').map((c) => c.name).join(', ')
+  const soquete = characteristics.filter((c) => c.type === 'soquete').map((c) => c.name).join(', ')
+  if (materiais) baseRows.push({ label: materiais.includes(',') ? 'Materiais' : 'Material', value: materiais })
+  if (soquete) baseRows.push({ label: 'Tipo de soquete', value: soquete })
+  const techRows: SpecRow[] = [...baseRows, ...((product.tech_specs ?? []) as SpecRow[])]
+
+  // ---- Aba "Arquivos para download": 3 slots ----
+  const files: ProductTabFile[] = []
+  if (product.datasheet_url)
+    files.push({ type: 'datasheet', label: LEAD_FILE_LABEL.datasheet, url: product.datasheet_url, filename: product.datasheet_filename })
+  if (product.ies_url)
+    files.push({ type: 'ies', label: LEAD_FILE_LABEL.ies, url: product.ies_url, filename: product.ies_filename })
+  if (product.certificates_url)
+    files.push({ type: 'certificates', label: LEAD_FILE_LABEL.certificates, url: product.certificates_url, filename: product.certificates_filename })
+
   return (
     <main className="product-detail-page min-h-screen bg-(--color-bg)">
       <Header variant="solid" />
@@ -193,9 +218,16 @@ export default async function ProductDetailPage({ params }: Props) {
             negativas via 50vw, saindo do container de 1100px. */}
         <hr className="product-detail-divider" />
 
-        {/* Technical specs (vêm ANTES da descrição) */}
+        {/* Abas: Arquivos, Informações Técnicas, Características, Aplicações */}
         <div className="product-section">
-          <ProductSpecs product={product} characteristics={characteristics} />
+          <ProductTabs
+            productId={product.id}
+            productName={product.name}
+            techRows={techRows}
+            features={product.features ?? []}
+            applications={product.applications}
+            files={files}
+          />
         </div>
 
         {/* Description */}

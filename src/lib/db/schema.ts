@@ -106,6 +106,9 @@ export type ProductCategory = {
   created_at: string
 }
 
+// Linha da tabela "Informações Técnicas" (flexível): rótulo + valor.
+export type ProductTechSpec = { label: string; value: string }
+
 export type Product = {
   id: string
   name: string
@@ -117,6 +120,19 @@ export type Product = {
   status: ProductStatus
   environment: ProductEnvironment
   primary_material: string | null
+  // Aba "Informações Técnicas" (linhas rótulo/valor flexíveis)
+  tech_specs: ProductTechSpec[] | null
+  // Aba "Características" (lista de itens)
+  features: string[] | null
+  // Aba "Aplicações" (texto)
+  applications: string | null
+  // Aba "Arquivos para download" — 3 slots (URL no R2 + nome original)
+  datasheet_url: string | null
+  datasheet_filename: string | null
+  ies_url: string | null
+  ies_filename: string | null
+  certificates_url: string | null
+  certificates_filename: string | null
   // technical specs
   height_cm: number | null
   width_cm: number | null
@@ -361,6 +377,24 @@ export type SiteSettings = {
 export type UpdateSiteSettings = Partial<Pick<SiteSettings, 'catalog_url' | 'catalog_filename'>>
 
 // ----------------------------------------------------------------
+// LEADS — capturados no popup de download de arquivos do produto
+// ----------------------------------------------------------------
+export type LeadFileType = 'datasheet' | 'ies' | 'certificates'
+
+export type Lead = {
+  id: string
+  product_id: string | null // set null se o produto for excluído
+  product_name: string | null // denormalizado (sobrevive à exclusão do produto)
+  file_type: LeadFileType
+  name: string
+  email: string
+  phone: string | null
+  created_at: string
+}
+
+export type InsertLead = Omit<Lead, 'id' | 'created_at'>
+
+// ----------------------------------------------------------------
 // SUPABASE DATABASE SHAPE (for createClient generic)
 // Must include Views, Functions, CompositeTypes for full type inference.
 // ----------------------------------------------------------------
@@ -465,6 +499,12 @@ export type Database = {
         Row: SiteSettings
         Insert: Partial<SiteSettings> & { id?: number }
         Update: Partial<Omit<SiteSettings, 'id'>>
+        Relationships: []
+      }
+      leads: {
+        Row: Lead
+        Insert: InsertLead
+        Update: Partial<InsertLead>
         Relationships: []
       }
     }

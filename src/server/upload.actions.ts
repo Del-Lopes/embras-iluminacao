@@ -35,14 +35,18 @@ const MODEL_MIME: Record<string, string> = {
   'model/gltf-binary': 'glb',
 }
 
-// Documentos (ex.: catálogo em PDF) — mesmo fluxo presigned.
+// Documentos (catálogo em PDF, arquivos de download do produto: data sheet,
+// IES/3D, certificados) — mesmo fluxo presigned. Aceita PDF e ZIP.
 const DOC_MIME: Record<string, string> = {
   'application/pdf': 'pdf',
+  'application/zip': 'zip',
+  'application/x-zip-compressed': 'zip',
+  'application/octet-stream': 'zip', // alguns navegadores enviam .zip assim
 }
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024 // 5 MB — mirrors image-upload.tsx
 const MAX_MODEL_BYTES = 50 * 1024 * 1024 // 50 MB — .glb
-const MAX_DOC_BYTES = 30 * 1024 * 1024 // 30 MB — PDF
+const MAX_DOC_BYTES = 50 * 1024 * 1024 // 50 MB — PDF/ZIP
 
 const PRESIGN_TTL_SECONDS = 60
 

@@ -22,6 +22,7 @@ import { Switch } from '@/components/ui/switch'
 import { RichTextField } from '@/components/admin/rich-text-field'
 import { R2Upload } from '@/components/admin/r2-upload'
 import { R2ModelUpload } from '@/components/admin/r2-model-upload'
+import { R2FileUpload } from '@/components/admin/r2-file-upload'
 import { ProductImageGallery, type GalleryImage } from '@/components/admin/product-image-gallery'
 import type {
   Model3dArScale,
@@ -30,6 +31,7 @@ import type {
   Model3dVariation,
   Product,
   ProductCharacteristic,
+  ProductTechSpec,
 } from '@/lib/db/schema'
 
 // The variations panel pulls in @google/model-viewer to read materials, so it's
@@ -81,6 +83,13 @@ const schema = z.object({
       })
     )
     .optional(),
+  applications: z.string().optional(),
+  datasheet_url: z.string().optional(),
+  datasheet_filename: z.string().optional(),
+  ies_url: z.string().optional(),
+  ies_filename: z.string().optional(),
+  certificates_url: z.string().optional(),
+  certificates_filename: z.string().optional(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -135,6 +144,9 @@ export const ProductEditor = ({
   const [secondaryMaterialIds, setSecondaryMaterialIds] = useState<string[]>(productSecondaryMaterialIds)
   const [soqueteIds, setSoqueteIds] = useState<string[]>(productSoqueteIds)
   const [images, setImages] = useState<GalleryImage[]>(productImages)
+  // Abas novas: Informações Técnicas (linhas rótulo/valor) e Características (lista).
+  const [techSpecs, setTechSpecs] = useState<ProductTechSpec[]>(product?.tech_specs ?? [])
+  const [features, setFeatures] = useState<string[]>(product?.features ?? [])
 
   // Auto-save (rascunho) — só na criação. Cria o produto assim que houver nome e
   // vai atualizando; se o usuário sair, o rascunho e os arquivos permanecem.
@@ -183,6 +195,13 @@ export const ProductEditor = ({
       model_3d_ar_scale: product?.model_3d_ar_scale ?? 'fixed',
       model_3d_material_labels: product?.model_3d_material_labels ?? {},
       model_3d_variations: product?.model_3d_variations ?? [],
+      applications: product?.applications ?? '',
+      datasheet_url: product?.datasheet_url ?? '',
+      datasheet_filename: product?.datasheet_filename ?? '',
+      ies_url: product?.ies_url ?? '',
+      ies_filename: product?.ies_filename ?? '',
+      certificates_url: product?.certificates_url ?? '',
+      certificates_filename: product?.certificates_filename ?? '',
     },
   })
 
@@ -221,6 +240,24 @@ export const ProductEditor = ({
   const model3dArScale = watch('model_3d_ar_scale') ?? 'fixed'
   const model3dMaterialLabels = watch('model_3d_material_labels') ?? {}
   const model3dVariations = watch('model_3d_variations') ?? []
+  const datasheetUrl = watch('datasheet_url') ?? ''
+  const datasheetFilename = watch('datasheet_filename') ?? ''
+  const iesUrl = watch('ies_url') ?? ''
+  const iesFilename = watch('ies_filename') ?? ''
+  const certificatesUrl = watch('certificates_url') ?? ''
+  const certificatesFilename = watch('certificates_filename') ?? ''
+
+  // Helpers — Informações Técnicas (linhas rótulo/valor)
+  const addSpec = () => setTechSpecs((prev) => [...prev, { label: '', value: '' }])
+  const updateSpec = (i: number, key: 'label' | 'value', val: string) =>
+    setTechSpecs((prev) => prev.map((s, idx) => (idx === i ? { ...s, [key]: val } : s)))
+  const removeSpec = (i: number) => setTechSpecs((prev) => prev.filter((_, idx) => idx !== i))
+
+  // Helpers — Características (lista de itens)
+  const addFeature = () => setFeatures((prev) => [...prev, ''])
+  const updateFeature = (i: number, val: string) =>
+    setFeatures((prev) => prev.map((f, idx) => (idx === i ? val : f)))
+  const removeFeature = (i: number) => setFeatures((prev) => prev.filter((_, idx) => idx !== i))
 
   const toggleSecondaryCategory = (id: string) =>
     setSecondaryCategoryIds((prev) =>
@@ -252,6 +289,8 @@ export const ProductEditor = ({
     soquete_ids: soqueteIds,
     images,
     has_3d_model: !!data.has_3d_model,
+    tech_specs: techSpecs,
+    features,
   })
 
   // Salva/atualiza o rascunho automaticamente (sem SEO por IA, sem navegar).
@@ -283,6 +322,8 @@ export const ProductEditor = ({
     sm: secondaryMaterialIds,
     sq: soqueteIds,
     img: images,
+    ts: techSpecs,
+    ft: features,
   })
   useEffect(() => {
     if (isEdit) return
@@ -414,6 +455,132 @@ export const ProductEditor = ({
                 render={({ field }) => (
                   <RichTextField value={field.value ?? ''} onChange={field.onChange} />
                 )}
+              />
+            </div>
+          </div>
+
+          {/* Informações técnicas (aba) — linhas rótulo/valor flexíveis */}
+          <div className="editor-section">
+            <p className="editor-section-title">Informações técnicas</p>
+            <span className="field-hint field-hint--xs">
+              Tabela exibida na aba “Informações Técnicas”. Rótulo + valor (ex.: Tensão / 220V).
+            </span>
+            {techSpecs.length > 0 && (
+              <div className="spec-rows">
+                {techSpecs.map((row, i) => (
+                  <div key={i} className="spec-row">
+                    <Input
+                      placeholder="Rótulo (ex.: Tensão)"
+                      value={row.label}
+                      onChange={(e) => updateSpec(i, 'label', e.target.value)}
+                    />
+                    <Input
+                      placeholder="Valor (ex.: 220V)"
+                      value={row.value}
+                      onChange={(e) => updateSpec(i, 'value', e.target.value)}
+                    />
+                    <button type="button" className="action-btn action-btn--delete" onClick={() => removeSpec(i)}>
+                      Remover
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button type="button" className="btn-secondary" onClick={addSpec} style={{ marginTop: 10 }}>
+              + Adicionar linha
+            </button>
+          </div>
+
+          {/* Características (aba) — lista de itens */}
+          <div className="editor-section">
+            <p className="editor-section-title">Características</p>
+            <span className="field-hint field-hint--xs">
+              Lista de itens exibida na aba “Características”.
+            </span>
+            {features.length > 0 && (
+              <div className="spec-rows">
+                {features.map((f, i) => (
+                  <div key={i} className="feature-row">
+                    <Input
+                      placeholder="Item da lista"
+                      value={f}
+                      onChange={(e) => updateFeature(i, e.target.value)}
+                    />
+                    <button type="button" className="action-btn action-btn--delete" onClick={() => removeFeature(i)}>
+                      Remover
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button type="button" className="btn-secondary" onClick={addFeature} style={{ marginTop: 10 }}>
+              + Adicionar item
+            </button>
+          </div>
+
+          {/* Aplicações (aba) — texto */}
+          <div className="editor-section">
+            <div className="field-group">
+              <Label htmlFor="applications">Aplicações</Label>
+              <Textarea
+                id="applications"
+                rows={4}
+                placeholder="Onde o produto é indicado (ex.: ruas, avenidas, praças, pátios…)"
+                {...register('applications')}
+              />
+            </div>
+          </div>
+
+          {/* Arquivos para download (aba) — 3 slots (PDF/ZIP) */}
+          <div className="editor-section">
+            <p className="editor-section-title">Arquivos para download</p>
+            <span className="field-hint field-hint--xs">
+              PDF ou ZIP. Aparecem na aba “Arquivos para download” da página do produto — o
+              visitante preenche um popup (lead) antes de baixar.
+            </span>
+            <div className="field-group">
+              <Label>Data Sheet</Label>
+              <input type="hidden" {...register('datasheet_url')} />
+              <input type="hidden" {...register('datasheet_filename')} />
+              <R2FileUpload
+                value={datasheetUrl}
+                filename={datasheetFilename}
+                onChange={(url, name) => {
+                  setValue('datasheet_url', url)
+                  setValue('datasheet_filename', name)
+                }}
+                group="product"
+                folder={effectiveSlug}
+              />
+            </div>
+            <div className="field-group">
+              <Label>IES / 3D</Label>
+              <input type="hidden" {...register('ies_url')} />
+              <input type="hidden" {...register('ies_filename')} />
+              <R2FileUpload
+                value={iesUrl}
+                filename={iesFilename}
+                onChange={(url, name) => {
+                  setValue('ies_url', url)
+                  setValue('ies_filename', name)
+                }}
+                group="product"
+                folder={effectiveSlug}
+              />
+            </div>
+            <div className="field-group">
+              <Label>Certificados</Label>
+              <input type="hidden" {...register('certificates_url')} />
+              <input type="hidden" {...register('certificates_filename')} />
+              <R2FileUpload
+                value={certificatesUrl}
+                filename={certificatesFilename}
+                onChange={(url, name) => {
+                  setValue('certificates_url', url)
+                  setValue('certificates_filename', name)
+                }}
+                group="product"
+                folder={effectiveSlug}
               />
             </div>
           </div>

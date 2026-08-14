@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, FileText, Sparkles, Tag, LogOut, Zap, ShoppingBag, Bot, Settings, HardDrive, ScrollText, PackagePlus, SlidersHorizontal, Users, FolderPlus, FolderKanban, FileDown } from 'lucide-react'
+import { LayoutDashboard, FileText, Sparkles, Tag, LogOut, Zap, ShoppingBag, Bot, Settings, HardDrive, ScrollText, PackagePlus, SlidersHorizontal, Users, FolderPlus, FolderKanban, FileDown, Inbox } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { logoutAction } from '@/server/auth.actions'
 import { AreaSwitcher } from '@/components/admin/area-switcher'
@@ -56,6 +56,7 @@ const PRODUCT_MAIN_NAV: NavItem[] = [
   { label: 'Projetos', href: '/admin/projects', icon: FolderKanban },
   { label: 'Categorias', href: '/admin/products/product-categories', icon: Tag },
   { label: 'Especificações', href: '/admin/products/characteristics', icon: SlidersHorizontal },
+  { label: 'Leads', href: '/admin/leads', icon: Inbox },
   { label: 'Catálogo (PDF)', href: '/admin/catalog', icon: FileDown },
 ]
 
@@ -77,12 +78,13 @@ const ROLE_LABEL: Record<UserRole, string> = {
 export const Sidebar = ({ userName, userEmail, userRole }: SidebarProps) => {
   const pathname = usePathname()
   const [accountOpen, setAccountOpen] = useState(false)
-  // Projetos e Catálogo vivem dentro da área Site (ex-Produtos), então
-  // /admin/projects e /admin/catalog também ativam 'products'.
+  // Projetos, Catálogo e Leads vivem dentro da área Site (ex-Produtos), então
+  // /admin/projects, /admin/catalog e /admin/leads também ativam 'products'.
   const area: 'blog' | 'products' =
     pathname.startsWith('/admin/products') ||
     pathname.startsWith('/admin/projects') ||
-    pathname.startsWith('/admin/catalog')
+    pathname.startsWith('/admin/catalog') ||
+    pathname.startsWith('/admin/leads')
       ? 'products'
       : 'blog'
 

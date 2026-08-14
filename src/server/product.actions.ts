@@ -359,6 +359,19 @@ const productSchema = z.object({
     )
     .optional()
     .default([]),
+  // Abas novas do produto (Informações Técnicas, Características, Aplicações, Arquivos)
+  tech_specs: z
+    .array(z.object({ label: z.string().default(''), value: z.string().default('') }))
+    .optional()
+    .default([]),
+  features: z.array(z.string()).optional().default([]),
+  applications: z.string().optional().default(''),
+  datasheet_url: z.string().optional().default(''),
+  datasheet_filename: z.string().optional().default(''),
+  ies_url: z.string().optional().default(''),
+  ies_filename: z.string().optional().default(''),
+  certificates_url: z.string().optional().default(''),
+  certificates_filename: z.string().optional().default(''),
   // SEO não vem mais do formulário — é gerado por IA (fallback determinístico) no save.
 })
 
@@ -428,6 +441,18 @@ const toProductColumns = (
     model_3d_ar_scale: d.has_3d_model ? d.model_3d_ar_scale : null,
     model_3d_material_labels: materialLabels,
     model_3d_variations: d.has_3d_model ? variations : null,
+    // Abas novas — descarta linhas/itens vazios.
+    tech_specs: d.tech_specs
+      .map((s) => ({ label: s.label.trim(), value: s.value.trim() }))
+      .filter((s) => s.label || s.value),
+    features: d.features.map((f) => f.trim()).filter(Boolean),
+    applications: d.applications.trim() || null,
+    datasheet_url: d.datasheet_url.trim() || null,
+    datasheet_filename: d.datasheet_filename.trim() || null,
+    ies_url: d.ies_url.trim() || null,
+    ies_filename: d.ies_filename.trim() || null,
+    certificates_url: d.certificates_url.trim() || null,
+    certificates_filename: d.certificates_filename.trim() || null,
     published_at: null, // resolved per create/update below
   }
 }
@@ -669,6 +694,9 @@ export const createProductAction = async (
     columns.model_3d_url,
     columns.model_3d_poster,
     ...(columns.model_3d_variations ?? []).map((v) => v.texture_url),
+    columns.datasheet_url,
+    columns.ies_url,
+    columns.certificates_url,
   ])
 
   revalidatePath('/admin/products')
@@ -785,6 +813,9 @@ export const updateProductAction = async (
       columns.model_3d_url,
       columns.model_3d_poster,
       ...(columns.model_3d_variations ?? []).map((v) => v.texture_url),
+      columns.datasheet_url,
+      columns.ies_url,
+      columns.certificates_url,
     ],
     [
       existing?.cover_image,
