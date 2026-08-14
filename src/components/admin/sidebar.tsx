@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, FileText, Sparkles, Tag, LogOut, Zap, ShoppingBag, Bot, Settings, HardDrive, ScrollText, PackagePlus, SlidersHorizontal, Users, FolderPlus } from 'lucide-react'
+import { LayoutDashboard, FileText, Sparkles, Tag, LogOut, Zap, ShoppingBag, Bot, Settings, HardDrive, ScrollText, PackagePlus, SlidersHorizontal, Users, FolderPlus, FolderKanban } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { logoutAction } from '@/server/auth.actions'
 import { AreaSwitcher } from '@/components/admin/area-switcher'
@@ -50,28 +50,21 @@ const USERS_NAV: NavItem[] = [
   { label: 'Usuários', href: '/admin/users', icon: Users },
 ]
 
-// ---- Produtos area nav (isolated from blog) ----
+// ---- Produtos area nav (isolated from blog) — Projetos vive aqui dentro ----
 const PRODUCT_MAIN_NAV: NavItem[] = [
   { label: 'Dashboard', href: '/admin/products', icon: LayoutDashboard, exact: true },
+  { label: 'Projetos', href: '/admin/projects', icon: FolderKanban },
   { label: 'Categorias', href: '/admin/products/product-categories', icon: Tag },
   { label: 'Especificações', href: '/admin/products/characteristics', icon: SlidersHorizontal },
 ]
 
 const PRODUCT_CREATE_NAV: NavItem[] = [
   { label: 'Novo Produto', href: '/admin/products/new', icon: PackagePlus },
+  { label: 'Novo Projeto', href: '/admin/projects/new', icon: FolderPlus },
 ]
 
 const PRODUCT_STORAGE_NAV: NavItem[] = [
   { label: 'Arquivos (R2)', href: '/admin/products/storage', icon: HardDrive },
-]
-
-// ---- Projetos area nav (portfólio, isolado) ----
-const PROJECT_MAIN_NAV: NavItem[] = [
-  { label: 'Dashboard', href: '/admin/projects', icon: LayoutDashboard, exact: true },
-]
-
-const PROJECT_CREATE_NAV: NavItem[] = [
-  { label: 'Novo Projeto', href: '/admin/projects/new', icon: FolderPlus },
 ]
 
 const ROLE_LABEL: Record<UserRole, string> = {
@@ -83,10 +76,10 @@ const ROLE_LABEL: Record<UserRole, string> = {
 export const Sidebar = ({ userName, userEmail, userRole }: SidebarProps) => {
   const pathname = usePathname()
   const [accountOpen, setAccountOpen] = useState(false)
-  const area: 'blog' | 'products' | 'projects' = pathname.startsWith('/admin/products')
-    ? 'products'
-    : pathname.startsWith('/admin/projects')
-      ? 'projects'
+  // Projetos vive dentro da área Produtos, então /admin/projects também ativa 'products'.
+  const area: 'blog' | 'products' =
+    pathname.startsWith('/admin/products') || pathname.startsWith('/admin/projects')
+      ? 'products'
       : 'blog'
 
   // Espelha ADMIN_ONLY_PREFIXES de lib/auth/permissions. O middleware
@@ -137,15 +130,6 @@ export const Sidebar = ({ userName, userEmail, userRole }: SidebarProps) => {
                 {PRODUCT_STORAGE_NAV.map(renderLink)}
               </>
             )}
-          </>
-        ) : area === 'projects' ? (
-          <>
-            {PROJECT_MAIN_NAV.map(renderLink)}
-
-            <div className="sidebar-divider" />
-
-            <span className="sidebar-section-label">Criação</span>
-            {PROJECT_CREATE_NAV.map(renderLink)}
           </>
         ) : (
           <>
