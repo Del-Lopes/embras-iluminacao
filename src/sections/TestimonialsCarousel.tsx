@@ -149,12 +149,23 @@ export default function TestimonialsCarousel() {
 		// Sem bg próprio: a cor e o glow vêm do TestimonialsBackdrop, que envolve
 		// esta seção — um fundo opaco aqui esconderia o glow. `relative` já basta
 		// para o conteúdo ficar acima dele (o glow é absolute e vem antes no DOM).
-		// h-full: como item flex do backdrop (h-screen), ocupa a altura toda e o
-		// `items-center` centraliza o conteúdo dentro dela.
-		<section className="relative w-full h-full flex items-center justify-center overflow-hidden py-16 lg:py-0">
+		// Altura de conteúdo: o backdrop não impõe mais altura, então a seção
+		// mede exatamente o depoimento. É isso que faz o espaçamento definido
+		// no cabeçalho valer de fato.
+		// O pb é a soma de duas coisas: os 160px (-bottom-40) que o ticker desce
+		// abaixo do conteúdo, mais os 150px de respiro até o rodapé (medida
+		// própria desta seção, fora do padrão de 128px). Daí 310px no desktop.
+		// Os dois valores são amarrados: mexer no -bottom-40 exige refazer esta
+		// conta, senão o respiro até o rodapé sai do lugar. Abaixo de lg o
+		// ticker está oculto e não há o que somar, então o pb é o respiro puro:
+		// 100px no mobile e 130px no tablet, ambos medida própria desta seção
+		// (o padrão é 60px e 80px). O overflow-hidden contém o número gigante,
+		// que sangra pela esquerda, e é ele que obriga o ticker a caber dentro
+		// desse pb.
+		<section className="relative w-full flex items-center justify-center overflow-hidden pt-0 pb-25 md:pb-32.5 lg:pb-77.5">
 			<div
 				ref={containerRef}
-				className="relative w-full max-w-7xl px-6 md:px-8 lg:px-12"
+				className="relative w-full max-w-site px-6 md:px-8 lg:px-12"
 				onMouseMove={handleMouseMove}
 			>
 				{/* Número gigante (paralaxe) — sangra pela esquerda */}
@@ -172,7 +183,8 @@ export default function TestimonialsCarousel() {
 				{/* Conteúdo — layout assimétrico */}
 				<div className="relative flex">
 					{/* Coluna esquerda — texto vertical + progresso */}
-					<div className="hidden sm:flex flex-col items-center justify-center pr-8 md:pr-16 border-r border-(--color-border)">
+					{/* Sem border-r: o pr sozinho já separa esta coluna do conteúdo. */}
+					<div className="hidden sm:flex flex-col items-center justify-center pr-8 md:pr-16">
 						<span
 							className="text-xs font-(family-name:--font-body) text-(--color-muted) tracking-widest uppercase"
 							style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
@@ -182,14 +194,16 @@ export default function TestimonialsCarousel() {
 						<div className="relative h-32 w-px bg-(--color-border) mt-8">
 							<div
 								ref={progressRef}
-								className="absolute top-0 left-0 w-full bg-(--color-accent) origin-top"
+								className="absolute top-0 left-0 w-full bg-(--color-highlight) origin-top"
 								style={{ height: `${(1 / total) * 100}%` }}
 							/>
 						</div>
 					</div>
 
 					{/* Centro — conteúdo principal */}
-					<div className="flex-1 sm:pl-16 py-12">
+					{/* Sem padding vertical: quem define a distância para o título da
+					    seção é o pb do cabeçalho. Um py aqui somaria por cima dele. */}
+					<div className="flex-1 sm:pl-16">
 						{/* Badge */}
 						<div ref={badgeRef} className="mb-8">
 							<span className="inline-flex items-center gap-2 text-xs font-bold font-(family-name:--font-body) text-(--color-highlight) border border-(--color-border) rounded-full px-3 py-1 uppercase tracking-widest">
@@ -202,7 +216,7 @@ export default function TestimonialsCarousel() {
 						<div className="relative mb-12 min-h-[120px] md:min-h-[160px]" style={{ perspective: '600px' }}>
 							<blockquote
 								ref={quoteRef}
-								className="text-2xl md:text-3xl font-(family-name:--font-body) font-light text-(--color-accent) leading-[1.3] tracking-tight"
+								className="text-2xl md:text-3xl font-(family-name:--font-libre) font-light text-(--color-accent) leading-[1.3] tracking-tight"
 							>
 								{current.quote.split(' ').map((word, i) => (
 									<span key={`${activeIndex}-${i}`} className="tc-word inline-block mr-[0.3em]">
@@ -217,8 +231,18 @@ export default function TestimonialsCarousel() {
 							<div ref={authorRef} className="flex items-center gap-4">
 								<div ref={lineRef} className="w-8 h-px bg-(--color-accent)" />
 								<div>
-									<p className="text-base font-medium" style={{ color: 'var(--color-highlight)' }}>{current.author}</p>
-									<p className="text-[11px] text-(--color-muted) uppercase">{current.role}</p>
+									<p
+										className="font-(family-name:--font-libre) text-base font-medium"
+										style={{ color: 'var(--color-highlight)' }}
+									>
+										{current.author}
+									</p>
+									{/* Inter declarada, e não herdada do body: a herança
+									    funcionava, mas deixava a escolha implícita num
+									    bloco cujo vizinho (a citação) usa Libre. */}
+									<p className="text-[11px] font-(family-name:--font-body) text-(--color-muted) uppercase">
+										{current.role}
+									</p>
 								</div>
 							</div>
 
@@ -228,10 +252,10 @@ export default function TestimonialsCarousel() {
 									type="button"
 									onClick={goPrev}
 									aria-label="Anterior"
-									className="group relative w-12 h-12 rounded-full border border-(--color-border) flex items-center justify-center overflow-hidden active:scale-95 transition-transform"
+									className="group relative w-12 h-12 rounded-full bg-(--color-brand-blue) flex items-center justify-center overflow-hidden active:scale-95 transition-transform"
 								>
-									<span className="absolute inset-0 bg-(--color-accent) -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]" />
-									<svg width="18" height="18" viewBox="0 0 16 16" fill="none" className="relative z-10 text-(--color-accent) group-hover:text-(--color-bg) transition-colors">
+									<span className="absolute inset-0 bg-(--color-highlight) origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-450 ease-[cubic-bezier(0.2,0.7,0.2,1)]" />
+									<svg width="18" height="18" viewBox="0 0 16 16" fill="none" className="relative z-10 text-white">
 										<path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
 									</svg>
 								</button>
@@ -240,10 +264,10 @@ export default function TestimonialsCarousel() {
 									type="button"
 									onClick={goNext}
 									aria-label="Próximo"
-									className="group relative w-12 h-12 rounded-full border border-(--color-border) flex items-center justify-center overflow-hidden active:scale-95 transition-transform"
+									className="group relative w-12 h-12 rounded-full bg-(--color-brand-blue) flex items-center justify-center overflow-hidden active:scale-95 transition-transform"
 								>
-									<span className="absolute inset-0 bg-(--color-accent) translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]" />
-									<svg width="18" height="18" viewBox="0 0 16 16" fill="none" className="relative z-10 text-(--color-accent) group-hover:text-(--color-bg) transition-colors">
+									<span className="absolute inset-0 bg-(--color-highlight) origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-450 ease-[cubic-bezier(0.2,0.7,0.2,1)]" />
+									<svg width="18" height="18" viewBox="0 0 16 16" fill="none" className="relative z-10 text-white">
 										<path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
 									</svg>
 								</button>
@@ -252,12 +276,13 @@ export default function TestimonialsCarousel() {
 					</div>
 				</div>
 
-				{/* Ticker inferior — nomes/segmentos repetidos. Escondido no mobile:
-				    ele fica -bottom-24 (fora da seção de altura-de-conteúdo) e o
-				    overflow-hidden o cortava; é decorativo e quase invisível
-				    (opacity 0.06), então some sem perda no mobile. */}
-				<div className="hidden lg:block absolute -bottom-24 left-0 right-0 overflow-hidden opacity-[0.06] pointer-events-none">
-					<div ref={tickerRef} className="flex whitespace-nowrap text-6xl font-bold tracking-tight text-(--color-accent)">
+				{/* Ticker inferior — nomes/segmentos repetidos. O elemento se ancora
+				    NESTE container (o div acima é relative), e não na seção; por
+				    isso o -bottom-40, que o desce para a faixa do pb da seção em
+				    vez de deixá-lo sobre a linha do autor. Oculto no mobile, onde
+				    ele ficaria sozinho num vão sem conteúdo. */}
+				<div className="hidden lg:block absolute -bottom-40 left-0 right-0 overflow-hidden opacity-[0.06] pointer-events-none">
+					<div ref={tickerRef} className="flex whitespace-nowrap font-(family-name:--font-libre) text-6xl font-bold tracking-tight text-(--color-accent)">
 						{[0, 1].map((dup) => (
 							<span key={dup} className="flex shrink-0">
 								{[...Array(5)].map((_, i) => (

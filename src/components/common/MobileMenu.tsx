@@ -114,7 +114,7 @@ export default function MobileMenu({
 							item.disabled ? (
 								<span
 									key={item.label}
-									className="text-3xl font-(--font-heading) uppercase tracking-tight text-(--color-muted) cursor-default"
+									className="text-3xl font-(family-name:--font-heading) uppercase tracking-tight text-(--color-muted) cursor-default"
 								>
 									{item.label}
 								</span>
@@ -123,7 +123,7 @@ export default function MobileMenu({
 									key={item.label}
 									href={item.href}
 									onClick={handleClick(item.href)}
-									className="text-3xl font-(--font-heading) uppercase tracking-tight text-(--color-accent) hover:text-(--color-highlight) transition-colors"
+									className="text-3xl font-(family-name:--font-heading) uppercase tracking-tight text-(--color-accent) hover:text-(--color-highlight) transition-colors"
 								>
 									{item.label}
 								</Link>

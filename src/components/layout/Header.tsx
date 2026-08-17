@@ -76,8 +76,11 @@ export default function Header({
 								href={item.href}
 								className={cn(
 									'text-[10px] uppercase tracking-[0.3em] transition-colors whitespace-nowrap',
+									// O laranja vale nas duas variantes: no overlay o hover
+									// era um branco a 50%, que sobre foto some em vez de
+									// destacar.
 									overlay
-										? 'text-white hover:text-white/50'
+										? 'text-white hover:text-(--color-highlight)'
 										: 'text-(--color-accent) hover:text-(--color-highlight)'
 								)}
 							>

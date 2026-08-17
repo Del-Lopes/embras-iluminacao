@@ -60,3 +60,7 @@ next-env.d.ts
 
 # backups
 *.backup.tsx
+
+# ferramentas locais — cache do plugin impeccable (revisão de design),
+# gerado por máquina e sem valor para o repositório
+/.impeccable

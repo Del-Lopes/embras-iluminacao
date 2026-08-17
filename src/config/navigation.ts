@@ -2,10 +2,10 @@ import type { NavItem } from '@/types'
 
 export const navItems: NavItem[] = [
   { label: 'Home', href: '/' },
-  { label: 'Projetos', href: '/#projetos' },
   { label: 'Produtos', href: '/catalogo' },
-  { label: 'Quem Somos', href: '/#quem-somos' },
-  { label: 'Manifesto', href: '/#manifesto' },
+  // Páginas próprias, e não mais âncoras para seções da home.
+  { label: 'Projetos', href: '/projetos' },
+  { label: 'Quem Somos', href: '/quem-somos' },
   { label: 'Postes', href: '/postes' },
   { label: 'Blog', href: '/blog' },
   { label: 'Contato', href: '/#contato' },

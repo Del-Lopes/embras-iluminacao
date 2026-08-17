@@ -115,11 +115,16 @@ export const AnimatedHeading: React.FC<AnimatedHeadingProps> = ({
 
 export interface AnimatedParagraphProps extends React.HTMLAttributes<HTMLParagraphElement> {
 	children: React.ReactNode
+	direction?: Direction
 	delay?: number
 }
 
 export const AnimatedParagraph: React.FC<AnimatedParagraphProps> = ({
 	children,
+	// 'down' preserva o comportamento antigo (entrava de cima). As declarações
+	// grandes da home passam 'left' para acompanhar o AnimatedHeading, que já
+	// entra da esquerda.
+	direction = 'down',
 	className = '',
 	delay = 0.7,
 	...props
@@ -140,22 +145,28 @@ export const AnimatedParagraph: React.FC<AnimatedParagraphProps> = ({
 
 			if (!inners.length) return
 
-			gsap.fromTo(
-				inners,
-				{ yPercent: -150 },
-				{
-					scrollTrigger: {
-						trigger: el,
-						start: 'top 85%',
-						toggleActions: 'play none none none',
-					},
-					yPercent: 0,
-					duration: 0.8,
-					delay: delay,
-					ease: 'power4.out',
-					stagger: 0.05,
-				}
-			)
+			const fromVars: gsap.TweenVars =
+				direction === 'left'
+					? { xPercent: -150 }
+					: direction === 'right'
+						? { xPercent: 150 }
+						: direction === 'up'
+							? { yPercent: 150 }
+							: { yPercent: -150 }
+
+			gsap.fromTo(inners, fromVars, {
+				scrollTrigger: {
+					trigger: el,
+					start: 'top 85%',
+					toggleActions: 'play none none none',
+				},
+				xPercent: 0,
+				yPercent: 0,
+				duration: 0.8,
+				delay: delay,
+				ease: 'power4.out',
+				stagger: 0.05,
+			})
 
 			return () => {
 				split.revert()
@@ -182,7 +193,6 @@ export const AnimatedPill: React.FC<AnimatedPillProps> = ({
 }) => {
 	const containerRef = useRef<HTMLDivElement>(null)
 	const textRef = useRef<HTMLSpanElement>(null)
-	const lineRef = useRef<HTMLDivElement>(null)
 	const [mounted, setMounted] = useState(false)
 
 	useEffect(() => {
@@ -191,12 +201,7 @@ export const AnimatedPill: React.FC<AnimatedPillProps> = ({
 
 	useGSAP(
 		() => {
-			if (
-				!mounted ||
-				!containerRef.current ||
-				!textRef.current ||
-				!lineRef.current
-			)
+			if (!mounted || !containerRef.current || !textRef.current)
 				return
 
 			gsap.set(containerRef.current, { visibility: 'visible' })
@@ -205,10 +210,12 @@ export const AnimatedPill: React.FC<AnimatedPillProps> = ({
 				gsap.getProperty(textRef.current, 'color') ||
 				'rgba(255, 255, 255, 0.4)'
 
-			// Flash para a cor do texto do tema (branco no dark, preto no light)
+			// Luz que varre letra a letra e volta para a cor de repouso. Token
+			// próprio (e não --color-highlight) porque ela precisa contrastar
+			// com o FUNDO da seção: azul sobre claro, branca sobre escuro.
 			const highlightColor =
 				getComputedStyle(containerRef.current)
-					.getPropertyValue('--color-accent')
+					.getPropertyValue('--color-eyebrow-flash')
 					.trim() || '#ffffff'
 
 			const split = new SplitText(textRef.current, { type: 'chars' })
@@ -230,17 +237,6 @@ export const AnimatedPill: React.FC<AnimatedPillProps> = ({
 				ease: 'power2.inOut',
 			})
 
-			tl.fromTo(
-				lineRef.current,
-				{ xPercent: 102 },
-				{
-					xPercent: -105,
-					duration: 1.0,
-					ease: 'power2.inOut',
-				},
-				'-=0.4'
-			)
-
 			return () => split.revert()
 		},
 		{ scope: containerRef, dependencies: [mounted] }
@@ -249,19 +245,38 @@ export const AnimatedPill: React.FC<AnimatedPillProps> = ({
 	return (
 		<div
 			ref={containerRef}
-			className={`inline-flex flex-col tracking-[0.4em] not-italic text-[14px] font-medium bg-transparent border-none p-0 ${className}`}
+			// tracking 0.18em (era 0.4em): o rótulo mantém o ar de eyebrow sem as
+			// palavras se soltarem umas das outras.
+			// 14px no celular e 15px a partir do tablet: em caixa alta e com esse
+			// tracking, o rótulo pesa mais do que o tamanho sugere, e na largura
+			// do celular ele competia com o título logo abaixo.
+			className={`inline-flex flex-row items-center gap-2.5 tracking-[0.18em] not-italic text-[14px] md:text-[15px] font-medium bg-transparent border-none p-0 ${className}`}
 			style={{ visibility: 'hidden' }}
 			{...props}
 		>
+			{/* Marca da Embras. O PNG é branco com alfa, então recolorir por
+			    filtro CSS seria um encadeamento frágil que nunca acerta o tom.
+			    Aqui o alfa vira MÁSCARA e a cor vem do background — que lê o
+			    mesmo token do texto, mantendo ícone e rótulo sempre iguais.
+			    `self-center` porque as seções passam items-start/items-center
+			    no className e sobrescreveriam o alinhamento do container. */}
+			<span
+				aria-hidden
+				className="self-center shrink-0 w-4.5 h-4.5 bg-(--color-eyebrow)"
+				style={{
+					maskImage: 'url(/images/embras-form-w.png)',
+					WebkitMaskImage: 'url(/images/embras-form-w.png)',
+					maskSize: 'contain',
+					WebkitMaskSize: 'contain',
+					maskRepeat: 'no-repeat',
+					WebkitMaskRepeat: 'no-repeat',
+					maskPosition: 'center',
+					WebkitMaskPosition: 'center',
+				}}
+			/>
 			<span ref={textRef} className="block relative">
 				{children}
 			</span>
-			<div className="relative mt-[8px] h-px w-[40%] overflow-hidden bg-[color-mix(in_srgb,var(--color-accent)_20%,transparent)]">
-				<div
-					ref={lineRef}
-					className="absolute inset-0 h-full w-full bg-(--color-accent) will-change-transform"
-				/>
-			</div>
 		</div>
 	)
 }

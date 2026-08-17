@@ -14,12 +14,12 @@ export default function ContactSection() {
 			id="contato"
 			className="py-20 md:py-36 bg-(--color-bg) relative"
 		>
-			<div className="max-w-7xl mx-auto w-full px-6 md:px-8 lg:px-12 flex flex-col items-center text-center gap-8 md:gap-12 lg:gap-16 relative z-10">
+			<div className="max-w-site mx-auto w-full px-6 md:px-8 lg:px-12 flex flex-col items-center text-center gap-8 md:gap-12 lg:gap-16 relative z-10">
 				<div className="flex flex-col items-center gap-4">
-					<AnimatedPill className="items-center justify-center text-(--color-muted) uppercase w-fit">
+					<AnimatedPill className="items-center justify-center text-(--color-eyebrow) uppercase w-fit">
 						Orçamento
 					</AnimatedPill>
-					<AnimatedHeading className="text-5xl md:text-8xl font-(--font-heading) uppercase leading-tight md:leading-[106px] tracking-tighter">
+					<AnimatedHeading className="text-5xl md:text-8xl font-(family-name:--font-libre) font-medium leading-tight md:leading-[106px] tracking-tighter">
 						Vamos <br /> iluminar seu <br />
 						<span className="text-(--color-highlight)">próximo projeto.</span>
 					</AnimatedHeading>

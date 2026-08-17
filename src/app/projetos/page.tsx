@@ -32,7 +32,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Sea
         <div className="blog-index-hero-inner">
           <h1 className="blog-index-title">Projetos</h1>
           <p className="blog-index-desc">
-            Onde a luz encontra a arquitetura — uma seleção dos nossos projetos.
+            Onde a luz encontra a arquitetura. Uma seleção dos nossos projetos.
           </p>
         </div>
       </div>

@@ -286,7 +286,7 @@ export function Model3dVariations({
             <fieldset className="model3d-material-fields" disabled={isSaved}>
             <div className="model3d-material-head">
               <div className="field-group">
-                <Label>Material — <code className="model3d-tech">{material}</code></Label>
+                <Label>Material: <code className="model3d-tech">{material}</code></Label>
                 <Input
                   placeholder="Nome amigável (ex.: Metal, Estofado)"
                   value={materialLabels[material] ?? ''}

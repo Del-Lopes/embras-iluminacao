@@ -17,10 +17,12 @@ import { useGSAP } from '@gsap/react'
  * - `h-screen`: o glow tem 60vw (864px a 1440) e a tela 900px, então ele quase
  *   preenche a seção. É daí que vem a lavada forte. Numa caixa mais alta sobra
  *   folga e só a cauda do blur chega às bordas.
- * - `z-10`: o blur de 120px se espalha ~120px além da caixa do glow, e a seção
- *   seguinte (ContactSection) é `relative` com fundo opaco. Sem z-10 os dois
- *   ficam em z:auto, a ordem de pintura vira a ordem do DOM, e a seção de baixo
- *   apaga o sangramento — deixando uma borda reta.
+ * - `z-10`: o blur de 120px se espalha ~120px além da caixa do glow, e o que
+ *   vem depois tem fundo opaco. Sem z-10 os dois ficam em z:auto, a ordem de
+ *   pintura vira a ordem do DOM, e o elemento de baixo apaga o sangramento —
+ *   deixando uma borda reta.
+ *   (Até então o vizinho de baixo era a ContactSection; ela saiu da home e
+ *   hoje quem ocupa esse lugar é o rodapé.)
  */
 export default function TestimonialsBackdrop({
 	children,
@@ -59,7 +61,11 @@ export default function TestimonialsBackdrop({
 	return (
 		<section
 			ref={sectionRef}
-			className="h-auto lg:h-screen w-full bg-(--color-bg) relative flex flex-row z-10"
+			// Altura de conteúdo, e não h-screen. Uma tela inteira reservada para
+			// um depoimento de ~300px sobrava tanto que o `items-center` do
+			// carrossel jogava o conteúdo para o meio do vazio, e qualquer
+			// espaçamento definido acima virava irrelevante perto da sobra.
+			className="h-auto w-full bg-(--color-bg) relative flex flex-row z-10"
 		>
 			{/* Background Glow Effect — a cor sai da classe testimonials-glow, que
 			    muda por tema (globals.css). No dark é branco a 5% (clareia o preto);

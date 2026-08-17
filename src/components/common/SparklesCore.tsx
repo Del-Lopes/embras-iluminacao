@@ -15,7 +15,10 @@ type ParticlesProps = {
 	minSize?: number
 	maxSize?: number
 	speed?: number
-	particleColor?: string
+	// Aceita array: o tsparticles sorteia uma cor por partícula, com peso igual
+	// entre os itens. Para uma proporção desigual, repetir a cor dominante —
+	// sete laranjas e um azul dão uma azul a cada oito, sem tocar no engine.
+	particleColor?: string | string[]
 	particleDensity?: number
 }
 
@@ -70,9 +73,10 @@ export const SparklesCore = (props: ParticlesProps) => {
 							enable: false,
 							zIndex: 1,
 						},
-						// 60 em vez de 120: metade do trabalho por segundo, sem diferença
-						// perceptível num campo de estrelas lento.
-						fpsLimit: 60,
+						// 30 em vez de 60: outra metade do trabalho por segundo. O campo
+						// se move devagar e as partículas são pontos, então não há
+						// borda em movimento rápido para denunciar a taxa mais baixa.
+						fpsLimit: 30,
 						interactivity: {
 							events: {
 								onClick: { enable: false, mode: 'push' },
@@ -253,7 +257,17 @@ export const SparklesCore = (props: ParticlesProps) => {
 								speed: 1,
 							},
 						},
-						detectRetina: true,
+						// detectRetina DESLIGADO. Ligado, o canvas é renderizado na
+						// resolução física do monitor: num display 2x são quatro vezes
+						// mais pixels para preencher a cada quadro, e esse é o custo
+						// dominante aqui, porque o desenho é de centenas de círculos.
+						// Em partículas de 1 a 2px o ganho de nitidez é imperceptível,
+						// então é o corte mais barato que existe neste componente.
+						detectRetina: false,
+						// Sem isso o rAF continua rodando com a seção fora da tela,
+						// gastando CPU numa animação que ninguém está vendo.
+						pauseOnOutsideViewport: true,
+						pauseOnBlur: true,
 					}}
 				/>
 			)}

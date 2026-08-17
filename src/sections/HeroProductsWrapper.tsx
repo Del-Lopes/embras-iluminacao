@@ -9,6 +9,28 @@ import ImageGallery from '@/components/common/ImageGallery'
 import CascadeText from '@/components/common/CascadeText'
 import { useTheme } from '@/components/common/ThemeProvider'
 
+// ============================================================
+// CENA DE REVELAÇÃO — desligada
+//
+// O hero tem dois atos. O ato 1 é a tela inicial (título, texto, CTA e a
+// imagem dos lustres) e continua no ar. O ato 2 é a coreografia que vinha
+// depois: uma tela extra de scroll servindo de gatilho, o escurecimento,
+// a subida do wordmark EMBRAS, as partículas e a galeria de imagens.
+//
+// A galeria e o EMBRAS são a carga do ato 2 — sem eles, o resto seria uma
+// tela preta vazia com partículas e nada acontecendo. Por isso o ato sai
+// inteiro, não em pedaços.
+//
+// NADA foi apagado: JSX, animações e constantes seguem no arquivo, apenas
+// sob esta condição. Para reexibir, basta trocar para `true`.
+// ============================================================
+const SHOW_REVEAL_SCENE = false
+
+// Indicador de scroll — a barrinha vertical à direita, com o traço branco
+// que desce conforme a rolagem. Fora de exibição a pedido; JSX e animação
+// preservados abaixo. Para reexibir, trocar para `true`.
+const SHOW_SCROLL_INDICATOR = false
+
 // Galeria no topo da cena. Placeholders do próprio projeto — trocar pelas fotos
 // reais do catálogo quando houver.
 const GALLERY_IMAGES = [
@@ -58,9 +80,8 @@ const EMBRAS_MASK_RISE =
 // font-(--font-heading)) NÃO gera font-family e o texto caía no sans do sistema.
 const EMBRAS_TEXT_CLS =
 	'font-(family-name:--font-playfair) uppercase leading-none tracking-[0.05em] whitespace-nowrap'
-// Estado de chegada: dourado sólido, igual nos dois temas. var(--color-highlight)
-// resolve o tom por tema sozinho (#C9A86A dark / #8A6A28 light) — a única coisa
-// que muda entre eles.
+// Estado de chegada: cor de destaque sólida, via var(--color-highlight) —
+// hoje o laranja #E54621, o mesmo nos dois temas.
 
 // --- Centralizador do slide ---
 // Alcance (fração da tela) para ele arrematar o encaixe.
@@ -140,7 +161,7 @@ export default function HeroProductsWrapper() {
 	// toggle de tema quebraria as outras seções. Aqui, alternar o tema com a cena
 	// já aberta também reaplica as cores na hora.
 	useEffect(() => {
-		if (!mounted) return
+		if (!mounted || !SHOW_REVEAL_SCENE) return
 		const light = revealed && isLight
 		gsap.to(overlayRef.current, {
 			backgroundColor: light ? SCENE_LIGHT : SCENE_DARK,
@@ -170,7 +191,8 @@ export default function HeroProductsWrapper() {
 	// perto (25% da tela). Ou seja: não sequestra a rolagem — o usuário conduz, o
 	// encaixe só arremata.
 	useEffect(() => {
-		if (!mounted) return
+		// O centralizador existe só para enquadrar o slide do ato 2.
+		if (!mounted || !SHOW_REVEAL_SCENE) return
 		const lenis = (
 			window as unknown as {
 				__lenis?: {
@@ -218,26 +240,37 @@ export default function HeroProductsWrapper() {
 
 	useGSAP(
 		() => {
-			if (
-				!mounted ||
-				!heroRef.current ||
-				!lineRef.current ||
-				!carouselTriggerRef.current ||
-				!overlayRef.current
-			)
-				return
+			// Guard mínimo: só o hero. Cada trecho abaixo confere o próprio ref —
+			// exigir todos aqui faria um item desligado abortar os demais.
+			if (!mounted || !heroRef.current) return
+
+			const cleanup = () => {
+				ScrollTrigger.getAll().forEach((t) => t.kill())
+			}
 
 			// 1. Hero local scroll animation (the line indicator)
-			gsap.to(lineRef.current, {
-				y: 90, // Updated for 120px height - 30px indicator
-				ease: 'none',
-				scrollTrigger: {
-					trigger: heroRef.current,
-					start: 'top top',
-					end: 'bottom top',
-					scrub: 0.5,
-				},
-			})
+			if (SHOW_SCROLL_INDICATOR && lineRef.current) {
+				gsap.to(lineRef.current, {
+					y: 90, // Updated for 120px height - 30px indicator
+					ease: 'none',
+					scrollTrigger: {
+						trigger: heroRef.current,
+						start: 'top top',
+						end: 'bottom top',
+						scrub: 0.5,
+					},
+				})
+			}
+
+			// Daqui para baixo é o ato 2. Com a cena desligada os nós nem são
+			// renderizados, então para por aqui — mantendo o cleanup acima.
+			if (
+				!SHOW_REVEAL_SCENE ||
+				!carouselTriggerRef.current ||
+				!overlayRef.current
+			) {
+				return cleanup
+			}
 
 			// 2. Escurecimento do hero conforme a seção seguinte sobe.
 			//    Completa na METADE do percurso (DARKEN_END) em vez de só no fim:
@@ -326,9 +359,7 @@ export default function HeroProductsWrapper() {
 				},
 			})
 
-			return () => {
-				ScrollTrigger.getAll().forEach((t) => t.kill())
-			}
+			return cleanup
 		},
 		{ dependencies: [mounted] }
 	)
@@ -431,6 +462,7 @@ export default function HeroProductsWrapper() {
 
 				{/* RIGHT SCROLL INDICATOR — escondido no mobile: encostava no título
 				    de duas linhas e é uma affordância de desktop. */}
+				{SHOW_SCROLL_INDICATOR && (
 				<div className="hidden lg:block absolute top-1/2 -translate-y-1/2 right-8 md:right-12 z-20">
 					<div className="relative w-0.5 h-[120px] flex justify-center">
 						<div className="absolute inset-0 bg-[#474747]" />
@@ -440,12 +472,15 @@ export default function HeroProductsWrapper() {
 						/>
 					</div>
 				</div>
+				)}
 
 				{/* TRANSITION OVERLAY */}
+				{SHOW_REVEAL_SCENE && (
 				<div
 					ref={overlayRef}
 					className="absolute inset-0 bg-[#050505] z-30 pointer-events-none opacity-0"
 				/>
+				)}
 
 				{/* PARTÍCULAS — campo de fundo cobrindo o container inteiro, sem
 				    máscara (antes eram uma faixa concentrada sob o feixe).
@@ -455,6 +490,7 @@ export default function HeroProductsWrapper() {
 				    (z-30) e o EMBRAS (z-40), elas ficam atrás do texto; a galeria é
 				    z-30 no wrapper, logo acima do hero todo. Ordem final:
 				    partículas < texto < galeria. */}
+				{SHOW_REVEAL_SCENE && (
 				<div
 					ref={sparklesRef}
 					className="absolute inset-0 z-35 pointer-events-none opacity-0"
@@ -468,12 +504,14 @@ export default function HeroProductsWrapper() {
 						className="w-full h-full"
 					/>
 				</div>
+				)}
 
 				{/* BOTTOM GRADIENT TEXT - EMBRAS - RESTORED TO HERO SECTION */}
 				{/* SEM overflow-hidden de propósito: o texto agora percorre um trecho
 				    longo (parte do rodapé até 70vh), e o corte deste container ficaria
 				    no MEIO da tela. O próprio hero já tem overflow-hidden, então o
 				    sangramento continua sendo cortado na base da tela, como no original. */}
+				{SHOW_REVEAL_SCENE && (
 				<div
 					className="absolute left-0 w-full pointer-events-none select-none z-40 flex items-end justify-center"
 					style={{
@@ -539,6 +577,7 @@ export default function HeroProductsWrapper() {
 						</div>
 					</div>
 				</div>
+				)}
 			</section>
 
 			{/* --- SLIDE PÓS-HERO --- */}
@@ -548,10 +587,12 @@ export default function HeroProductsWrapper() {
 			    pointer-events-none: vazia, mas z-10 a põe acima do hero INTEIRO (z-0)
 			    e cobrindo a tela — sem isto ela intercepta o hover do EMBRAS, que
 			    vive dentro do hero. (A galeria escapava por ser z-30, acima dela.) */}
+			{SHOW_REVEAL_SCENE && (
 			<div
 				ref={carouselTriggerRef}
 				className="relative w-full h-screen z-10 overflow-hidden bg-transparent pointer-events-none"
 			/>
+			)}
 
 			{/* --- GALERIA --- */}
 			{/* Camada sticky, ancorada no TOPO da viewport. Sticky (e não dentro da
@@ -561,6 +602,7 @@ export default function HeroProductsWrapper() {
 			    z-0). É a largura deste container que dita o tamanho do texto EMBRAS.
 			    `play={revealed}`: mesma flag da troca de cor do texto, sem atraso —
 			    é o que faz as duas coisas acontecerem juntas. */}
+			{SHOW_REVEAL_SCENE && (
 			<div className="absolute inset-0 z-30 pointer-events-none">
 				<div className="sticky top-0 h-screen w-full">
 					<div
@@ -571,6 +613,7 @@ export default function HeroProductsWrapper() {
 					</div>
 				</div>
 			</div>
+			)}
 		</div>
 	)
 }

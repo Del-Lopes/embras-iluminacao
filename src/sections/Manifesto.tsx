@@ -350,9 +350,19 @@ export default function Manifesto() {
 				ref={bgRef}
 				className="absolute inset-0 pointer-events-none opacity-0"
 				style={{
+					// A parada final é var(--color-bg) nos dois temas: o gradiente
+					// existe para se dissolver no fundo da página. Fixá-la em hex
+					// (era #050505 / #f5f5f5) deixava as duas cores livres para
+					// divergirem, e qualquer troca de fundo criava uma borda visível
+					// onde o gradiente termina.
+					// Laranja translúcido em vez dos cinzas de antes. Alfa baixo
+					// (0.16 / 0.10) porque o gradiente cobre 65% da largura da
+					// seção: em valores cheios ele viraria um bloco de cor, não
+					// uma luz. No dark a opacidade é maior, já que o laranja tem
+					// menos presença sobre fundo escuro.
 					background: isDark
-						? 'radial-gradient(65% 75% at 8% 5%, #6b6b6b 0%, #2a2a2a 45%, #050505 100%)'
-						: 'radial-gradient(65% 75% at 8% 5%, #9e9b93 0%, #c4c1b9 45%, #f5f5f5 100%)',
+						? 'radial-gradient(65% 75% at 8% 5%, rgba(229, 70, 33, 0.22) 0%, rgba(229, 70, 33, 0.08) 45%, var(--color-bg) 100%)'
+						: 'radial-gradient(65% 75% at 8% 5%, rgba(229, 70, 33, 0.16) 0%, rgba(229, 70, 33, 0.05) 45%, var(--color-bg) 100%)',
 				}}
 			/>
 
@@ -377,7 +387,7 @@ export default function Manifesto() {
 								    forma confiável aqui. Até 1400px levemente menor; acima,
 								    tamanho cheio. */}
 								<p
-									className="manifesto-p font-(--font-heading) text-(--color-accent) max-w-5xl"
+									className="manifesto-p font-(family-name:--font-libre) font-medium text-(--color-accent)! max-w-5xl"
 									style={{ whiteSpace: 'pre-line' }}
 								>
 									{slide.text}
@@ -388,12 +398,14 @@ export default function Manifesto() {
 
 					{/* Elemento Decorativo Inferior */}
 					<div className="flex items-center gap-4 w-full mt-12 pb-12">
+						{/* O brilho das bolinhas acompanha o azul, e não o
+						    branco/preto do tema — senão o halo destoaria da cor. */}
 						<div className="flex gap-2">
-							<div className="w-2 h-2 rounded-full bg-(--color-accent)" style={{ boxShadow: isDark ? '0 0 10px rgba(255,255,255,0.5)' : '0 0 10px rgba(0,0,0,0.2)' }} />
-							<div className="w-2 h-2 rounded-full bg-(--color-accent)" style={{ boxShadow: isDark ? '0 0 10px rgba(255,255,255,0.5)' : '0 0 10px rgba(0,0,0,0.2)' }} />
+							<div className="w-2 h-2 rounded-full bg-(--color-brand-blue)" style={{ boxShadow: '0 0 10px rgba(16, 42, 88, 0.45)' }} />
+							<div className="w-2 h-2 rounded-full bg-(--color-brand-blue)" style={{ boxShadow: '0 0 10px rgba(16, 42, 88, 0.45)' }} />
 						</div>
 						<div
-							className="flex-1 h-px bg-(--color-muted)"
+							className="flex-1 h-px bg-(--color-brand-blue)"
 							ref={lineHRef}
 						/>
 					</div>
@@ -404,7 +416,7 @@ export default function Manifesto() {
 					ref={lineVRef}
 					className="hidden md:block w-px h-[75vh] shrink-0"
 					style={{
-						background: `linear-gradient(to bottom, var(--color-muted) 0%, var(--color-muted) 60%, transparent 100%)`,
+						background: `linear-gradient(to bottom, var(--color-brand-blue) 0%, var(--color-brand-blue) 60%, transparent 100%)`,
 					}}
 				/>
 
@@ -424,7 +436,7 @@ export default function Manifesto() {
 							    centralizar na coluna lateral. */}
 							<div className="relative h-full flex items-start md:items-center justify-center pt-[20px] md:pt-0 -mr-6 md:mr-0">
 								<span
-									className="harmonious relative font-(--font-heading) uppercase select-none text-[140px] md:text-[min(15vh,18vw)] lg:text-[min(20vh,40vw)]"
+									className="harmonious relative uppercase select-none text-[140px] md:text-[min(15vh,18vw)] lg:text-[min(20vh,40vw)]"
 									style={{
 										writingMode: 'vertical-rl',
 										lineHeight: 0.8,
