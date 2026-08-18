@@ -3,13 +3,13 @@ import type { SEOConfig } from '@/types'
 export const siteUrl = 'https://embras.com.br'
 
 export const defaultSEO: SEOConfig = {
-  title: 'Embras Premium Lighting | Iluminação Arquitetônica de Alto Padrão',
+  title: 'Fabricante e distribuidor de luminárias Led, postes e soluções completas de iluminação',
   description:
-    'Especialistas em projetos de iluminação para mansões, casas luxuosas e fazendas. A luz esculpida para os espaços mais exclusivos.',
+    'Indústria brasileira de iluminação: fabricação própria de postes, luminárias LED e soluções para residências, empresas e espaços públicos, com atendimento em todo o país.',
   openGraph: {
-    title: 'Embras Premium Lighting | Iluminação Arquitetônica de Alto Padrão',
+    title: 'Fabricante e distribuidor de luminárias Led, postes e soluções completas de iluminação',
     description:
-      'Especialistas em projetos de iluminação para mansões, casas luxuosas e fazendas. A luz esculpida para os espaços mais exclusivos.',
+      'Indústria brasileira de iluminação: fabricação própria de postes, luminárias LED e soluções para residências, empresas e espaços públicos, com atendimento em todo o país.',
     url: siteUrl,
     siteName: 'Embras Iluminação',
     images: [
@@ -17,7 +17,7 @@ export const defaultSEO: SEOConfig = {
         url: `${siteUrl}/images/og-image.jpg`,
         width: 1200,
         height: 630,
-        alt: 'Embras Premium Lighting — Iluminação Arquitetônica de Alto Padrão',
+        alt: 'Embras Iluminação — fabricante de postes e luminárias LED',
       },
     ],
     locale: 'pt_BR',
@@ -25,9 +25,9 @@ export const defaultSEO: SEOConfig = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Embras Premium Lighting | Iluminação Arquitetônica de Alto Padrão',
+    title: 'Fabricante e distribuidor de luminárias Led, postes e soluções completas de iluminação',
     description:
-      'Especialistas em projetos de iluminação para mansões, casas luxuosas e fazendas.',
+      'Indústria brasileira de postes, luminárias LED e soluções completas de iluminação.',
     images: [`${siteUrl}/images/og-image.jpg`],
   },
 }

@@ -44,8 +44,6 @@ const NAV_LINKS = [
 	{ label: 'Contato', href: '/#contato' },
 ]
 
-// TODO: telefone e endereço vieram de placeholder do projeto — confirmar os
-// dados reais antes de publicar.
 const CONTACT = [
 	{
 		icon: MapPin,
@@ -54,18 +52,25 @@ const CONTACT = [
 	},
 	{
 		icon: Mail,
-		text: 'contato@embras.com.br',
-		href: 'mailto:contato@embras.com.br',
+		text: 'vendas@embrasiluminacao.com.br',
+		href: 'mailto:vendas@embrasiluminacao.com.br',
+	},
+	{
+		icon: Mail,
+		text: 'projetos@embrasiluminacao.com.br',
+		href: 'mailto:projetos@embrasiluminacao.com.br',
 	},
 	{
 		icon: MessageCircle,
-		text: '(11) 99999-9999',
-		href: 'https://wa.me/5511999999999',
+		// O número no link vai sem máscara e com o código do país, formato que o
+		// WhatsApp exige; o texto é o que a pessoa lê.
+		text: '11 94746-7797',
+		href: 'https://wa.me/5511947467797',
 	},
 	{
 		icon: Phone,
-		text: '(11) 3333-3333',
-		href: 'tel:+551133333333',
+		text: '11 3605-1589',
+		href: 'tel:+551136051589',
 	},
 ]
 
