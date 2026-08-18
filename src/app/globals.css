@@ -8,6 +8,11 @@
 	/* --- Colors (dark default) --- */
 	--color-bg: #14110f;
 	--color-surface: #0f0f0f;
+	/* Fundo dos cards. Existe separado de --color-bg porque no tema escuro o
+	   card precisa se destacar do fundo da seção: usando o mesmo valor ele
+	   sumia e só a borda o delimitava. No claro os dois coincidem, já que ali
+	   quem separa é a sombra do próprio branco contra o cinza da página. */
+	--color-card: #221f1d;
 	--color-accent: #ffffff;
 	--color-primary: #f0f0f0;
 	/* #5b5b5b dava 2.82:1 contra o #14110f do fundo, bem abaixo dos 4.5:1 que
@@ -92,6 +97,7 @@
    ============================================================ */
 .light {
 	--color-bg: #fcfcfc;
+	--color-card: #ffffff;
 	--color-surface: #eaeae4;
 	--color-accent: #0a0a0a;
 	--color-primary: #1a1a1a;
@@ -130,9 +136,8 @@ html:not(.light) {
 	   ela é um lampejo momentâneo sobre o fundo quase preto, e no tom de botão
 	   mal chega a ser percebida antes de voltar ao laranja. */
 	--color-eyebrow-flash: #5b8fe0;
-	/* Mesmo tom da luz do pill. Atenção: as partículas azuis são desenhadas em
-	   canvas pelo tsparticles, onde var() não chega, então BrandOpening.tsx
-	   repete este valor em JS. Mexeu aqui, mexa lá. */
+	/* Mesmo tom da luz do pill. Sobrou da linha de luz que abria a seção de
+	   números, removida; fica como token de apoio para efeitos em azul claro. */
 	--color-beam-blue: #5b8fe0;
 }
 
@@ -173,7 +178,6 @@ html:not(.light) {
 	   sai sempre na cor da faixa e nunca some. */
 	--color-bg: var(--pl-surface);
 }
-
 
 /* ============================================================
    ANIMATIONS
@@ -4806,7 +4810,7 @@ tr[data-selected='true'] td {
    Light: um cinza bem mais forte — escurecer o quase-branco a 5% não se vê
    (perto do branco a percepção de contraste cai), então precisa de mais peso. */
 .testimonials-glow {
-	background: rgba(255, 255, 255, 0.05);
+	background: rgba(255, 255, 255, 0);
 }
 /* Sem glow no tema claro: a versão dele aqui era cinza a 25% (contra branco a
    5% no dark), forte o bastante para virar uma mancha sobre o fundo #FCFCFC.
@@ -6815,3 +6819,136 @@ tr[data-selected='true'] td {
 		text-align: right;
 	}
 }
+
+/* ---- Rodapé: divisória superior no tema escuro ---- */
+/* No tema claro o preto do rodapé já se separa sozinho do fundo da página. No
+   escuro os dois quase se encostam, e a linha marca onde um termina.
+   Só o topo: as divisórias internas do rodapé continuam vindo dos tokens dele. */
+html:not(.light) .site-footer {
+	/* Mesmo filete das demais divisórias do tema escuro. O token vem do :root,
+	   e não dos FOOTER_TOKENS aplicados no elemento, que redefinem só as cores
+	   internas do rodapé. */
+	border-top: 1px solid var(--color-divider);
+	transition: border-color 0.5s ease;
+}
+
+/* Some no hover do CTA, junto com a divisória interna, quando a faixa laranja
+   toma a área inteira. O :has olha o link do CTA, que é o primeiro filho. */
+html:not(.light) .site-footer:has(> a:hover) {
+	border-top-color: transparent;
+}
+
+/* ---- Barra fixa do header (aparece após 80vh) ---- */
+/* Vidro escuro: uma camada translúcida sobre o conteúdo que passa por baixo,
+   desfocado. O gradiente e o filete claro no topo dão o volume do vidro; sem
+   eles a barra lê como um retângulo cinza chapado.
+
+   A cor é escura nos dois temas, como o hero: é o que garante contraste para o
+   texto branco da barra, venha por baixo uma foto ou uma página clara. */
+.site-header-sticky {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 50;
+	background-image: linear-gradient(
+		to bottom,
+		rgba(20, 20, 20, 0.72),
+		rgba(10, 10, 10, 0.6)
+	);
+	backdrop-filter: blur(16px) saturate(140%);
+	-webkit-backdrop-filter: blur(16px) saturate(140%);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+	/* Estado oculto. O deslocamento é pequeno de propósito: a entrada é um fade
+	   com um leve descer, não uma barra que salta para dentro. */
+	opacity: 0;
+	transform: translateY(-8px);
+	pointer-events: none;
+	transition:
+		opacity 0.45s ease,
+		transform 0.45s ease;
+}
+
+.site-header-sticky.is-visible {
+	opacity: 1;
+	transform: none;
+	pointer-events: auto;
+}
+
+/* Quem prefere menos movimento recebe só o fade. */
+@media (prefers-reduced-motion: reduce) {
+	.site-header-sticky {
+		transform: none;
+		transition: opacity 0.45s ease;
+	}
+}
+
+/* ---- ShutterText ---- */
+/* A palavra já nasce no gradiente da marca: ele fica atrás do texto, recortado
+   pelos glifos, e a cor transparente deixa ver só ele. */
+.shutter-text [data-char] {
+	background-image: linear-gradient(
+		180deg,
+		rgba(16, 42, 88, 1) 0%,
+		rgba(229, 70, 33, 1) 100%
+	);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+
+	/* Invisível no carregamento, para o efeito revelar a palavra em vez de
+	   apenas passar por cima de um texto que já estava lá. Quem devolve a
+	   opacidade é o GSAP, quando a seção entra na tela. */
+	opacity: 0;
+}
+
+/* ---- Marca d'água da seção "Quem somos" ---- */
+/* O arquivo já vem preto com transparência, então no tema claro basta a
+   opacidade dar o tom de cinza. No escuro, o invert(1) leva o desenho ao
+   branco antes do mesmo tratamento. */
+/* A cor sai do filtro, e não da opacidade: brightness(0) achata o desenho em
+   preto e invert(a) devolve o cinza de valor a — 0.898 dá #E5E5E5, o tom que a
+   marca tinha antes, quando era preta a 9% sobre o fundo claro. Com opacidade o
+   tom final dependeria do fundo, e mudaria de seção para seção. */
+.wwa-watermark {
+	filter: brightness(0) invert(0.898);
+}
+
+/* No tema escuro o mesmo cinza claro gritaria sobre o fundo quase preto; aqui
+   o valor é baixo, mantendo a marca um degrau acima do fundo. */
+html:not(.light) .wwa-watermark {
+	filter: brightness(0) invert(0.14);
+}
+
+/* ---- Card da seção "Quem somos" ---- */
+/* Cada tema delimita o card de um jeito: no claro, a sombra sobre o fundo
+   branco; no escuro, a borda. Manter os dois no escuro criava um halo, porque
+   a sombra preta escurecia a marca d'água atrás do card.
+
+   O filete laranja do topo fica de fora do reset: ele é o acento do bloco, e
+   não delimitação. */
+/* Fundo azul bem claro, o mesmo papel do card da referência: separa o bloco
+   de texto do fundo da seção sem virar mais uma caixa branca. No tema escuro,
+   o mesmo azul em versão profunda, para o card continuar se destacando. */
+/* Vidro (css.glass). O filete laranja do topo continua declarado aqui: com a
+   borda escrita em CSS, a classe do Tailwind não venceria. */
+.wwa-card {
+	background: rgba(255, 255, 255, 0.2);
+	box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+	backdrop-filter: blur(7px);
+	-webkit-backdrop-filter: blur(7px);
+	border-top: 2px solid var(--color-highlight);
+}
+
+/* No tema escuro o véu é preto: o branco clarearia o card e ele deixaria de
+   acompanhar o fundo da seção. Sem sombra: preta sobre fundo escuro ela não
+   dava profundidade, só sujava a marca d'água que passa atrás. */
+html:not(.light) .wwa-card {
+	background: rgba(0, 0, 0, 0.2);
+	box-shadow: none;
+}
+
+
+

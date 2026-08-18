@@ -343,6 +343,10 @@ export default function Manifesto() {
 		<section
 			ref={sectionRef}
 			id="manifesto"
+			// A seção ocupa a tela inteira e é lida como uma peça só; a barra fixa
+			// do header por cima dela atrapalharia a leitura. O atributo é o que o
+			// Header procura para se recolher enquanto isto estiver no topo.
+			data-hide-sticky-header
 			className="h-screen w-full bg-(--color-bg) flex overflow-hidden relative"
 		>
 			{/* BACKGROUND GLOW */}

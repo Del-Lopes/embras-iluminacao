@@ -96,7 +96,7 @@ export default function WhyUs() {
 					{ITEMS.map((item) => (
 						<article
 							key={item.title}
-							className="bg-(--color-bg) border border-(--color-divider) p-8 lg:p-10 flex flex-col gap-3.75"
+							className="bg-(--color-card) border border-(--color-divider) p-8 lg:p-10 flex flex-col gap-3.75"
 						>
 							<svg
 								aria-hidden

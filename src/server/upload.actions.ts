@@ -50,6 +50,11 @@ const MAX_DOC_BYTES = 50 * 1024 * 1024 // 50 MB — PDF/ZIP
 
 const PRESIGN_TTL_SECONDS = 60
 
+// Pastas que o gerenciador de Storage não mostra e que ele não pode excluir:
+// guardam arquivos usados diretamente por páginas do site (o vídeo
+// institucional, por exemplo), e não conteúdo gerenciado pelo painel.
+const HIDDEN_FOLDERS = new Set(['site/'])
+
 export type UploadKind = 'image' | 'model' | 'document'
 // Destino no R2: 'product' → produtos/, 'model' → modelos_3d/, 'project' → projetos/,
 // 'catalog' → catalogo/
@@ -277,11 +282,14 @@ export const deleteR2Folder = async (prefix: string): Promise<DeleteFolderResult
   if (!clean || !clean.endsWith('/')) return { error: 'Pasta inválida' }
 
   // Pastas-base do sistema não podem ser excluídas (subpastas dentro delas sim).
+  // As ocultas entram na mesma regra: elas não aparecem na listagem, mas o
+  // caminho pode ser digitado, e apagá-las quebraria páginas do site.
   if (
     clean === 'modelos_3d/' ||
     clean === 'produtos/' ||
     clean === 'projetos/' ||
-    clean === 'catalogo/'
+    clean === 'catalogo/' ||
+    HIDDEN_FOLDERS.has(clean)
   ) {
     return { error: 'Esta pasta do sistema não pode ser excluída' }
   }
@@ -319,6 +327,12 @@ export const listR2Objects = async (prefix = ''): Promise<ListR2Result> => {
   let safePrefix = prefix.replace(/^\/+/, '')
   if (safePrefix && !safePrefix.endsWith('/')) safePrefix += '/'
 
+  // Pasta de arquivos do próprio site (vídeo institucional e afins): não é
+  // conteúdo gerenciado pelo painel, e listá-la só convidaria a excluir algo
+  // de que uma página depende. Devolve vazio, e não erro: para quem usa o
+  // painel ela simplesmente não existe.
+  if (HIDDEN_FOLDERS.has(safePrefix)) return { folders: [], files: [] }
+
   try {
     const folders: string[] = []
     const files: R2Object[] = []
@@ -336,7 +350,7 @@ export const listR2Objects = async (prefix = ''): Promise<ListR2Result> => {
         })
       )
       for (const p of res.CommonPrefixes ?? []) {
-        if (p.Prefix) folders.push(p.Prefix)
+        if (p.Prefix && !HIDDEN_FOLDERS.has(p.Prefix)) folders.push(p.Prefix)
       }
       for (const o of res.Contents ?? []) {
         if (!o.Key || o.Key === safePrefix || o.Key.endsWith('/')) continue

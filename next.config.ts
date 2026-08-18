@@ -63,6 +63,10 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       `img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com ${r2PublicOrigin}`,
       "font-src 'self' https://fonts.gstatic.com",
+      // media-src: sem esta linha o <video> cairia no default-src 'self' e o
+      // arquivo servido pelo CDN do R2 seria bloqueado. O img-src acima já
+      // libera a mesma origem para as fotos.
+      `media-src 'self' blob: ${r2PublicOrigin}`,
       // <model-viewer> runs the Draco/KTX2 decoders in a Web Worker created from
       // a blob: URL — without this the worker is blocked (default-src 'self').
       "worker-src 'self' blob:",

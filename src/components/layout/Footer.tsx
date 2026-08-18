@@ -83,7 +83,7 @@ export default function Footer() {
 		// halo pintava por cima do topo daqui e virava uma mancha clara.
 		// Resolvido aqui, e não removendo o z-10 de lá, para não alterar o
 		// comportamento da seção de depoimentos.
-		<footer className="relative z-20 bg-[#14110f] w-full" style={FOOTER_TOKENS}>
+		<footer className="site-footer relative z-20 bg-[#14110f] w-full" style={FOOTER_TOKENS}>
 			{/* ---------- CTA gigante ---------- */}
 			{/* Em repouso o bloco herda o preto do rodapé; o laranja é a
 			    recompensa do hover. Full-bleed de propósito: a faixa colorida

@@ -36,7 +36,7 @@ export default function Nav() {
         )}
       </div>
       <div className="nav-cta">
-        <ThemeToggle themed />
+        <ThemeToggle />
         <MobileMenu items={LP_NAV} barClass="bg-(--color-accent)" />
       </div>
     </nav>

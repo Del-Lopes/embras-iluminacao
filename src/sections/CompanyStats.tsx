@@ -3,7 +3,7 @@ import { AnimatedPill, AnimatedParagraph } from '@/components/common/AnimatedTyp
 import { CountUp } from '@/components/common/CountUp'
 import { AnimatedReveal } from '@/components/common/AnimatedReveal'
 import { IronArtVideo } from '@/components/common/IronArtVideo'
-import { BrandOpening } from '@/components/common/BrandOpening'
+import { ShutterText } from '@/components/common/ShutterText'
 
 // Seção institucional de números, logo abaixo do hero.
 // Layout de duas colunas: à esquerda a declaração + CTA + ilustração;
@@ -38,17 +38,16 @@ const STATS: Stat[] = [
 
 export default function CompanyStats() {
 	return (
-		// isolate faz esta seção virar um contexto de empilhamento próprio, e é
-		// isso que permite ao campo de partículas usar z-index negativo sem
-		// sumir. Sem ele o contexto seria a raiz do documento, onde um z-index
-		// negativo é pintado ANTES dos fundos dos elementos em fluxo, e o bg
-		// desta própria seção cobriria as partículas por inteiro.
-		<section className="bg-(--color-bg) w-full py-15 md:py-20 lg:py-32 isolate">
+		<section className="bg-(--color-bg) w-full py-15 md:py-20 lg:py-32">
 			{/* Wrapper próprio, FORA do container de 1366px do resto da seção: aqui
-			    o teto é 1280, sem padding lateral no desktop. É ele que define a
-			    largura da linha de luz, cujas camadas são medidas em porcentagem. */}
-			<div className="w-full max-w-7xl mx-auto px-6 md:px-8 lg:px-0">
-				<BrandOpening />
+			    o teto é 1280, sem padding lateral no desktop.
+
+			    Só desktop: a palavra ocupa a largura toda e, no tablet e no
+			    celular, roubaria a abertura da seção em vez de apresentá-la.
+			    Escondida por display, e não por opacidade, para não deixar a
+			    altura reservada nem a animação rodando fora de vista. */}
+			<div className="hidden lg:block w-full max-w-7xl mx-auto px-6 md:px-8 lg:px-0 mb-25">
+				<ShutterText />
 			</div>
 
 			<div className="max-w-site mx-auto w-full px-6 md:px-8 lg:px-12">
