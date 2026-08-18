@@ -49,6 +49,22 @@ function hexToLinearRGB(hex: string): [number, number, number] {
   ]
 }
 
+// ATENÇÃO À VERSÃO: o @google/model-viewer está travado em 4.2.0 no
+// package.json, sem o "^", e não deve ser atualizado sem checar o ponto abaixo.
+//
+// A partir da 4.3.0 a biblioteca passou a exigir 'ios-src' para habilitar o AR
+// nos navegadores de TERCEIROS do iOS (Chrome/CriOS, Edge, Firefox, DuckDuckGo)
+// e a bloquear o app do Google (GSA) mesmo com ele. A condição, no fonte:
+//
+//   4.2.0  value === 'quick-look' && IS_AR_QUICKLOOK_CANDIDATE
+//   4.3.0+ value === 'quick-look' && IS_AR_QUICKLOOK_CANDIDATE && !IS_IOS_GSA
+//          && (!IS_IOS_THIRDPARTY || this.iosSrc != null)
+//
+// Como aqui só existe o GLB (o USDZ é gerado no próprio aparelho), a 4.3.x
+// deixaria o AR morto fora do Safari. Para subir de versão, ou a condição volta
+// a ser a da 4.2.0, ou passamos a hospedar um .usdz por produto e a informá-lo
+// em ios-src.
+//
 // Thin wrapper around the <model-viewer> web component. The (heavy) library is
 // imported lazily on mount, so it never enters the bundle of routes that don't
 // render a 3D model. When the product has material variations it also renders a
