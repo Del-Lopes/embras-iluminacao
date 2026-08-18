@@ -1622,6 +1622,14 @@ p {
 
 /* Gallery: vertical thumb strip + main image */
 .product-gallery--has-thumbs {
+	/* Padrão das miniaturas em um lugar só. O tamanho é FIXO e a quantidade
+	   visível é o que define a altura da trilha: o resto rola. Antes a trilha
+	   tinha altura fixa e as miniaturas eram flexíveis, então treze fotos se
+	   espremiam até virar tarjas de 30px em vez de rolar. */
+	--thumb-size: 64px;
+	--thumb-gap: 10px;
+	--thumbs-visible: 6;
+
 	display: flex;
 	gap: 14px;
 	/* Mesma razão do minmax(0, 1fr) acima: sem isto o conteúdo definiria a
@@ -1643,7 +1651,7 @@ p {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 64px;
+	width: var(--thumb-size);
 	height: 24px;
 	padding: 0;
 	border: 1px solid var(--color-border);
@@ -1675,9 +1683,14 @@ p {
 .product-gallery-thumbs {
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
+	gap: var(--thumb-gap);
 	flex-shrink: 0;
-	max-height: 520px;
+	/* Exatamente N miniaturas e os vãos entre elas: a última visível fica
+	   inteira, sem meia foto cortada sugerindo um limite que não existe. */
+	max-height: calc(
+		var(--thumbs-visible) * var(--thumb-size) + (var(--thumbs-visible) - 1) *
+			var(--thumb-gap)
+	);
 	overflow-y: auto;
 	/* A navegação é pelas setas; a barra nativa só somaria ruído ao lado das
 	   miniaturas. A rolagem por roda e por toque continua funcionando. */
@@ -1689,8 +1702,11 @@ p {
 }
 
 .product-gallery-thumb {
-	width: 64px;
-	height: 64px;
+	width: var(--thumb-size);
+	height: var(--thumb-size);
+	/* Sem isto a miniatura é encolhida pelo flex para caber na trilha, que é
+	   justamente o defeito que a altura calculada acima existe para evitar. */
+	flex-shrink: 0;
 	padding: 0;
 	border: 1px solid var(--color-border);
 	border-radius: 8px;
@@ -1730,14 +1746,10 @@ p {
 		max-width: none;
 	}
 
-	.product-gallery-thumb {
-		width: 104px;
-		height: 104px;
-	}
-
-	/* A seta acompanha a largura da miniatura para a coluna ficar alinhada. */
-	.product-gallery-nav {
-		width: 104px;
+	/* Miniatura maior, mesma quantidade visível: a trilha cresce junto com a
+	   foto principal, que aqui ocupa a largura toda. */
+	.product-gallery--has-thumbs {
+		--thumb-size: 104px;
 	}
 }
 
@@ -1749,6 +1761,11 @@ p {
    a ordem visual sem mexer no DOM, onde a trilha vem antes da foto. */
 @media (max-width: 767px) {
 	.product-gallery--has-thumbs {
+		/* Na horizontal quem manda é a largura da tela, então a quantidade
+		   visível não é fixa; o tamanho da miniatura continua sendo, e a faixa
+		   rola pelas setas ou pelo toque. */
+		--thumb-size: 64px;
+
 		flex-direction: column-reverse;
 		gap: 10px;
 	}
@@ -1774,15 +1791,12 @@ p {
 	}
 
 	.product-gallery-thumb {
-		width: 48px;
-		height: 48px;
-		flex-shrink: 0;
 		scroll-snap-align: start;
 	}
 
 	.product-gallery-nav {
 		width: 24px;
-		height: 48px;
+		height: var(--thumb-size);
 		flex-shrink: 0;
 	}
 
@@ -1827,6 +1841,165 @@ p {
 .gallery-3d-btn svg {
 	color: #ffffff;
 	flex-shrink: 0;
+}
+
+/* Lupa (canto inferior esquerdo da foto) — abre o lightbox. Mesmo desenho do
+   botão 3D, em quadrado, para os dois conviverem na mesma barra visual. */
+.gallery-zoom-btn {
+	position: absolute;
+	left: 12px;
+	bottom: 12px;
+	z-index: 3;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 38px;
+	height: 38px;
+	padding: 0;
+	border: none;
+	border-radius: 999px;
+	background-color: #111111;
+	color: #ffffff;
+	cursor: pointer;
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+	transition:
+		background-color 0.15s ease,
+		transform 0.15s ease;
+}
+
+.gallery-zoom-btn:hover {
+	background-color: #000000;
+	transform: translateY(-1px);
+}
+
+/* ================================================================
+   LIGHTBOX
+   ================================================================ */
+.lightbox {
+	position: fixed;
+	inset: 0;
+	z-index: 200;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	padding: 24px;
+	background-color: rgba(8, 8, 8, 0.92);
+	/* Entra com um fade curto: sem ele o salto para o preto total assusta. */
+	animation: lightbox-in 0.2s ease-out;
+}
+
+@keyframes lightbox-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+.lightbox-figure {
+	margin: 0;
+	max-width: 100%;
+	max-height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* Tamanho real até onde a janela permitir: a foto nunca é ampliada além do
+   próprio arquivo nem cortada para caber. */
+.lightbox-img {
+	max-width: 100%;
+	max-height: calc(100dvh - 48px);
+	width: auto;
+	height: auto;
+	object-fit: contain;
+	display: block;
+	border-radius: 4px;
+}
+
+.lightbox-close,
+.lightbox-nav {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 1px solid rgba(255, 255, 255, 0.25);
+	border-radius: 999px;
+	background-color: rgba(0, 0, 0, 0.4);
+	color: #ffffff;
+	cursor: pointer;
+	transition:
+		background-color 0.15s ease,
+		border-color 0.15s ease;
+}
+
+.lightbox-close:hover,
+.lightbox-nav:hover {
+	background-color: var(--color-highlight);
+	border-color: var(--color-highlight);
+}
+
+.lightbox-close {
+	position: absolute;
+	top: 20px;
+	right: 20px;
+	width: 44px;
+	height: 44px;
+	z-index: 2;
+}
+
+.lightbox-nav {
+	flex-shrink: 0;
+	width: 48px;
+	height: 48px;
+}
+
+.lightbox-nav--next svg {
+	transform: rotate(180deg);
+}
+
+.lightbox-counter {
+	position: absolute;
+	left: 50%;
+	bottom: 20px;
+	transform: translateX(-50%);
+	font-family: var(--font-body);
+	font-size: 12px;
+	letter-spacing: 0.12em;
+	color: rgba(255, 255, 255, 0.75);
+}
+
+/* No celular as setas saem das laterais e vão para a base, ao lado do
+   contador: espremidas nas bordas elas roubavam largura da foto. */
+@media (max-width: 767px) {
+	.lightbox {
+		padding: 16px;
+	}
+
+	.lightbox-nav {
+		position: absolute;
+		bottom: 16px;
+		width: 44px;
+		height: 44px;
+	}
+
+	.lightbox-nav--prev {
+		left: 16px;
+	}
+
+	.lightbox-nav--next {
+		right: 16px;
+	}
+
+	.lightbox-img {
+		max-height: calc(100dvh - 140px);
+	}
+
+	.lightbox-counter {
+		bottom: 32px;
+	}
 }
 
 .product-gallery-main-img {

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils/cn'
+import { Lightbox } from '@/components/common/Lightbox'
 
 type GalleryImage = { url: string; alt: string }
 
@@ -18,6 +19,16 @@ function VrIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M3 7h18a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-5.2a2 2 0 0 1-1.7-1l-.8-1.3a1.5 1.5 0 0 0-2.6 0L9.9 15a2 2 0 0 1-1.7 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z" />
+    </svg>
+  )
+}
+
+// Lupa do botão de tela cheia.
+function ZoomIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5M11 8v6M8 11h6" />
     </svg>
   )
 }
@@ -135,6 +146,11 @@ export function ProductGallery({ coverImage, images, name, has3d = false }: Prop
   }
 
   const [active, setActive] = useState(0)
+  const [zoomed, setZoomed] = useState(false)
+
+  // O portal do lightbox só existe no cliente: no servidor não há document.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   if (thumbs.length === 0) {
     return (
@@ -206,8 +222,33 @@ export function ProductGallery({ coverImage, images, name, has3d = false }: Prop
       <div className="product-gallery-main">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={main.url} alt={main.alt} className="product-gallery-main-img" />
+
+        {/* Lupa à esquerda: o "Ver em 3D" ocupa o canto direito nos produtos
+            com modelo, e os dois no mesmo canto se sobreporiam. */}
+        <button
+          type="button"
+          className="gallery-zoom-btn"
+          onClick={() => setZoomed(true)}
+          aria-label="Ver a imagem em tela cheia"
+        >
+          <ZoomIcon />
+        </button>
+
         {btn3d}
       </div>
+
+      {/* O lightbox recebe o mesmo conjunto de miniaturas, então a navegação
+          lá dentro percorre exatamente as fotos do carrossel. Compartilhar o
+          índice faz a galeria ficar na foto em que a pessoa parou ao fechar. */}
+      {zoomed && (
+        <Lightbox
+          images={thumbs}
+          index={active}
+          onIndexChange={setActive}
+          onClose={() => setZoomed(false)}
+          mounted={mounted}
+        />
+      )}
     </div>
   )
 }
