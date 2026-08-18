@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { navItems } from '@/config/navigation'
@@ -8,8 +8,19 @@ import { cn } from '@/lib/utils/cn'
 import ThemeToggle from '@/components/common/ThemeToggle'
 import MobileMenu from '@/components/common/MobileMenu'
 
-// A barra fixa entra depois de percorrer 80% da altura da janela.
-const STICKY_AT = 0.8
+// Quanto da altura da janela precisa ser percorrido para a barra entrar.
+// Na home ela espera o hero passar; nas demais páginas o conteúdo começa logo
+// no topo, e segurar até 80% deixava a barra ausente boa parte da leitura.
+const STICKY_AT_HOME = 0.8
+const STICKY_AT_PAGE = 0.4
+
+// Tempo parado até a barra se recolher.
+const IDLE_MS = 1000
+
+// Quanto rolar para trazê-la de volta. Uma "marcação" da roda do mouse anda
+// cerca de 100px, então 80 responde a um gesto deliberado e ignora o tranco de
+// um toque no trackpad ou o ajuste de meia linha.
+const WAKE_PX = 80
 // Altura de referência da barra: é a faixa do topo que uma seção precisa
 // cobrir para pedir o recolhimento.
 const HIDE_BAND = 80
@@ -17,6 +28,9 @@ const HIDE_BAND = 80
 const RELEASE_SLACK = 0.05
 // Sem pin: fração da tela que a seção ainda precisa ocupar para segurar a barra.
 const COVER_MIN = 0.5
+
+// Quanto do rodapé precisa ter entrado na tela para a barra se recolher.
+const FOOTER_ENTER = 0.35
 
 /**
  * Conteúdo da barra: logo, nav e controles.
@@ -108,6 +122,22 @@ export default function Header({
 }) {
 	const overlay = variant === 'overlay'
 	const [stuck, setStuck] = useState(false)
+	// Recolhida por inatividade. Separado de `stuck` porque são condições
+	// independentes: a barra pode estar na faixa de exibição e ainda assim
+	// recolhida por ninguém estar rolando.
+	const [collapsed, setCollapsed] = useState(false)
+
+	// Refs, e não estado: são lidos dentro dos ouvintes, registrados uma única
+	// vez. Com estado, eles enxergariam sempre o valor da primeira renderização.
+	const collapsedRef = useRef(false)
+	const hoveringRef = useRef(false)
+	const collapseAtRef = useRef(0)
+	const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+	const setCollapsedBoth = (value: boolean) => {
+		collapsedRef.current = value
+		setCollapsed(value)
+	}
 
 	useEffect(() => {
 		// Seções que pedem a barra recolhida (hoje o Manifesto, que ocupa a tela
@@ -142,8 +172,62 @@ export default function Header({
 			return rect.top < HIDE_BAND && rect.bottom > vh * COVER_MIN
 		}
 
-		const onScroll = () =>
-			setStuck(window.scrollY > window.innerHeight * STICKY_AT && !isBlocked())
+		// O rodapé encerra a página, e ali a barra sai de cena. O corte não é o
+		// primeiro pixel dele à vista: isso disparava assim que a borda superior
+		// aparecia, com a barra sumindo enquanto ainda havia conteúdo para ler.
+		// A conta é quanto do rodapé já entrou na tela, em fração da altura dele.
+		const footerEntered = () => {
+			const footer = document.querySelector('.site-footer')
+			if (!footer) return false
+			const rect = footer.getBoundingClientRect()
+			if (rect.height === 0) return false
+			const visivel = window.innerHeight - rect.top
+			return visivel / rect.height > FOOTER_ENTER
+		}
+
+		// Reinicia a contagem de inatividade. Se o ponteiro estiver sobre a
+		// barra quando o tempo vencer, ela não se recolhe e a contagem recomeça:
+		// assim ela some assim que o mouse sair, sem exigir um novo gesto.
+		const armIdle = () => {
+			if (idleTimer.current) clearTimeout(idleTimer.current)
+			idleTimer.current = setTimeout(() => {
+				if (hoveringRef.current) {
+					armIdle()
+					return
+				}
+				collapseAtRef.current = window.scrollY
+				setCollapsedBoth(true)
+			}, IDLE_MS)
+		}
+
+		const threshold = overlay ? STICKY_AT_HOME : STICKY_AT_PAGE
+
+		const onScroll = () => {
+			const y = window.scrollY
+			const visible = y > window.innerHeight * threshold && !isBlocked() && !footerEntered()
+			setStuck(visible)
+
+			if (!visible) {
+				// Fora da faixa de exibição não há o que recolher; zerar aqui evita
+				// que ela reapareça já recolhida na próxima entrada.
+				if (collapsedRef.current) setCollapsedBoth(false)
+				if (idleTimer.current) clearTimeout(idleTimer.current)
+				return
+			}
+
+			if (collapsedRef.current) {
+				// Distância absoluta: vale rolar para qualquer lado, o que importa é
+				// ter sido um movimento intencional.
+				if (Math.abs(y - collapseAtRef.current) > WAKE_PX) {
+					setCollapsedBoth(false)
+					armIdle()
+				}
+				return
+			}
+
+			armIdle()
+		}
+
 		// Avalia já na montagem: a página pode carregar com a rolagem restaurada
 		// pelo navegador, e aí a barra precisa nascer visível.
 		onScroll()
@@ -152,8 +236,9 @@ export default function Header({
 		return () => {
 			window.removeEventListener('scroll', onScroll)
 			window.removeEventListener('resize', onScroll)
+			if (idleTimer.current) clearTimeout(idleTimer.current)
 		}
-	}, [])
+	}, [overlay])
 
 	return (
 		<>
@@ -163,7 +248,9 @@ export default function Header({
 					overlay
 						// Home: sobre o hero. Fundo black/20 só no mobile (< lg) — teste;
 						// no desktop segue transparente.
-						? 'absolute top-0 left-0 bg-black/10 lg:bg-transparent'
+						// Home: sobre o hero. Fundo black/20 só no mobile (< lg) — teste;
+							// no desktop segue transparente.
+							? 'absolute top-0 left-0 bg-black/10 lg:bg-transparent'
 						: 'relative bg-(--color-bg) border-b border-(--color-border)'
 				)}
 			>
@@ -173,8 +260,16 @@ export default function Header({
 			{/* Barra fixa de vidro. Fora de vista ela some do fluxo de foco e não
 			    intercepta cliques (pointer-events pelo CSS). */}
 			<div
-				className={cn('site-header-sticky', stuck && 'is-visible')}
-				aria-hidden={!stuck}
+				className={cn('site-header-sticky', stuck && !collapsed && 'is-visible')}
+				aria-hidden={!stuck || collapsed}
+				// Com o ponteiro sobre a barra ela nunca se recolhe: quem está
+				// prestes a clicar num item não pode vê-lo sumir.
+				onMouseEnter={() => {
+					hoveringRef.current = true
+				}}
+				onMouseLeave={() => {
+					hoveringRef.current = false
+				}}
 			>
 				<HeaderInner onDark />
 			</div>

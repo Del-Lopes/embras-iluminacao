@@ -6851,39 +6851,43 @@ html:not(.light) .site-footer:has(> a:hover) {
 	left: 0;
 	right: 0;
 	z-index: 50;
+	/* Véu mais denso: quanto menos do fundo em movimento aparece, menos se
+	   percebe a reamostragem do desfoque durante a inércia do scroll. */
 	background-image: linear-gradient(
 		to bottom,
-		rgba(20, 20, 20, 0.72),
-		rgba(10, 10, 10, 0.6)
+		rgba(20, 20, 20, 0.88),
+		rgba(10, 10, 10, 0.8)
 	);
-	backdrop-filter: blur(16px) saturate(140%);
-	-webkit-backdrop-filter: blur(16px) saturate(140%);
+	/* Só a propriedade padrão: o prefixo -webkit- é emitido pelo compilador.
+	   Escrito à mão logo abaixo, ele SUBSTITUI a padrão na saída, e era por
+	   isso que o desfoque não aparecia.
+
+	   Sem saturate() e com raio menor: o backdrop é recalculado a cada quadro
+	   enquanto o scroll suave desacelera (~1,8s de inércia do Lenis), e nesse
+	   período um raio grande somado a um ajuste de cor faz o fundo tremer até
+	   assentar. Só o desfoque, mais curto, estabiliza a imagem. */
+	backdrop-filter: blur(10px);
 	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
-	/* Estado oculto. O deslocamento é pequeno de propósito: a entrada é um fade
-	   com um leve descer, não uma barra que salta para dentro. */
+	/* Entrada só por opacidade. Com translateY, cada quadro da transição movia
+	   a barra e obrigava o navegador a reamostrar o fundo numa posição nova,
+	   somando tremor justo no momento em que ela aparece. */
 	opacity: 0;
-	transform: translateY(-8px);
 	pointer-events: none;
-	transition:
-		opacity 0.45s ease,
-		transform 0.45s ease;
+	transition: opacity 0.45s ease;
+
+	/* Mantém a barra na própria camada de composição, em vez de o navegador
+	   promovê-la e descartá-la a cada aparição. */
+	will-change: opacity;
 }
 
 .site-header-sticky.is-visible {
 	opacity: 1;
-	transform: none;
 	pointer-events: auto;
 }
 
-/* Quem prefere menos movimento recebe só o fade. */
-@media (prefers-reduced-motion: reduce) {
-	.site-header-sticky {
-		transform: none;
-		transition: opacity 0.45s ease;
-	}
-}
+
 
 /* ---- ShutterText ---- */
 /* A palavra já nasce no gradiente da marca: ele fica atrás do texto, recortado
@@ -6938,7 +6942,6 @@ html:not(.light) .wwa-watermark {
 	background: rgba(255, 255, 255, 0.2);
 	box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 	backdrop-filter: blur(7px);
-	-webkit-backdrop-filter: blur(7px);
 	border-top: 2px solid var(--color-highlight);
 }
 
