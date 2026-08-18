@@ -2,9 +2,10 @@ import type { Metadata } from 'next'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Manifesto from '@/sections/Manifesto'
-import { AnimatedPill } from '@/components/common/AnimatedTypography'
+import { AnimatedHeading, AnimatedPill } from '@/components/common/AnimatedTypography'
 import { LazyVideo } from '@/components/common/LazyVideo'
 import { ButtonLink } from '@/components/common/ButtonLink'
+import { RiseIn } from '@/components/common/RiseIn'
 
 export const metadata: Metadata = {
   title: 'Quem somos',
@@ -54,9 +55,14 @@ export default function QuemSomosPage() {
             Nossa história
           </AnimatedPill>
 
-          <h1 className="text-[22px] md:text-[1.75rem] font-(family-name:--font-libre) font-medium leading-[1.3] tracking-tight text-(--color-accent) md:max-w-[46ch]">
+          {/* Mesmo componente dos títulos da home. as="h1" porque aqui ele é o
+              título da página; o padrão do componente é h2. */}
+          <AnimatedHeading
+            as="h1"
+            className="text-[22px] md:text-[1.75rem] font-(family-name:--font-libre) font-medium leading-[1.3] tracking-tight text-(--color-accent) md:max-w-[46ch]"
+          >
             Embras Iluminação: indústria, experiência e confiança
-          </h1>
+          </AnimatedHeading>
         </div>
 
         {/* Texto à esquerda, vídeo à direita. items-start impede o player de
@@ -66,7 +72,10 @@ export default function QuemSomosPage() {
             entre o botão e o vídeo: 50px, o respiro padrão entre elementos fora
             do desktop. */}
         <div className="mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-[50px] lg:gap-16 items-start">
-          <div className="blog-content">
+          {/* Cada bloco do texto sobe e aparece, um após o outro. A classe
+              blog-content vai no próprio RiseIn: ela define o espaçamento entre
+              os filhos, e um wrapper extra entre os dois quebraria isso. */}
+          <RiseIn className="blog-content">
             {PARAGRAPHS.map((text) => (
               <p key={text.slice(0, 40)}>{text}</p>
             ))}
@@ -90,7 +99,7 @@ export default function QuemSomosPage() {
             <ButtonLink href={pdfSrc} className="mt-2 self-start">
               Baixar a matéria em PDF
             </ButtonLink>
-          </div>
+          </RiseIn>
 
           {/* Vídeo institucional: só é baixado quando o visitante dá o play,
               para não pesar no carregamento da página. */}

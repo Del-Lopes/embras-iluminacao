@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import { AnimatedHeading, AnimatedPill } from '@/components/common/AnimatedTypography'
 import { StackReveal } from '@/components/common/StackReveal'
+import { ButtonLink } from '@/components/common/ButtonLink'
 
 const ITEMS = [
 	{
@@ -121,6 +122,13 @@ export default function WhyUs() {
 						</article>
 					))}
 				</StackReveal>
+
+				{/* Botão padrão do site, alinhado à esquerda como o cabeçalho da
+				    seção, com o respiro de 50px no celular e no tablet e 64px no
+				    desktop. */}
+				<div className="mt-12.5 md:mt-16 flex justify-start">
+					<ButtonLink href="/#contato">Quero um orçamento</ButtonLink>
+				</div>
 			</div>
 		</section>
 	)

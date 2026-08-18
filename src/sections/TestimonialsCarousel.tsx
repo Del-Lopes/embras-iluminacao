@@ -162,7 +162,13 @@ export default function TestimonialsCarousel() {
 		// (o padrão é 60px e 80px). O overflow-hidden contém o número gigante,
 		// que sangra pela esquerda, e é ele que obriga o ticker a caber dentro
 		// desse pb.
-		<section className="relative w-full flex items-center justify-center overflow-hidden pt-0 pb-25 md:pb-32.5 lg:pb-77.5">
+		//
+		// O pt de 80px a partir de md existe pelo mesmo número: com 28rem de
+		// corpo e o texto ao lado somando cerca de 320px, ele sobra uns 64px
+		// acima do conteúdo, e sem esse respiro o overflow-hidden cortava seu
+		// topo em linha reta. No celular o corpo cai para 16rem e não sobra
+		// nada, então lá o pt continua zerado.
+		<section className="relative w-full flex items-center justify-center overflow-hidden pt-0 md:pt-20 pb-25 md:pb-32.5 lg:pb-77.5">
 			<div
 				ref={containerRef}
 				className="relative w-full max-w-site px-6 md:px-8 lg:px-12"

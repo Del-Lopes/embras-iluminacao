@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import FragmentedImageReveal from '@/components/common/FragmentedImageReveal'
-import { FadeIn } from '@/components/common/FadeIn'
 import {
 	AnimatedHeading,
 	AnimatedParagraph,
@@ -238,7 +237,12 @@ export default function WhoWeAre() {
 					</div>
 
 					{/* Card de texto */}
-					<FadeIn className="lg:order-0 relative z-30 wwa-card p-8 lg:p-10 flex flex-col gap-5">
+					{/* Sem FadeIn em volta: cada elemento aqui dentro já tem a própria
+					    entrada, e o fade do card corria por cima delas. Com o card
+					    ainda em 50% de opacidade, o título já havia percorrido metade
+					    do deslocamento, e quando o card ficava opaco a animação
+					    tinha acabado — o efeito existia, mas passava invisível. */}
+					<div className="lg:order-0 relative z-30 wwa-card p-8 lg:p-10 flex flex-col gap-5">
 						<AnimatedPill className="text-(--color-eyebrow) uppercase w-fit items-start">
 							Quem somos
 						</AnimatedPill>
@@ -275,7 +279,7 @@ export default function WhoWeAre() {
 								→
 							</span>
 						</Link>
-					</FadeIn>
+					</div>
 				</div>
 			</div>
 		</section>
