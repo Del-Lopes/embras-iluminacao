@@ -44,6 +44,8 @@ const NAV_LINKS = [
 	{ label: 'Contato', href: '/#contato' },
 ]
 
+const WHATSAPP_URL = 'https://wa.me/5511947467797'
+
 const CONTACT = [
 	{
 		icon: MapPin,
@@ -65,7 +67,7 @@ const CONTACT = [
 		// O número no link vai sem máscara e com o código do país, formato que o
 		// WhatsApp exige; o texto é o que a pessoa lê.
 		text: '11 94746-7797',
-		href: 'https://wa.me/5511947467797',
+		href: WHATSAPP_URL,
 	},
 	{
 		icon: Phone,
@@ -93,8 +95,13 @@ export default function Footer() {
 			{/* Em repouso o bloco herda o preto do rodapé; o laranja é a
 			    recompensa do hover. Full-bleed de propósito: a faixa colorida
 			    varre a tela toda, enquanto o texto segue alinhado ao container. */}
-			<Link
-				href="/#contato"
+			{/* <a>, e não <Link>: o destino é externo, e o Link do Next existe
+			    para navegação interna. target/rel abrem numa aba nova sem dar à
+			    página de destino acesso ao window desta. */}
+			<a
+				href={WHATSAPP_URL}
+				target="_blank"
+				rel="noopener noreferrer"
 				className="group block w-full bg-transparent transition-colors duration-500 hover:bg-(--color-highlight)"
 			>
 				{/* Container padded por fora, borda no filho: assim a divisória
@@ -122,7 +129,7 @@ export default function Footer() {
 					</svg>
 					</div>
 				</div>
-			</Link>
+			</a>
 
 			<div className="max-w-site mx-auto w-full px-6 md:px-8 lg:px-12">
 				{/* ---------- Corpo ---------- */}
