@@ -14,7 +14,9 @@
 // ================================================================
 
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
-import { r2Client, R2_BUCKET, r2PublicUrl, deleteR2Objects, deleteR2Prefix, isFolderMarker } from '@/lib/storage/r2-client'
+import { r2Client, R2_BUCKET, r2PublicUrl, deleteR2Objects, deleteR2Prefix, isFolderMarker,
+  r2FolderSegment,
+} from '@/lib/storage/r2-client'
 import { PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { randomUUID } from 'node:crypto'
@@ -68,18 +70,9 @@ const GROUP_BASE: Record<UploadGroup, string> = {
   catalog: 'catalogo',
 }
 
-// Sanitiza o nome do produto em um segmento de pasta seguro (nunca confiar no
-// caminho vindo do cliente). Vazio → 'sem-nome' para não gravar na raiz.
-const sanitizeFolder = (raw: string): string => {
-  const s = (raw || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80)
-  return s || 'sem-nome'
-}
+// O segmento de pasta vem do helper do r2-client: é a mesma regra usada pela
+// limpeza na exclusão, e manter uma cópia aqui faria as duas divergirem.
+const sanitizeFolder = (raw: string): string => r2FolderSegment(raw)
 
 export type GetUploadUrlInput = {
   kind: UploadKind

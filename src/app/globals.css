@@ -4559,6 +4559,25 @@ tr[data-selected='true'] td {
 	font-style: italic;
 }
 
+/* Links dentro do corpo do texto. Sem esta regra eles saíam no azul
+   sublinhado do navegador, que no tema escuro fica ilegível sobre o fundo. */
+.blog-content a {
+	color: var(--color-brand-blue);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	/* A cor do sublinhado sozinha não muda: só o traço acompanha o hover,
+	   e o texto continua legível durante a transição. */
+	text-decoration-color: color-mix(in srgb, var(--color-brand-blue) 40%, transparent);
+	transition: color 0.3s ease, text-decoration-color 0.3s ease;
+	/* Endereços de e-mail longos não podem estourar a coluna no celular. */
+	overflow-wrap: anywhere;
+}
+
+.blog-content a:hover {
+	color: var(--color-highlight);
+	text-decoration-color: var(--color-highlight);
+}
+
 /* ================================================================
    CATEGORIES MANAGER
    ================================================================ */

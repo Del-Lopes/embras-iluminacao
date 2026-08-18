@@ -342,36 +342,71 @@ export const getPublishedProjects = async (
 }
 
 // ================================================================
-// Limpeza best-effort no R2 ao excluir — remove a pasta projetos/<slug>/ inteira
-// (capa + álbum). Import dinâmico para o dashboard nunca depender do R2.
+// Limpeza de storage na exclusão. Mesma divisão do catálogo: COLETAR antes do
+// delete, porque depois a linha e o álbum em cascata já não existem, e APAGAR
+// depois, só para os ids que o banco removeu de fato. Fazendo tudo antes, um
+// editor sem permissão sobre o projeto de outro autor apagava os arquivos e o
+// registro continuava lá, apontando para imagens mortas.
+//
+// Import dinâmico do R2 para o dashboard nunca depender das credenciais, e
+// falha na limpeza nunca bloqueia a exclusão no banco.
 // ================================================================
-const cleanupProjectStorage = async (projectIds: string[]): Promise<void> => {
-  if (!projectIds.length) return
+type StorageTargets = { slug: string; urls: string[] }
+
+const collectProjectStorage = async (
+  projectIds: string[]
+): Promise<Map<string, StorageTargets>> => {
+  const map = new Map<string, StorageTargets>()
+  if (!projectIds.length) return map
   try {
     const supabase = await createSupabaseServerClient()
     const [{ data: projects }, { data: images }] = await Promise.all([
-      supabase.from('projects').select('cover_image').in('id', projectIds),
-      supabase.from('project_images').select('url').in('project_id', projectIds),
+      supabase.from('projects').select('id, slug, cover_image').in('id', projectIds),
+      supabase.from('project_images').select('project_id, url').in('project_id', projectIds),
     ])
 
-    const urls = [
-      ...(projects ?? []).map((p) => p.cover_image),
-      ...(images ?? []).map((i) => i.url),
-    ].filter((u): u is string => !!u)
-
-    if (!urls.length) return
-
-    const { r2KeyFromPublicUrl, deleteR2Prefix } = await import('@/lib/storage/r2-client')
-
-    const prefixes = new Set<string>()
-    for (const u of urls) {
-      const m = r2KeyFromPublicUrl(u)?.match(/^(projetos\/[^/]+)\//)
-      if (m) prefixes.add(`${m[1]}/`)
+    for (const proj of projects ?? []) {
+      map.set(proj.id, {
+        slug: proj.slug,
+        urls: [proj.cover_image].filter((u): u is string => !!u),
+      })
     }
 
-    await Promise.allSettled([...prefixes].map((p) => deleteR2Prefix(p)))
+    for (const img of images ?? []) {
+      const target = map.get(img.project_id)
+      if (target && img.url) target.urls.push(img.url)
+    }
   } catch (err) {
-    console.error('[cleanupProjectStorage]', (err as Error).message)
+    console.error('[collectProjectStorage]', (err as Error).message)
+  }
+  return map
+}
+
+const purgeProjectStorage = async (targets: StorageTargets[]): Promise<void> => {
+  if (!targets.length) return
+  try {
+    const { r2KeyFromPublicUrl, deleteR2Prefix, r2FolderSegment } = await import(
+      '@/lib/storage/r2-client'
+    )
+
+    const prefixes = new Set<string>()
+    for (const target of targets) {
+      // Pasta pelo slug: cobre o projeto sem foto nenhuma, que mesmo assim tem
+      // o marcador .keep gravado na criação e ficaria como pasta fantasma no
+      // gerenciador de storage.
+      prefixes.add(`projetos/${r2FolderSegment(target.slug)}/`)
+
+      // Pastas pelas chaves reais: cobrem o que ficou para trás quando o slug
+      // mudou depois dos uploads e as fotos continuaram na pasta antiga.
+      for (const url of target.urls) {
+        const m = r2KeyFromPublicUrl(url)?.match(/^(projetos\/[^/]+)\//)
+        if (m) prefixes.add(`${m[1]}/`)
+      }
+    }
+
+    await Promise.allSettled([...prefixes].map((prefix) => deleteR2Prefix(prefix)))
+  } catch (err) {
+    console.error('[purgeProjectStorage]', (err as Error).message)
   }
 }
 
@@ -395,13 +430,22 @@ export const deleteProjectAction = async (formData: FormData): Promise<void> => 
     .single()
   if (!profile) return
 
-  await cleanupProjectStorage([projectId])
+  // Lê os caminhos antes: depois do delete a linha e o álbum em cascata não
+  // existem mais.
+  const targets = await collectProjectStorage([projectId])
 
-  if (profile.role === 'admin') {
-    await supabase.from('projects').delete().eq('id', projectId)
-  } else {
-    await supabase.from('projects').delete().eq('id', projectId).eq('author_id', user.id)
-  }
+  const query = supabase.from('projects').delete().eq('id', projectId)
+  const { data: deleted } = await (profile.role === 'admin'
+    ? query
+    : query.eq('author_id', user.id)
+  ).select('id')
+
+  // Nada excluído (projeto de outro autor, por exemplo): os arquivos ficam.
+  if (!deleted?.length) return
+
+  await purgeProjectStorage(
+    deleted.map((row) => targets.get(row.id)).filter((t): t is StorageTargets => !!t)
+  )
 
   revalidatePath('/admin/projects')
   revalidatePath('/projetos')
@@ -427,13 +471,21 @@ export const bulkDeleteProjectsAction = async (ids: string[]): Promise<void> => 
     .single()
   if (!profile) return
 
-  await cleanupProjectStorage(ids)
+  const targets = await collectProjectStorage(ids)
 
-  if (profile.role === 'admin') {
-    await supabase.from('projects').delete().in('id', ids)
-  } else {
-    await supabase.from('projects').delete().in('id', ids).eq('author_id', user.id)
-  }
+  const query = supabase.from('projects').delete().in('id', ids)
+  const { data: deleted } = await (profile.role === 'admin'
+    ? query
+    : query.eq('author_id', user.id)
+  ).select('id')
+
+  if (!deleted?.length) return
+
+  // Só os que saíram de fato: numa seleção mista, os projetos de outro autor
+  // continuam de pé e não podem perder os arquivos.
+  await purgeProjectStorage(
+    deleted.map((row) => targets.get(row.id)).filter((t): t is StorageTargets => !!t)
+  )
 
   revalidatePath('/admin/projects')
   revalidatePath('/projetos')

@@ -2,15 +2,23 @@ import type { NextConfig } from "next";
 
 // R2 origins for CSP — derived from env so a future custom read domain works.
 // Public read base (images) and the S3 endpoint (browser presigned PUT).
+// O fallback é o CDN real, e não um curinga do r2.dev: este arquivo é lido
+// em tempo de BUILD, e se a variável não estiver presente nesse momento (o
+// build roda antes de o runtime receber o env), tanto a CSP quanto a lista de
+// hosts do next/image nasceriam sem o domínio que serve todas as fotos.
+const R2_FALLBACK_ORIGIN = "https://cdn.embrasilumina.com.br";
+
 const r2PublicOrigin = (() => {
   try {
     return process.env.R2_PUBLIC_BASE_URL
       ? new URL(process.env.R2_PUBLIC_BASE_URL).origin
-      : "https://*.r2.dev";
+      : R2_FALLBACK_ORIGIN;
   } catch {
-    return "https://*.r2.dev";
+    return R2_FALLBACK_ORIGIN;
   }
 })();
+
+const r2PublicHost = new URL(r2PublicOrigin).hostname;
 
 // The AWS SDK uses virtual-hosted-style URLs for presigned PUT, i.e.
 // https://<bucket>.<account>.r2.cloudflarestorage.com — so a wildcard host
@@ -106,6 +114,18 @@ const nextConfig: NextConfig = {
   },
   images: {
     formats: ["image/avif", "image/webp"],
+    // Sem esta lista o next/image recusa qualquer URL externa, e as fotos
+    // vindas do CDN quebram a página inteira com "hostname is not configured".
+    // O domínio principal vem do mesmo env usado na CSP, então trocar de CDN
+    // continua sendo uma variável só.
+    remotePatterns: [
+      { protocol: "https", hostname: r2PublicHost },
+      // Endereço direto do bucket, usado antes do domínio próprio e ainda
+      // presente em registros antigos.
+      { protocol: "https", hostname: "**.r2.dev" },
+      // Storage do Supabase, de onde vieram as imagens da primeira versão.
+      { protocol: "https", hostname: "**.supabase.co" },
+    ],
   },
 };
 

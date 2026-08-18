@@ -173,49 +173,94 @@ export const getProducts = async ({
 }
 
 // ================================================================
-// Best-effort R2 cleanup on product delete — removes ALL files associated with
-// the product by deleting its entire folders (produtos/<slug>/ and
-// modelos_3d/<slug>/). Folders are derived from the product's real stored keys,
-// so cover, gallery images, the 3D model, its poster and every texture variation
-// (plus any orphan) go together. Dynamic import so the dashboard never depends on
-// R2 env being present; storage cleanup failing never blocks the DB delete.
+// Limpeza de storage na exclusão.
+//
+// São duas etapas separadas de propósito. COLETAR precisa rodar ANTES do
+// delete, porque depois a linha e as imagens em cascata já não existem para
+// serem lidas. APAGAR precisa rodar DEPOIS, e só para os ids que o banco
+// realmente removeu: fazendo tudo antes, um editor sem permissão sobre o
+// produto de outro autor apagava os arquivos e o registro continuava lá,
+// apontando para imagens mortas.
+//
+// Import dinâmico do R2 para o dashboard nunca depender das credenciais, e
+// falha na limpeza nunca bloqueia a exclusão no banco.
 // ================================================================
-const cleanupProductStorage = async (productIds: string[]): Promise<void> => {
-  if (!productIds.length) return
+type StorageTargets = { slug: string; urls: string[] }
+
+const collectProductStorage = async (
+  productIds: string[]
+): Promise<Map<string, StorageTargets>> => {
+  const map = new Map<string, StorageTargets>()
+  if (!productIds.length) return map
   try {
     const supabase = await createSupabaseServerClient()
     const [{ data: products }, { data: images }] = await Promise.all([
       supabase
         .from('products')
-        .select('cover_image, model_3d_url, model_3d_poster, model_3d_variations')
+        .select(
+          // Os três documentos entram aqui junto das imagens: eles moram na
+          // mesma pasta do produto, e um produto que só tem PDF não gerava
+          // nenhuma URL, deixando a pasta inteira para trás.
+          'id, slug, cover_image, model_3d_url, model_3d_poster, model_3d_variations, datasheet_url, ies_url, certificates_url'
+        )
         .in('id', productIds),
-      supabase.from('product_images').select('url').in('product_id', productIds),
+      supabase.from('product_images').select('product_id, url').in('product_id', productIds),
     ])
 
-    const urls = [
-      ...(products ?? []).flatMap((p) => [
-        p.cover_image,
-        p.model_3d_url,
-        p.model_3d_poster,
-        ...(((p.model_3d_variations as Model3dVariation[] | null) ?? []).map((v) => v.texture_url)),
-      ]),
-      ...(images ?? []).map((i) => i.url),
-    ].filter((u): u is string => !!u)
-
-    if (!urls.length) return
-
-    const { r2KeyFromPublicUrl, deleteR2Prefix } = await import('@/lib/storage/r2-client')
-
-    // Distinct product folders (produtos/<slug>/, modelos_3d/<slug>/) from real keys.
-    const prefixes = new Set<string>()
-    for (const u of urls) {
-      const m = r2KeyFromPublicUrl(u)?.match(/^((?:produtos|modelos_3d)\/[^/]+)\//)
-      if (m) prefixes.add(`${m[1]}/`)
+    for (const p of products ?? []) {
+      map.set(p.id, {
+        slug: p.slug,
+        urls: [
+          p.cover_image,
+          p.model_3d_url,
+          p.model_3d_poster,
+          p.datasheet_url,
+          p.ies_url,
+          p.certificates_url,
+          ...(((p.model_3d_variations as Model3dVariation[] | null) ?? []).map(
+            (v) => v.texture_url
+          )),
+        ].filter((u): u is string => !!u),
+      })
     }
 
-    await Promise.allSettled([...prefixes].map((p) => deleteR2Prefix(p)))
+    for (const img of images ?? []) {
+      const target = map.get(img.product_id)
+      if (target && img.url) target.urls.push(img.url)
+    }
   } catch (err) {
-    console.error('[cleanupProductStorage]', (err as Error).message)
+    console.error('[collectProductStorage]', (err as Error).message)
+  }
+  return map
+}
+
+const purgeProductStorage = async (targets: StorageTargets[]): Promise<void> => {
+  if (!targets.length) return
+  try {
+    const { r2KeyFromPublicUrl, deleteR2Prefix, r2FolderSegment } = await import(
+      '@/lib/storage/r2-client'
+    )
+
+    const prefixes = new Set<string>()
+    for (const target of targets) {
+      // Pastas pelo slug: cobrem o produto sem arquivo nenhum, que mesmo assim
+      // tem o marcador .keep gravado na criação e ficaria como pasta fantasma
+      // no gerenciador de storage.
+      const folder = r2FolderSegment(target.slug)
+      prefixes.add(`produtos/${folder}/`)
+      prefixes.add(`modelos_3d/${folder}/`)
+
+      // Pastas pelas chaves reais: cobrem o que ficou para trás quando o slug
+      // mudou depois dos uploads e os arquivos continuaram na pasta antiga.
+      for (const url of target.urls) {
+        const m = r2KeyFromPublicUrl(url)?.match(/^((?:produtos|modelos_3d)\/[^/]+)\//)
+        if (m) prefixes.add(`${m[1]}/`)
+      }
+    }
+
+    await Promise.allSettled([...prefixes].map((prefix) => deleteR2Prefix(prefix)))
+  } catch (err) {
+    console.error('[purgeProductStorage]', (err as Error).message)
   }
 }
 
@@ -239,18 +284,22 @@ export const deleteProductAction = async (formData: FormData): Promise<void> => 
     .single()
   if (!profile) return
 
-  // Clean R2 objects before the row (and its CASCADE'd images) disappear.
-  await cleanupProductStorage([productId])
+  // Lê os caminhos antes: depois do delete a linha e as imagens em cascata
+  // não existem mais.
+  const targets = await collectProductStorage([productId])
 
-  if (profile.role === 'admin') {
-    await supabase.from('products').delete().eq('id', productId)
-  } else {
-    await supabase
-      .from('products')
-      .delete()
-      .eq('id', productId)
-      .eq('author_id', user.id)
-  }
+  const query = supabase.from('products').delete().eq('id', productId)
+  const { data: deleted } = await (profile.role === 'admin'
+    ? query
+    : query.eq('author_id', user.id)
+  ).select('id')
+
+  // Nada excluído (produto de outro autor, por exemplo): os arquivos ficam.
+  if (!deleted?.length) return
+
+  await purgeProductStorage(
+    deleted.map((row) => targets.get(row.id)).filter((t): t is StorageTargets => !!t)
+  )
 
   revalidatePath('/admin/products')
 }
@@ -274,17 +323,21 @@ export const bulkDeleteProductsAction = async (ids: string[]): Promise<void> => 
     .single()
   if (!profile) return
 
-  await cleanupProductStorage(ids)
+  const targets = await collectProductStorage(ids)
 
-  if (profile.role === 'admin') {
-    await supabase.from('products').delete().in('id', ids)
-  } else {
-    await supabase
-      .from('products')
-      .delete()
-      .in('id', ids)
-      .eq('author_id', user.id)
-  }
+  const query = supabase.from('products').delete().in('id', ids)
+  const { data: deleted } = await (profile.role === 'admin'
+    ? query
+    : query.eq('author_id', user.id)
+  ).select('id')
+
+  if (!deleted?.length) return
+
+  // Só os que saíram de fato: numa seleção mista, os produtos de outro autor
+  // continuam de pé e não podem perder os arquivos.
+  await purgeProductStorage(
+    deleted.map((row) => targets.get(row.id)).filter((t): t is StorageTargets => !!t)
+  )
 
   revalidatePath('/admin/products')
 }

@@ -121,6 +121,21 @@ export const deleteR2Prefix = async (prefix: string): Promise<number> => {
   return keys.length
 }
 
+// Converte um nome (o slug do produto/projeto) no segmento de pasta usado no
+// R2. Vive aqui, e não no upload.actions, porque quem APAGA precisa chegar
+// exatamente ao mesmo caminho que quem GRAVOU: duas cópias da regra sairiam do
+// lugar na primeira mudança, e a limpeza passaria a errar a pasta.
+export const r2FolderSegment = (raw: string): string => {
+	const s = (raw || '')
+		.toLowerCase()
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '')
+		.slice(0, 80)
+	return s || 'sem-nome'
+}
+
 // Nome do objeto vazio que materializa uma pasta. O R2 (como o S3) não tem
 // pastas de verdade: um prefixo só "existe" enquanto houver algum objeto
 // abaixo dele. Sem o marcador, uma pasta recém-criada e ainda sem arquivos
