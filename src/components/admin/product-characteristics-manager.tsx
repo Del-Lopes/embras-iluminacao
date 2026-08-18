@@ -16,7 +16,6 @@ type ColumnDef = {
 
 const COLUMNS: ColumnDef[] = [
   { type: 'material', label: 'Materiais', hint: 'Lista única de materiais', placeholder: 'Ex: aço' },
-  { type: 'soquete', label: 'Tipo de Soquete', hint: 'Lista para tipos de soquete', placeholder: 'Ex: E27' },
 ]
 
 type Props = { characteristics: ProductCharacteristic[] }

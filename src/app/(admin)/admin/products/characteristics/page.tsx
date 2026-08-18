@@ -5,7 +5,7 @@ import { ProductCharacteristicsManager } from '@/components/admin/product-charac
 import type { ProductCharacteristic } from '@/lib/db/schema'
 
 export const metadata: Metadata = {
-  title: 'Especificações de Produto',
+  title: 'Filtros de Produto',
   robots: { index: false, follow: false },
 }
 
@@ -24,9 +24,9 @@ export default async function ProductCharacteristicsPage() {
     <div className="editor-page">
       <div className="editor-header">
         <Link href="/admin/products" className="editor-back">← Produtos</Link>
-        <h1 className="dashboard-title">Especificações de Produto</h1>
+        <h1 className="dashboard-title">Filtros</h1>
         <p className="dashboard-subtitle">
-          Cadastre os filtros de materiais, principal e secundário, e tipo de soquete
+          Cadastre os valores usados como filtro no catálogo
         </p>
       </div>
 

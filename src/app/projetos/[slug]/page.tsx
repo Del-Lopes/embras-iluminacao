@@ -4,10 +4,17 @@ import Link from 'next/link'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { ProductGallery } from '@/components/catalog/ProductGallery'
+import { EditorJsContent } from '@/components/blog/EditorJsContent'
+import { formatProjectDate } from '@/lib/utils/project-date'
+import { findAdjacentSlugs } from '@/lib/utils/adjacent'
+import { AdjacentNav } from '@/components/common/AdjacentNav'
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
 import type { Project } from '@/lib/db/schema'
 
 type Props = { params: Promise<{ slug: string }> }
+
+const stripTags = (html: string | null | undefined) =>
+  (html ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
@@ -23,7 +30,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: data.name,
-    description: data.description?.slice(0, 160) ?? undefined,
+    // O texto vem do editor rico: sem tirar as tags, a meta description sairia
+    // como "<p>Uma resid…" e gastaria os 160 caracteres com marcação.
+    description: stripTags(data.description)?.slice(0, 160) || undefined,
     openGraph: { images: data.cover_image ? [data.cover_image] : [] },
   }
 }
@@ -50,39 +59,70 @@ export default async function ProjectDetailPage({ params }: Props) {
 
   const images = (imgData ?? []).map((i) => ({ url: i.url, alt: i.alt ?? '' }))
 
+  // Vizinhos na mesma ordem padrão da listagem (/projetos): data do projeto
+  // decrescente, com os sem data no fim, e publicação como desempate.
+  const { data: orderData } = await supabase
+    .from('projects')
+    .select('slug')
+    .eq('status', 'published')
+    .order('project_date', { ascending: false, nullsFirst: false })
+    .order('published_at', { ascending: false })
+  const { prev, next } = findAdjacentSlugs(
+    (orderData ?? []).map((r) => r.slug as string),
+    project.slug
+  )
+
   return (
-    <main className="product-detail-page min-h-screen bg-(--color-bg)">
+    // project-detail-page: mesma casca do produto, com a escala vertical
+    // própria (128px). A classe extra evita mexer no padding do catálogo.
+    <main className="product-detail-page project-detail-page min-h-screen bg-(--color-bg)">
       <Header variant="solid" />
 
       <article className="product-detail">
+        {/* Navegação entre projetos: container próprio acima do conteúdo, para
+            não empurrar a galeria e desalinhá-la do texto ao lado. */}
+        <AdjacentNav prevHref={prev ? `/projetos/${prev}` : null} nextHref={next ? `/projetos/${next}` : null} />
+
         <div className="product-detail-top">
           {/* Álbum de fotos */}
           <ProductGallery coverImage={project.cover_image} images={images} name={project.name} />
 
           {/* Info do projeto */}
           <div className="product-info">
-            <div className="product-info-cat">
-              <Link href="/projetos" className="product-info-category">
-                Projetos
-              </Link>
-            </div>
-
-            <h1 className="product-info-name">{project.name}</h1>
-            {project.location && <p className="product-info-sku">{project.location}</p>}
-
-            {project.description && (
-              <div className="project-detail-text">
-                {project.description
-                  .split(/\n{2,}/)
-                  .map((para, i) => (
-                    <p key={i}>{para}</p>
-                  ))}
+            {/* No lugar do rótulo fixo "Projetos": a cidade, que leva à
+                listagem já filtrada por ela. */}
+            {project.location && (
+              <div className="product-info-cat">
+                <Link
+                  href={`/projetos?location=${encodeURIComponent(project.location)}`}
+                  className="product-info-category"
+                >
+                  {project.location}
+                </Link>
               </div>
             )}
 
-            <Link href="/projetos" className="project-detail-back">
-              ← Ver todos os projetos
-            </Link>
+            <h1 className="product-info-name">{project.name}</h1>
+            {project.project_date && (
+              <p className="product-info-sku">{formatProjectDate(project.project_date)}</p>
+            )}
+
+            {/* Divisor no mesmo tom das divisórias da home. */}
+            <hr className="project-detail-rule" />
+
+            {/* O campo passou a ser texto rico. Projetos salvos antes disso
+                guardam texto puro, que renderizado como HTML viraria um bloco
+                único sem parágrafos: quando não há marcação, mantém a quebra
+                por linha em branco. */}
+            {stripTags(project.description) && (
+              <div className="project-detail-text">
+                {/<[a-z][\s\S]*>/i.test(project.description ?? '') ? (
+                  <EditorJsContent content={project.description!} />
+                ) : (
+                  project.description!.split(/\n{2,}/).map((para, i) => <p key={i}>{para}</p>)
+                )}
+              </div>
+            )}
           </div>
         </div>
       </article>

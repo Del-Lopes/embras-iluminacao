@@ -23,6 +23,9 @@ import type {
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { generateProductSeo } from '@/lib/ai/product-seo-generator'
+import { ensureProductSpecLabels } from '@/server/product-spec-label.actions'
+import { promoteProductSpecValues } from '@/server/product-spec-value.actions'
+import { canonicalizeUnits } from '@/lib/utils/si-units'
 
 const PAGE_SIZE = 20
 
@@ -335,8 +338,6 @@ const productSchema = z.object({
   // Materiais (lista única): 1 principal (card) + N secundários. Ambos filtráveis.
   primary_material_id: z.string().uuid().nullable().optional().default(null),
   secondary_material_ids: z.array(z.string().uuid()).optional().default([]),
-  // Soquetes: N por produto, filtráveis.
-  soquete_ids: z.array(z.string().uuid()).optional().default([]),
   images: z.array(imageInputSchema).optional().default([]),
   has_3d_model: z.boolean().optional().default(false),
   model_3d_url: z.string().optional().default(''),
@@ -364,7 +365,9 @@ const productSchema = z.object({
     .array(z.object({ label: z.string().default(''), value: z.string().default('') }))
     .optional()
     .default([]),
-  features: z.array(z.string()).optional().default([]),
+  // Rótulos que o usuário marcou para virar preset reutilizável. Não são
+  // gravados no produto: alimentam product_spec_labels.
+  new_spec_labels: z.array(z.string()).optional().default([]),
   applications: z.string().optional().default(''),
   datasheet_url: z.string().optional().default(''),
   datasheet_filename: z.string().optional().default(''),
@@ -442,10 +445,14 @@ const toProductColumns = (
     model_3d_material_labels: materialLabels,
     model_3d_variations: d.has_3d_model ? variations : null,
     // Abas novas — descarta linhas/itens vazios.
+    // canonicalizeUnits no VALOR: o símbolo entra no banco na grafia do SI
+    // ("200 n" vira "200 N"), então a ficha do produto e o preset promovido
+    // saem uniformes sem depender de o usuário acertar a caixa. Feito aqui, no
+    // servidor, e não no formulário: é a última porta antes do banco, e cobre
+    // também o rascunho automático.
     tech_specs: d.tech_specs
-      .map((s) => ({ label: s.label.trim(), value: s.value.trim() }))
+      .map((s) => ({ label: s.label.trim(), value: canonicalizeUnits(s.value.trim()) }))
       .filter((s) => s.label || s.value),
-    features: d.features.map((f) => f.trim()).filter(Boolean),
     applications: d.applications.trim() || null,
     datasheet_url: d.datasheet_url.trim() || null,
     datasheet_filename: d.datasheet_filename.trim() || null,
@@ -493,13 +500,12 @@ const syncCategories = async (
 }
 
 // Replace the product's characteristic mappings: 1 primary material
-// (is_primary=true) + N secondary materials + N soquetes (is_primary=false).
+// (is_primary=true) + N secondary materials (is_primary=false).
 const syncCharacteristics = async (
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   productId: string,
   primaryMaterialId: string | null,
-  secondaryMaterialIds: string[],
-  soqueteIds: string[]
+  secondaryMaterialIds: string[]
 ) => {
   await supabase.from('product_characteristic_map').delete().eq('product_id', productId)
   const rows: { product_id: string; characteristic_id: string; is_primary: boolean }[] = []
@@ -508,7 +514,7 @@ const syncCharacteristics = async (
     rows.push({ product_id: productId, characteristic_id: primaryMaterialId, is_primary: true })
     seen.add(primaryMaterialId)
   }
-  for (const id of [...secondaryMaterialIds, ...soqueteIds]) {
+  for (const id of secondaryMaterialIds) {
     if (seen.has(id)) continue
     seen.add(id)
     rows.push({ product_id: productId, characteristic_id: id, is_primary: false })
@@ -560,7 +566,7 @@ const reconcileProductFolders = async (
   hintUrls: (string | null | undefined)[] = []
 ) => {
   try {
-    const { listR2Keys, deleteR2Objects, r2KeyFromPublicUrl } = await import(
+    const { listR2Keys, deleteR2Objects, r2KeyFromPublicUrl, isFolderMarker } = await import(
       '@/lib/storage/r2-client'
     )
 
@@ -583,7 +589,9 @@ const reconcileProductFolders = async (
     await Promise.allSettled(
       [...prefixes].map(async (prefix) => {
         const stored = await listR2Keys(prefix)
-        const toDelete = stored.filter((k) => !keep.has(k))
+        // O marcador de pasta nunca é referenciado por nenhuma URL, então cairia
+        // sempre no toDelete e a pasta sumiria no primeiro salvamento.
+        const toDelete = stored.filter((k) => !keep.has(k) && !isFolderMarker(k))
         if (toDelete.length) await deleteR2Objects(toDelete)
       })
     )
@@ -681,10 +689,16 @@ export const createProductAction = async (
     supabase,
     created.id,
     d.primary_material_id,
-    d.secondary_material_ids,
-    d.soquete_ids
+    d.secondary_material_ids
   )
   await syncImages(supabase, created.id, d.images)
+  // Rótulos marcados como reutilizáveis. Depois do produto salvo, e sem
+  // await bloqueante de erro: se falhar, o produto já está gravado e só a
+  // sugestão deixa de existir.
+  await ensureProductSpecLabels(d.new_spec_labels)
+  // Valores não têm opção de salvar: a promoção decide sozinha, olhando
+  // quantos produtos já usam cada um.
+  await promoteProductSpecValues()
 
   // Remove do R2 qualquer arquivo (imagem ou modelo/textura) que tenha sido
   // enviado mas não é usado pelo produto salvo.
@@ -795,10 +809,11 @@ export const updateProductAction = async (
     supabase,
     productId,
     d.primary_material_id,
-    d.secondary_material_ids,
-    d.soquete_ids
+    d.secondary_material_ids
   )
   await syncImages(supabase, productId, d.images)
+  await ensureProductSpecLabels(d.new_spec_labels)
+  await promoteProductSpecValues()
 
   // R2 reconcile (produtos/<slug>/ + modelos_3d/<slug>/): remove tudo que o
   // produto salvo não usa mais — capa/modelo/poster substituídos, texturas de

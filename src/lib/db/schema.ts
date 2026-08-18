@@ -122,8 +122,6 @@ export type Product = {
   primary_material: string | null
   // Aba "Informações Técnicas" (linhas rótulo/valor flexíveis)
   tech_specs: ProductTechSpec[] | null
-  // Aba "Características" (lista de itens)
-  features: string[] | null
   // Aba "Aplicações" (texto)
   applications: string | null
   // Aba "Arquivos para download" — 3 slots (URL no R2 + nome original)
@@ -177,11 +175,12 @@ export type ProductImage = {
   created_at: string
 }
 
-// Características cadastráveis: uma única lista de materiais ('material') e os
-// tipos de soquete ('soquete'). Material e soquete são filtros do catálogo.
-// (O enum no banco ainda tem os valores legados material_principal/secundario,
-// mas nenhuma linha os usa após a migração 012.)
-export type ProductCharacteristicType = 'material' | 'soquete'
+// Características cadastráveis: hoje só materiais, que são o filtro do
+// catálogo. O tipo 'soquete' saiu por deixar de ser filtro, e quem precisar
+// informá-lo usa uma linha livre em "Informações técnicas".
+// (O enum no banco ainda tem os valores legados material_principal,
+// material_secundario e soquete, mas nenhuma linha os usa.)
+export type ProductCharacteristicType = 'material'
 
 export type ProductCharacteristic = {
   id: string
@@ -192,12 +191,44 @@ export type ProductCharacteristic = {
   created_at: string
 }
 
-// is_primary: para materiais, marca o material PRINCIPAL do produto (exibido no
-// card). Secundários e soquetes têm is_primary=false.
+// is_primary: marca o material PRINCIPAL do produto (exibido no card). Os
+// secundários têm is_primary=false.
 export type ProductCharacteristicMap = {
   product_id: string
   characteristic_id: string
   is_primary: boolean
+}
+
+// Rótulo reutilizável da tabela "Informações Técnicas" (ex.: "Tensão").
+// É só um catálogo de sugestões para o editor: o valor de cada produto
+// continua em products.tech_specs, então não há tabela de ligação e apagar
+// um rótulo daqui não afeta produto nenhum.
+// `normalized` é a forma sem acento/caixa que carrega o UNIQUE, e é o que
+// impede "Tensão" e "tensao" de virarem dois registros.
+export type ProductSpecLabel = {
+  id: string
+  name: string
+  normalized: string
+  sort_order: number
+  created_at: string
+}
+
+// Preset de VALOR (ex.: 220V). Mesma forma do rótulo, regra de entrada
+// diferente: o usuário não escolhe salvar — a função promote_product_spec_values
+// promove sozinha o que já foi usado em 10 produtos distintos. O cadastro
+// manual pela página de admin continua valendo, sem depender da contagem.
+export type ProductSpecValue = {
+  id: string
+  name: string
+  normalized: string
+  // Rótulo a que o valor pertence, na forma normalizada. É o que faz a
+  // sugestão ser em cascata: ao preencher "Tensão" só aparecem valores
+  // daquele rótulo, e não tudo que já foi digitado no catálogo.
+  // Guarda o texto normalizado e não uma FK, porque o rótulo de um produto
+  // pode existir sem estar cadastrado como preset.
+  label_normalized: string
+  sort_order: number
+  created_at: string
 }
 
 // ----------------------------------------------------------------
@@ -210,12 +241,20 @@ export type Project = {
   name: string
   slug: string
   location: string | null // ex.: "São Paulo"
+  // Quando o projeto foi feito. Texto livre porque costuma ser aproximado
+  // ("Março de 2024", "2023"); serve para exibição, não para cálculo.
+  project_date: string | null
   description: string | null // texto explicativo (plain text)
   cover_image: string | null
   status: ProjectStatus
   // Destaque na home: os projetos marcados aparecem no grid principal da
-  // seção "Projetos" (limitado a 4). Os demais viram cards menores / listagem.
+  // seção "Projetos", que tem 5 posições. Os demais viram cards menores /
+  // listagem.
   is_featured: boolean
+  // Posição no grid da home (1 a 5, ou null quando não é destaque). 1 é o card
+  // grande à esquerda; 2 a 5 são os menores à direita, lidos em coluna. As
+  // posições sem destaque são preenchidas pelos projetos mais antigos.
+  home_position: number | null
   author_id: string
   published_at: string | null
   created_at: string
@@ -274,6 +313,20 @@ export type InsertProductImage = Omit<
 // sort_order has a DB default → optional on insert.
 export type InsertProductCharacteristic = Omit<
   ProductCharacteristic,
+  'id' | 'created_at' | 'sort_order'
+> & {
+  sort_order?: number
+}
+
+export type InsertProductSpecLabel = Omit<
+  ProductSpecLabel,
+  'id' | 'created_at' | 'sort_order'
+> & {
+  sort_order?: number
+}
+
+export type InsertProductSpecValue = Omit<
+  ProductSpecValue,
   'id' | 'created_at' | 'sort_order'
 > & {
   sort_order?: number
@@ -477,6 +530,18 @@ export type Database = {
         Update: Partial<InsertProductCharacteristic>
         Relationships: []
       }
+      product_spec_labels: {
+        Row: ProductSpecLabel
+        Insert: InsertProductSpecLabel
+        Update: Partial<InsertProductSpecLabel>
+        Relationships: []
+      }
+      product_spec_values: {
+        Row: ProductSpecValue
+        Insert: InsertProductSpecValue
+        Update: Partial<InsertProductSpecValue>
+        Relationships: []
+      }
       product_characteristic_map: {
         Row: ProductCharacteristicMap
         Insert: Omit<ProductCharacteristicMap, 'is_primary'> & { is_primary?: boolean }
@@ -509,7 +574,19 @@ export type Database = {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      // Promove a preset todo valor de tech_specs já usado em `min_uses`
+      // produtos distintos. Retorna quantos foram inseridos nesta chamada.
+      promote_product_spec_values: {
+        Args: { min_uses: number }
+        Returns: number
+      }
+      // Exposta para o teste de paridade com o normalizeLabel do TypeScript.
+      normalize_spec_text: {
+        Args: { t: string }
+        Returns: string
+      }
+    }
     CompositeTypes: Record<string, never>
     Enums: {
       user_role: UserRole

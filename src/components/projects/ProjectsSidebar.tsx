@@ -2,45 +2,33 @@
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState, useTransition } from 'react'
-
-type CategoryOption = { id: string; name: string; slug: string; depth: number }
-
-type MaterialOption = { slug: string; name: string }
+import { PROJECT_PERIODS } from '@/lib/utils/project-periods'
 
 type Props = {
-  categories: CategoryOption[]
-  materials: MaterialOption[]
+  locations: string[]
   currentQ: string
-  currentEnvironment: string
-  currentTipo: string
-  currentMaterial: string
+  currentLocation: string
+  currentPeriod: string
 }
 
-const ENVIRONMENTS = [
-  { label: 'Todas', value: '' },
-  { label: 'Área interna', value: 'interno' },
-  { label: 'Área externa', value: 'externo' },
-]
-
-export function CatalogSidebar({
-  categories,
-  materials,
+// Sidebar de filtros da listagem de projetos. Mesma estrutura da CatalogSidebar
+// (inline no desktop, drawer no tablet/mobile), com os filtros que fazem
+// sentido aqui: busca, local e período.
+export function ProjectsSidebar({
+  locations,
   currentQ,
-  currentEnvironment,
-  currentTipo,
-  currentMaterial,
+  currentLocation,
+  currentPeriod,
 }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
 
-  // Drawer de filtros (tablet/mobile). No desktop os filtros ficam inline na
-  // sidebar e este estado não tem efeito (o drawer só vira overlay via CSS <=1024).
   const [open, setOpen] = useState(false)
 
-  // Trava o scroll do body enquanto o drawer está aberto (só faz diferença no
-  // tablet/mobile, onde o drawer é overlay).
+  // Trava o scroll do body enquanto o drawer está aberto (só tem efeito no
+  // tablet/mobile, onde ele é overlay).
   useEffect(() => {
     if (!open) return
     const prev = document.body.style.overflow
@@ -69,7 +57,6 @@ export function CatalogSidebar({
   const parseList = (s: string) =>
     s ? s.split(',').map((v) => v.trim()).filter(Boolean) : []
 
-  // Multi-seleção (checkbox): adiciona/remove o valor da lista
   const toggleMulti = (key: string, current: string, value: string) => {
     const list = parseList(current)
     const next = list.includes(value) ? list.filter((v) => v !== value) : [...list, value]
@@ -82,86 +69,55 @@ export function CatalogSidebar({
     updateParams({ q })
   }
 
-  const hasFilters =
-    currentQ || currentEnvironment || currentTipo || currentMaterial
+  const hasFilters = !!(currentQ || currentLocation || currentPeriod)
+  const clearAll = () => updateParams({ q: '', location: '', period: '' })
 
-  // Grupos de filtros — renderizados uma vez; ficam inline no desktop e dentro
-  // do drawer no tablet/mobile (o container troca de apresentação via CSS).
   const filterGroups = (
     <>
-      {/* Área de uso — seleção única (radio) */}
+      {locations.length > 0 && (
+        <nav className="blog-sidebar-cats">
+          <p className="blog-sidebar-cats-label">Local</p>
+          <ul>
+            {locations.map((loc) => (
+              <li key={loc}>
+                <label className="blog-cat-label">
+                  <input
+                    type="checkbox"
+                    className="blog-cat-check"
+                    checked={parseList(currentLocation).includes(loc)}
+                    onChange={() => toggleMulti('location', currentLocation, loc)}
+                  />
+                  <span className="blog-cat-name">{loc}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
+
+      {/* Períodos marcados juntos somam (união): "Este mês" + "Mais de 3 anos"
+          traz os dois conjuntos, e não a interseção, que seria sempre vazia. */}
       <nav className="blog-sidebar-cats">
-        <p className="blog-sidebar-cats-label">Área de uso</p>
+        <p className="blog-sidebar-cats-label">Data do projeto</p>
         <ul>
-          {ENVIRONMENTS.map((env) => (
-            <li key={env.value}>
+          {PROJECT_PERIODS.map((period) => (
+            <li key={period.value}>
               <label className="blog-cat-label">
                 <input
-                  type="radio"
-                  name="environment"
-                  className="blog-cat-radio"
-                  checked={currentEnvironment === env.value}
-                  onChange={() => updateParams({ environment: env.value })}
+                  type="checkbox"
+                  className="blog-cat-check"
+                  checked={parseList(currentPeriod).includes(period.value)}
+                  onChange={() => toggleMulti('period', currentPeriod, period.value)}
                 />
-                <span className="blog-cat-name">{env.label}</span>
+                <span className="blog-cat-name">{period.label}</span>
               </label>
             </li>
           ))}
         </ul>
       </nav>
 
-      {/* Tipo de produto (árvore de categorias) */}
-      {categories.length > 0 && (
-        <nav className="blog-sidebar-cats">
-          <p className="blog-sidebar-cats-label">Tipo de produto</p>
-          <ul>
-            {categories.map((cat) => (
-              <li key={cat.id} style={{ paddingLeft: cat.depth * 14 }}>
-                <label className="blog-cat-label">
-                  <input
-                    type="checkbox"
-                    className="blog-cat-check"
-                    checked={parseList(currentTipo).includes(cat.slug)}
-                    onChange={() => toggleMulti('tipo', currentTipo, cat.slug)}
-                  />
-                  <span className="blog-cat-name">{cat.name}</span>
-                </label>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      )}
-
-      {/* Material */}
-      {materials.length > 0 && (
-        <nav className="blog-sidebar-cats">
-          <p className="blog-sidebar-cats-label">Material</p>
-          <ul>
-            {materials.map((mat) => (
-              <li key={mat.slug}>
-                <label className="blog-cat-label">
-                  <input
-                    type="checkbox"
-                    className="blog-cat-check"
-                    checked={parseList(currentMaterial).includes(mat.slug)}
-                    onChange={() => toggleMulti('material', currentMaterial, mat.slug)}
-                  />
-                  <span className="blog-cat-name">{mat.name}</span>
-                </label>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      )}
-
       {hasFilters && (
-        <button
-          type="button"
-          className="catalog-clear-filters"
-          onClick={() =>
-            updateParams({ q: '', environment: '', tipo: '', material: '' })
-          }
-        >
+        <button type="button" className="catalog-clear-filters" onClick={clearAll}>
           Limpar filtros
         </button>
       )}
@@ -170,19 +126,17 @@ export function CatalogSidebar({
 
   return (
     <aside className="blog-sidebar catalog-sidebar">
-      {/* Busca */}
       <form onSubmit={handleSearch} className="blog-sidebar-search">
         <input
           name="q"
           type="search"
           defaultValue={currentQ}
-          placeholder="Buscar produtos"
+          placeholder="Buscar projetos"
           className="blog-sidebar-search-input"
         />
       </form>
 
-      {/* Botão FILTROS + Limpar filtros — abaixo da busca (linha visível só no
-          tablet/mobile via CSS). O "Limpar" só aparece quando há filtros ativos. */}
+      {/* Botão FILTROS: a linha inteira só aparece no tablet/mobile, via CSS. */}
       <div className="catalog-filter-bar">
         <button
           type="button"
@@ -201,23 +155,19 @@ export function CatalogSidebar({
           <button
             type="button"
             className="catalog-clear-filters catalog-clear-filters--bar"
-            onClick={() =>
-              updateParams({ q: '', environment: '', tipo: '', material: '' })
-            }
+            onClick={clearAll}
           >
             Limpar filtros
           </button>
         )}
       </div>
 
-      {/* Backdrop — clicar fora fecha (só overlay no tablet/mobile) */}
       <div
         className={`catalog-filter-backdrop${open ? ' is-open' : ''}`}
         onClick={() => setOpen(false)}
         aria-hidden="true"
       />
 
-      {/* Container dos filtros: inline no desktop, drawer no tablet/mobile */}
       <div
         className={`catalog-filters${open ? ' is-open' : ''}`}
         role="dialog"

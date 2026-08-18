@@ -11,17 +11,16 @@ type Props = {
   productId: string
   productName: string
   techRows: SpecRow[]
-  features: string[]
+  dimensionRows: SpecRow[]
   applications: string | null
   files: ProductTabFile[]
 }
 
-type TabKey = 'files' | 'tech' | 'features' | 'applications'
+type TabKey = 'files' | 'tech' | 'applications'
 
 const TAB_LABEL: Record<TabKey, string> = {
   files: 'Arquivos para download',
   tech: 'Informações Técnicas',
-  features: 'Características',
   applications: 'Aplicações',
 }
 
@@ -35,15 +34,17 @@ function FileIcon() {
   )
 }
 
-export function ProductTabs({ productId, productName, techRows, features, applications, files }: Props) {
+export function ProductTabs({ productId, productName, techRows, dimensionRows, applications, files }: Props) {
   const [selectedFile, setSelectedFile] = useState<LeadFile | null>(null)
 
-  // Abas exibidas só quando têm conteúdo (ordem igual à referência).
+  // Abas exibidas só quando têm conteúdo. Arquivos por último: é a ação de
+  // saída da página (baixar), enquanto as outras duas descrevem o produto.
+  // Sendo a primeira, ela também virava a aba aberta por padrão, empurrando o
+  // visitante para o download antes de ele ler as especificações.
   const tabs: TabKey[] = []
-  if (files.length) tabs.push('files')
-  if (techRows.length) tabs.push('tech')
-  if (features.length) tabs.push('features')
+  if (techRows.length || dimensionRows.length) tabs.push('tech')
   if (applications && applications.trim()) tabs.push('applications')
+  if (files.length) tabs.push('files')
 
   const [active, setActive] = useState<TabKey>(tabs[0] ?? 'tech')
 
@@ -87,22 +88,14 @@ export function ProductTabs({ productId, productName, techRows, features, applic
         )}
 
         {current === 'tech' && (
-          <dl className="product-specs-table">
-            {techRows.map((row, i) => (
-              <div key={`${row.label}-${i}`} className="product-spec-row">
-                <dt className="product-spec-label">{row.label}</dt>
-                <dd className="product-spec-value">{row.value}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
-
-        {current === 'features' && (
-          <ul className="product-features-list">
-            {features.map((f, i) => (
-              <li key={i}>{f}</li>
-            ))}
-          </ul>
+          <div className="product-specs">
+            {techRows.length > 0 && (
+              <SpecTable title="Especificações" rows={techRows} />
+            )}
+            {dimensionRows.length > 0 && (
+              <SpecTable title="Dimensões" rows={dimensionRows} />
+            )}
+          </div>
         )}
 
         {current === 'applications' && (
@@ -120,6 +113,38 @@ export function ProductTabs({ productId, productName, techRows, features, applic
         file={selectedFile}
         onClose={() => setSelectedFile(null)}
       />
+    </section>
+  )
+}
+
+// Tabela de especificações no formato lado a lado: uma linha de rótulos e,
+// abaixo, a linha de valores, com divisória vertical entre as colunas.
+//
+// O componente informa apenas QUANTAS colunas existem (--spec-count). Quantas
+// cabem antes de rolar é decisão do CSS, porque o limite muda por breakpoint
+// (8 no desktop, 6 no tablet) e JS renderizado no servidor não enxerga a
+// largura da tela.
+//
+// No celular o formato vira lista empilhada, porque lado a lado numa tela
+// estreita seria rolagem horizontal já na segunda coluna. A troca também é
+// feita no CSS, sem duplicar a marcação.
+function SpecTable({ title, rows }: { title: string; rows: SpecRow[] }) {
+  return (
+    <section className="spec-table">
+      <h3 className="spec-table-title">{title}</h3>
+      <div className="spec-table-scroll">
+        <div
+          className="spec-table-grid"
+          style={{ ['--spec-count' as string]: rows.length }}
+        >
+          {rows.map((row, i) => (
+            <div key={`${row.label}-${i}`} className="spec-cell">
+              <span className="spec-cell-label">{row.label}</span>
+              <span className="spec-cell-value">{row.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </section>
   )
 }

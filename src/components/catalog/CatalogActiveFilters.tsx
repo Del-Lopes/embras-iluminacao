@@ -10,10 +10,8 @@ type Props = {
   environment: string
   tipo: string
   material: string
-  soquete: string
   categories: Option[]
   materials: Option[]
-  soquetes: Option[]
 }
 
 const ENV_LABELS: Record<string, string> = {
@@ -23,16 +21,14 @@ const ENV_LABELS: Record<string, string> = {
 
 // Chips dos filtros ativos, exibidos abaixo da linha de controles. Cada chip tem
 // um X que remove aquele filtro específico (atualizando a URL). Filtros multi
-// (tipo/material/soquete) removem só o slug clicado; environment/busca zeram.
+// (tipo/material) removem só o slug clicado; environment/busca zeram.
 export function CatalogActiveFilters({
   q,
   environment,
   tipo,
   material,
-  soquete,
   categories,
   materials,
-  soquetes,
 }: Props) {
   const router = useRouter()
   const pathname = usePathname()
@@ -82,13 +78,6 @@ export function CatalogActiveFilters({
       key: `material-${slug}`,
       label: nameFor(materials, slug),
       onRemove: () => removeFromList('material', material, slug),
-    })
-  )
-  parseList(soquete).forEach((slug) =>
-    chips.push({
-      key: `soquete-${slug}`,
-      label: nameFor(soquetes, slug),
-      onRemove: () => removeFromList('soquete', soquete, slug),
     })
   )
 

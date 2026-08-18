@@ -27,7 +27,6 @@ type SearchParams = Promise<{
   environment?: string
   tipo?: string
   material?: string
-  soquete?: string
   sort?: string
   view?: string
 }>
@@ -39,15 +38,13 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
   const environment = params.environment?.trim() ?? ''
   const tipo = params.tipo?.trim() ?? ''
   const material = params.material?.trim() ?? ''
-  const soquete = params.soquete?.trim() ?? ''
   const sort = params.sort?.trim() || 'recentes'
 
-  // tipo / material / soquete são multi-seleção (lista separada por vírgula)
+  // tipo / material são multi-seleção (lista separada por vírgula)
   const parseList = (s: string) =>
     s ? s.split(',').map((v) => v.trim()).filter(Boolean) : []
   const tipoSlugs = parseList(tipo)
   const materialSlugs = parseList(material)
-  const soqueteSlugs = parseList(soquete)
   const view: 'grid' | 'list' = params.view === 'list' ? 'list' : 'grid'
 
   const supabase = await createSupabaseServerClient()
@@ -55,8 +52,8 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
   // Configurações do site (PDF do catálogo para download).
   const siteSettings = await getSiteSettings()
 
-  // Filter sources: árvore de categorias + materiais + soquetes (características)
-  const [{ data: catData }, { data: matData }, { data: soqData }] = await Promise.all([
+  // Filter sources: árvore de categorias + materiais (características)
+  const [{ data: catData }, { data: matData }] = await Promise.all([
     supabase
       .from('product_categories')
       .select('id, name, slug, parent_id, description, sort_order, created_at')
@@ -68,19 +65,11 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
       .eq('type', 'material')
       .order('sort_order')
       .order('name'),
-    supabase
-      .from('product_characteristics')
-      .select('id, name, slug')
-      .eq('type', 'soquete')
-      .order('sort_order')
-      .order('name'),
   ])
 
   const categories = flattenCategoryTree((catData ?? []) as ProductCategory[])
   const materialChars = (matData ?? []) as { id: string; name: string; slug: string }[]
   const materials = materialChars.map((c) => ({ slug: c.slug, name: c.name }))
-  const soqueteChars = (soqData ?? []) as { id: string; name: string; slug: string }[]
-  const soquetes = soqueteChars.map((c) => ({ slug: c.slug, name: c.name }))
 
   // Resolve "tipo" (slugs de categoria) → product ids (união das categorias selecionadas)
   let tipoProductIds: string[] | null = null
@@ -112,23 +101,8 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
     }
   }
 
-  // Resolve "soquete" (slugs) → product ids (união dos soquetes selecionados)
-  let soqueteProductIds: string[] | null = null
-  if (soqueteSlugs.length) {
-    const ids = soqueteChars.filter((c) => soqueteSlugs.includes(c.slug)).map((c) => c.id)
-    if (!ids.length) {
-      soqueteProductIds = []
-    } else {
-      const { data: maps } = await supabase
-        .from('product_characteristic_map')
-        .select('product_id')
-        .in('characteristic_id', ids)
-      soqueteProductIds = [...new Set((maps ?? []).map((m) => m.product_id))]
-    }
-  }
-
-  // Interseção das restrições por id (tipo ∩ material ∩ soquete)
-  const idConstraints = [tipoProductIds, materialProductIds, soqueteProductIds].filter(
+  // Interseção das restrições por id (tipo ∩ material)
+  const idConstraints = [tipoProductIds, materialProductIds].filter(
     (l): l is string[] => l !== null
   )
   const combinedIds: string[] | null =
@@ -223,7 +197,6 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
     if (environment) urlParams.set('environment', environment)
     if (tipo) urlParams.set('tipo', tipo)
     if (material) urlParams.set('material', material)
-    if (soquete) urlParams.set('soquete', soquete)
     if (sort !== 'recentes') urlParams.set('sort', sort)
     if (view !== 'grid') urlParams.set('view', view)
     if (p > 1) urlParams.set('page', String(p))
@@ -270,12 +243,10 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
           <CatalogSidebar
             categories={categories}
             materials={materials}
-            soquetes={soquetes}
             currentQ={q}
             currentEnvironment={environment}
             currentTipo={tipo}
             currentMaterial={material}
-            currentSoquete={soquete}
           />
         </Suspense>
 
@@ -292,11 +263,9 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
                 environment={environment}
                 tipo={tipo}
                 material={material}
-                soquete={soquete}
                 categories={categories.map((c) => ({ slug: c.slug, name: c.name }))}
                 materials={materials}
-                soquetes={soquetes}
-              />
+                  />
             </Suspense>
           </div>
 

@@ -9,7 +9,7 @@ import TestimonialsCarousel from '@/sections/TestimonialsCarousel'
 import TestimonialsBackdrop from '@/sections/TestimonialsBackdrop'
 import Footer from '@/components/layout/Footer'
 import Header from '@/components/layout/Header'
-import { getFeaturedProjects, getRecentProjects } from '@/server/project.actions'
+import { getHomeProjects, getRecentProjects } from '@/server/project.actions'
 
 // A seção de produtos passou a exibir CATEGORIAS estáticas com link para o
 // catálogo, em vez do carrossel de produtos. Com isso as duas consultas que
@@ -21,10 +21,12 @@ const AREAS: ProductLine[] = [
 ]
 
 export default async function Home() {
-  const [featuredProjects, recentProjects] = await Promise.all([
-    getFeaturedProjects(5),
-    getRecentProjects(8),
-  ])
+  // O grid da home vem resolvido em posições; os cards menores excluem quem já
+  // apareceu lá em cima, e por isso dependem do primeiro resultado.
+  const homeSlots = await getHomeProjects()
+  const recentProjects = await getRecentProjects(
+    homeSlots.filter((p): p is NonNullable<typeof p> => !!p).map((p) => p.id)
+  )
 
   // home-palette: laranja de destaque + azul de título. A identidade nova está
   // confinada à página principal enquanto as demais páginas não migram.
@@ -37,7 +39,7 @@ export default async function Home() {
         <HeroProductsWrapper />
         <CompanyStats />
         <ProductLines lines={AREAS} defaultActive="externo" />
-        <SuccessCases featured={featuredProjects} recent={recentProjects} />
+        <SuccessCases slots={homeSlots} recent={recentProjects} />
         <WhoWeAre />
         {/* Manifesto saiu da home: vai para a página /quem-somos, ainda a
             criar. O componente segue em src/sections/Manifesto.tsx. */}

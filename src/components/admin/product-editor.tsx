@@ -24,6 +24,8 @@ import { R2Upload } from '@/components/admin/r2-upload'
 import { R2ModelUpload } from '@/components/admin/r2-model-upload'
 import { R2FileUpload } from '@/components/admin/r2-file-upload'
 import { ProductImageGallery, type GalleryImage } from '@/components/admin/product-image-gallery'
+import { SpecLabelInput } from '@/components/admin/spec-label-input'
+import { normalizeLabel } from '@/lib/utils/normalize-label'
 import type {
   Model3dArScale,
   Model3dMaterialLabels,
@@ -31,6 +33,8 @@ import type {
   Model3dVariation,
   Product,
   ProductCharacteristic,
+  ProductSpecLabel,
+  ProductSpecValue,
   ProductTechSpec,
 } from '@/lib/db/schema'
 
@@ -115,24 +119,26 @@ type CategoryOption = { id: string; name: string; depth: number }
 type Props = {
   categories: CategoryOption[]
   characteristics: ProductCharacteristic[]
+  specLabels?: ProductSpecLabel[]
+  specValues?: ProductSpecValue[]
   product?: Product
   productPrimaryCategoryId?: string | null
   productSecondaryCategoryIds?: string[]
   productPrimaryMaterialId?: string | null
   productSecondaryMaterialIds?: string[]
-  productSoqueteIds?: string[]
   productImages?: GalleryImage[]
 }
 
 export const ProductEditor = ({
   categories,
   characteristics,
+  specLabels = [],
+  specValues = [],
   product,
   productPrimaryCategoryId = null,
   productSecondaryCategoryIds = [],
   productPrimaryMaterialId = null,
   productSecondaryMaterialIds = [],
-  productSoqueteIds = [],
   productImages = [],
 }: Props) => {
   const isEdit = !!product
@@ -142,11 +148,13 @@ export const ProductEditor = ({
   const [secondaryCategoryIds, setSecondaryCategoryIds] = useState<string[]>(productSecondaryCategoryIds)
   const [primaryMaterialId, setPrimaryMaterialId] = useState<string>(productPrimaryMaterialId ?? '')
   const [secondaryMaterialIds, setSecondaryMaterialIds] = useState<string[]>(productSecondaryMaterialIds)
-  const [soqueteIds, setSoqueteIds] = useState<string[]>(productSoqueteIds)
   const [images, setImages] = useState<GalleryImage[]>(productImages)
-  // Abas novas: Informações Técnicas (linhas rótulo/valor) e Características (lista).
+  // Aba Informações Técnicas (linhas rótulo/valor).
   const [techSpecs, setTechSpecs] = useState<ProductTechSpec[]>(product?.tech_specs ?? [])
-  const [features, setFeatures] = useState<string[]>(product?.features ?? [])
+  // Índices das linhas cujo rótulo o usuário marcou para virar preset. Fica
+  // fora de techSpecs de propósito: é decisão de cadastro, não conteúdo do
+  // produto, e não deve acabar gravado no tech_specs.
+  const [saveLabel, setSaveLabel] = useState<Set<number>>(new Set())
 
   // Auto-save (rascunho) — só na criação. Cria o produto assim que houver nome e
   // vai atualizando; se o usuário sair, o rascunho e os arquivos permanecem.
@@ -156,9 +164,8 @@ export const ProductEditor = ({
   const autosaveInitRef = useRef(false)
   const [draftSaved, setDraftSaved] = useState(false)
 
-  // Lista única de materiais + soquetes vinda das características.
+  // Lista de materiais vinda das características cadastradas.
   const materialOptions = characteristics.filter((c) => c.type === 'material')
-  const soqueteOptions = characteristics.filter((c) => c.type === 'soquete')
   const slugTouched = useRef(isEdit)
   const [showSlug, setShowSlug] = useState(false)
   const [slugTaken, setSlugTaken] = useState(false)
@@ -247,17 +254,74 @@ export const ProductEditor = ({
   const certificatesUrl = watch('certificates_url') ?? ''
   const certificatesFilename = watch('certificates_filename') ?? ''
 
+  // Índice dos rótulos já cadastrados, pela forma normalizada. É o que permite
+  // reconhecer que "tensao" digitado à mão é o preset "Tensão".
+  const labelByNormalized = new Map(specLabels.map((l) => [l.normalized, l]))
+
+  // Valores agrupados pelo rótulo a que pertencem. É o índice da cascata: o
+  // campo de valor de uma linha só enxerga o grupo do rótulo daquela linha.
+  const valuesByLabel = new Map<string, ProductSpecValue[]>()
+  for (const v of specValues) {
+    const list = valuesByLabel.get(v.label_normalized) ?? []
+    list.push(v)
+    valuesByLabel.set(v.label_normalized, list)
+  }
+  const valuesForLabel = (label: string) => valuesByLabel.get(normalizeLabel(label)) ?? []
+
   // Helpers — Informações Técnicas (linhas rótulo/valor)
   const addSpec = () => setTechSpecs((prev) => [...prev, { label: '', value: '' }])
   const updateSpec = (i: number, key: 'label' | 'value', val: string) =>
     setTechSpecs((prev) => prev.map((s, idx) => (idx === i ? { ...s, [key]: val } : s)))
-  const removeSpec = (i: number) => setTechSpecs((prev) => prev.filter((_, idx) => idx !== i))
 
-  // Helpers — Características (lista de itens)
-  const addFeature = () => setFeatures((prev) => [...prev, ''])
-  const updateFeature = (i: number, val: string) =>
-    setFeatures((prev) => prev.map((f, idx) => (idx === i ? val : f)))
-  const removeFeature = (i: number) => setFeatures((prev) => prev.filter((_, idx) => idx !== i))
+  const toggleSaveLabel = (i: number) =>
+    setSaveLabel((prev) => {
+      const next = new Set(prev)
+      if (next.has(i)) next.delete(i)
+      else next.add(i)
+      return next
+    })
+
+  // Ao sair do campo, um rótulo digitado que corresponda a um preset assume a
+  // grafia canônica dele. Assim o produto grava "Tensão" mesmo que o usuário
+  // tenha escrito "tensao", e a coluna da ficha técnica fica uniforme entre
+  // produtos. Também desmarca o "salvar": não há o que salvar, já existe.
+  const resolveSpecLabel = (i: number) => {
+    const preset = labelByNormalized.get(normalizeLabel(techSpecs[i]?.label ?? ''))
+    if (!preset) return
+    if (preset.name !== techSpecs[i].label) updateSpec(i, 'label', preset.name)
+    setSaveLabel((prev) => {
+      if (!prev.has(i)) return prev
+      const next = new Set(prev)
+      next.delete(i)
+      return next
+    })
+  }
+
+  // Mesma ideia para o valor, sem a parte do "salvar": aqui não há caixa para
+  // desmarcar, porque quem decide promover é a contagem de uso. A busca do
+  // preset é dentro do rótulo da linha, pela mesma razão da cascata.
+  const resolveSpecValue = (i: number) => {
+    const row = techSpecs[i]
+    if (!row) return
+    const target = normalizeLabel(row.value)
+    const preset = valuesForLabel(row.label).find((v) => v.normalized === target)
+    if (!preset || preset.name === row.value) return
+    updateSpec(i, 'value', preset.name)
+  }
+  // Remover uma linha reindexa as seguintes, então o conjunto de marcados
+  // precisa ser remapeado junto: sem isso, apagar a linha 0 faria a marca dela
+  // "escorregar" para a linha que assumiu o índice 0.
+  const removeSpec = (i: number) => {
+    setTechSpecs((prev) => prev.filter((_, idx) => idx !== i))
+    setSaveLabel((prev) => {
+      const next = new Set<number>()
+      for (const idx of prev) {
+        if (idx === i) continue
+        next.add(idx > i ? idx - 1 : idx)
+      }
+      return next
+    })
+  }
 
   const toggleSecondaryCategory = (id: string) =>
     setSecondaryCategoryIds((prev) =>
@@ -269,10 +333,6 @@ export const ProductEditor = ({
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
     )
 
-  const toggleSoquete = (id: string) =>
-    setSoqueteIds((prev) =>
-      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
-    )
 
   const handleAiDescription = () => {
     toast.info('Esta é uma sugestão de função para o futuro.')
@@ -286,11 +346,15 @@ export const ProductEditor = ({
     secondary_category_ids: secondaryCategoryIds.filter((id) => id !== primaryCategoryId),
     primary_material_id: primaryMaterialId || null,
     secondary_material_ids: secondaryMaterialIds.filter((id) => id !== primaryMaterialId),
-    soquete_ids: soqueteIds,
     images,
     has_3d_model: !!data.has_3d_model,
     tech_specs: techSpecs,
-    features,
+    // Só os rótulos marcados, e só os que ainda não são preset — o filtro
+    // repete a regra da UI para o payload não depender de o checkbox ter sido
+    // escondido a tempo.
+    new_spec_labels: [...saveLabel]
+      .map((i) => techSpecs[i]?.label ?? '')
+      .filter((l) => l.trim() && !labelByNormalized.has(normalizeLabel(l))),
   })
 
   // Salva/atualiza o rascunho automaticamente (sem SEO por IA, sem navegar).
@@ -320,10 +384,8 @@ export const ProductEditor = ({
     sc: secondaryCategoryIds,
     pm: primaryMaterialId,
     sm: secondaryMaterialIds,
-    sq: soqueteIds,
     img: images,
     ts: techSpecs,
-    ft: features,
   })
   useEffect(() => {
     if (isEdit) return
@@ -444,7 +506,9 @@ export const ProductEditor = ({
             </div>
             <div className="field-group">
               <div className="field-label-row">
-                <Label>Descrição</Label>
+                {/* Rótulo passa a citar Características: a seção própria saiu do
+                    formulário, e esse conteúdo agora entra aqui no texto rico. */}
+                <Label>Descrição / Características</Label>
                 <button type="button" className="btn-secondary btn-ai" onClick={handleAiDescription}>
                   ✨ Gerar com IA
                 </button>
@@ -461,83 +525,123 @@ export const ProductEditor = ({
 
           {/* Informações técnicas (aba) — linhas rótulo/valor flexíveis */}
           <div className="editor-section">
-            <p className="editor-section-title">Informações técnicas</p>
-            <span className="field-hint field-hint--xs">
-              Tabela exibida na aba “Informações Técnicas”. Rótulo + valor (ex.: Tensão / 220V).
-            </span>
+            <div className="editor-section-head">
+              <p className="editor-section-title">Informações técnicas</p>
+              <span className="field-hint field-hint--xs">
+                Tabela exibida na aba “Informações Técnicas”. Rótulo + valor (ex.: Tensão / 220 V).
+              </span>
+            </div>
             {techSpecs.length > 0 && (
               <div className="spec-rows">
-                {techSpecs.map((row, i) => (
-                  <div key={i} className="spec-row">
-                    <Input
-                      placeholder="Rótulo (ex.: Tensão)"
-                      value={row.label}
-                      onChange={(e) => updateSpec(i, 'label', e.target.value)}
-                    />
-                    <Input
-                      placeholder="Valor (ex.: 220V)"
-                      value={row.value}
-                      onChange={(e) => updateSpec(i, 'value', e.target.value)}
-                    />
-                    <button type="button" className="action-btn action-btn--delete" onClick={() => removeSpec(i)}>
-                      Remover
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <button type="button" className="btn-secondary" onClick={addSpec} style={{ marginTop: 10 }}>
-              + Adicionar linha
-            </button>
-          </div>
+                {techSpecs.map((row, i) => {
+                  const isPreset = labelByNormalized.has(normalizeLabel(row.label))
+                  return (
+                    <div key={i} className="spec-row spec-row--labeled">
+                      <SpecLabelInput
+                        value={row.label}
+                        onChange={(v) => updateSpec(i, 'label', v)}
+                        onResolve={() => resolveSpecLabel(i)}
+                        labels={specLabels}
+                        placeholder="Rótulo (ex.: Tensão)"
+                      />
+                      {/* Cascata: só os valores do rótulo desta linha. Com o
+                          rótulo em branco a lista fica vazia, porque sugerir
+                          tudo que existe no catálogo é justamente o que se
+                          quer evitar (8000K aparecendo em Tensão). */}
+                      <SpecLabelInput
+                        value={row.value}
+                        onChange={(v) => updateSpec(i, 'value', v)}
+                        onResolve={() => resolveSpecValue(i)}
+                        labels={valuesForLabel(row.label)}
+                        placeholder="Valor (ex.: 220 V)"
+                      />
+                      <button type="button" className="action-btn action-btn--delete" onClick={() => removeSpec(i)}>
+                        Remover
+                      </button>
 
-          {/* Características (aba) — lista de itens */}
-          <div className="editor-section">
-            <p className="editor-section-title">Características</p>
-            <span className="field-hint field-hint--xs">
-              Lista de itens exibida na aba “Características”.
-            </span>
-            {features.length > 0 && (
-              <div className="spec-rows">
-                {features.map((f, i) => (
-                  <div key={i} className="feature-row">
-                    <Input
-                      placeholder="Item da lista"
-                      value={f}
-                      onChange={(e) => updateFeature(i, e.target.value)}
-                    />
-                    <button type="button" className="action-btn action-btn--delete" onClick={() => removeFeature(i)}>
-                      Remover
-                    </button>
-                  </div>
-                ))}
+                      {/* O checkbox some quando o rótulo já é um preset: não há
+                          o que salvar, e deixá-lo visível sugeriria que algo
+                          acontece ao marcar. No lugar entra a confirmação de
+                          que o rótulo veio do cadastro. */}
+                      <div className="spec-row-save">
+                        {row.label.trim() === '' ? null : isPreset ? (
+                          <span className="field-hint field-hint--xs">Rótulo já cadastrado</span>
+                        ) : (
+                          <label className="category-check">
+                            <input
+                              type="checkbox"
+                              checked={saveLabel.has(i)}
+                              onChange={() => toggleSaveLabel(i)}
+                            />
+                            <span>Salvar rótulo para reutilizar</span>
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             )}
-            <button type="button" className="btn-secondary" onClick={addFeature} style={{ marginTop: 10 }}>
-              + Adicionar item
+            {/* Mesmo par de classes do "+ Adicionar variação" do modelo 3D:
+                contorno em vez de preenchimento, para ler como ação auxiliar
+                de uma lista e não como o botão principal do formulário. */}
+            <button
+              type="button"
+              className="model3d-outline-btn btn-xs"
+              onClick={addSpec}
+              style={{ marginTop: 10 }}
+            >
+              + Adicionar nova
             </button>
           </div>
 
           {/* Aplicações (aba) — texto */}
           <div className="editor-section">
-            <div className="field-group">
-              <Label htmlFor="applications">Aplicações</Label>
-              <Textarea
-                id="applications"
-                rows={4}
-                placeholder="Onde o produto é indicado (ex.: ruas, avenidas, praças, pátios…)"
-                {...register('applications')}
-              />
+            <Label htmlFor="applications">Aplicações</Label>
+            <Textarea
+              id="applications"
+              rows={4}
+              placeholder="Onde o produto é indicado (ex.: ruas, avenidas, praças, pátios…)"
+              {...register('applications')}
+            />
+          </div>
+
+          {/* Dimensões e Peso */}
+          <div className="editor-section">
+            <p className="editor-section-title">Dimensões e Peso</p>
+            <div className="editor-row editor-row--4">
+              <div className="field-group">
+                <Label htmlFor="height_cm">Altura (cm)</Label>
+                <Input id="height_cm" type="number" step="0.01" {...register('height_cm')} />
+              </div>
+              <div className="field-group">
+                <Label htmlFor="width_cm">Largura (cm)</Label>
+                <Input id="width_cm" type="number" step="0.01" {...register('width_cm')} />
+              </div>
+              <div className="field-group">
+                <Label htmlFor="depth_cm">Profundidade (cm)</Label>
+                <Input id="depth_cm" type="number" step="0.01" {...register('depth_cm')} />
+              </div>
+              <div className="field-group">
+                <Label htmlFor="weight_kg">Peso (kg)</Label>
+                <Input id="weight_kg" type="number" step="0.001" {...register('weight_kg')} />
+              </div>
             </div>
           </div>
 
           {/* Arquivos para download (aba) — 3 slots (PDF/ZIP) */}
           <div className="editor-section">
-            <p className="editor-section-title">Arquivos para download</p>
-            <span className="field-hint field-hint--xs">
-              PDF ou ZIP. Aparecem na aba “Arquivos para download” da página do produto — o
-              visitante preenche um popup (lead) antes de baixar.
-            </span>
+            <div className="editor-section-head">
+              <p className="editor-section-title">Arquivos para download</p>
+              <span className="field-hint field-hint--xs">
+                PDF ou ZIP. Aparecem na aba “Arquivos para download” da página do produto, e o
+                visitante preenche um popup (lead) antes de baixar.
+              </span>
+            </div>
+
+            {/* Os três slots num grupo próprio: o gap de 20px da seção é pouco
+                para separar blocos que têm abas, aviso e botão dentro. */}
+            <div className="file-slots">
             <div className="field-group">
               <Label>Data Sheet</Label>
               <input type="hidden" {...register('datasheet_url')} />
@@ -583,100 +687,7 @@ export const ProductEditor = ({
                 folder={effectiveSlug}
               />
             </div>
-          </div>
-
-          {/* Dimensões e Peso */}
-          <div className="editor-section">
-            <p className="editor-section-title">Dimensões e Peso</p>
-            <div className="editor-row editor-row--4">
-              <div className="field-group">
-                <Label htmlFor="height_cm">Altura (cm)</Label>
-                <Input id="height_cm" type="number" step="0.01" {...register('height_cm')} />
-              </div>
-              <div className="field-group">
-                <Label htmlFor="width_cm">Largura (cm)</Label>
-                <Input id="width_cm" type="number" step="0.01" {...register('width_cm')} />
-              </div>
-              <div className="field-group">
-                <Label htmlFor="depth_cm">Profundidade (cm)</Label>
-                <Input id="depth_cm" type="number" step="0.01" {...register('depth_cm')} />
-              </div>
-              <div className="field-group">
-                <Label htmlFor="weight_kg">Peso (kg)</Label>
-                <Input id="weight_kg" type="number" step="0.001" {...register('weight_kg')} />
-              </div>
             </div>
-          </div>
-
-          {/* Especificações — material principal (1) + secundários (N) + soquete (N) */}
-          <div className="editor-section">
-            <p className="editor-section-title">Especificações</p>
-            {characteristics.length === 0 ? (
-              <p className="field-hint" style={{ margin: 0 }}>
-                Nenhuma característica cadastrada. Crie em “Especificações”.
-              </p>
-            ) : (
-              <div className="char-groups-grid">
-                {/* Material principal (aparece no card) */}
-                <div className="char-group">
-                  <p className="char-group-label">Material Principal</p>
-                  <select
-                    className="editor-select"
-                    value={primaryMaterialId}
-                    onChange={(e) => setPrimaryMaterialId(e.target.value)}
-                  >
-                    <option value="">— Nenhum —</option>
-                    {materialOptions.map((m) => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Materiais secundários (filtram, não aparecem no card) */}
-                <div className="char-group">
-                  <p className="char-group-label">Materiais Secundários</p>
-                  {materialOptions.filter((m) => m.id !== primaryMaterialId).length === 0 ? (
-                    <p className="field-hint" style={{ margin: 0 }}>—</p>
-                  ) : (
-                    <div className="category-checklist">
-                      {materialOptions
-                        .filter((m) => m.id !== primaryMaterialId)
-                        .map((m) => (
-                          <label key={m.id} className="category-check">
-                            <input
-                              type="checkbox"
-                              checked={secondaryMaterialIds.includes(m.id)}
-                              onChange={() => toggleSecondaryMaterial(m.id)}
-                            />
-                            <span>{m.name}</span>
-                          </label>
-                        ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Tipo de Soquete (vários, filtram) */}
-                <div className="char-group">
-                  <p className="char-group-label">Tipo de Soquete</p>
-                  {soqueteOptions.length === 0 ? (
-                    <p className="field-hint" style={{ margin: 0 }}>—</p>
-                  ) : (
-                    <div className="category-checklist">
-                      {soqueteOptions.map((s) => (
-                        <label key={s.id} className="category-check">
-                          <input
-                            type="checkbox"
-                            checked={soqueteIds.includes(s.id)}
-                            onChange={() => toggleSoquete(s.id)}
-                          />
-                          <span>{s.name}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Modelo 3D */}
@@ -773,8 +784,12 @@ export const ProductEditor = ({
             </div>
           </div>
 
-          {/* Área de uso + Categorias */}
+          {/* Filtros — os três eixos de classificação do produto num bloco só:
+              área de uso, categorias e materiais. Todos alimentam a filtragem
+              do catálogo, então ficam juntos em vez de espalhados. */}
           <div className="editor-section">
+            <p className="editor-section-title">Filtros</p>
+
             <div className="field-group">
               <Label htmlFor="environment">Área de uso *</Label>
               <select id="environment" className="editor-select" {...register('environment')}>
@@ -783,7 +798,7 @@ export const ProductEditor = ({
               </select>
             </div>
 
-            <p className="editor-section-title">Categorias</p>
+            <p className="char-group-label">Categorias</p>
             {categories.length === 0 ? (
               <p className="field-hint" style={{ margin: 0 }}>
                 Nenhuma categoria cadastrada. Crie em “Categorias” antes de classificar o produto.
@@ -824,6 +839,54 @@ export const ProductEditor = ({
                       ))}
                   </div>
                 </div>
+              </div>
+            )}
+
+            <p className="char-group-label">Materiais</p>
+            {characteristics.length === 0 ? (
+              <p className="field-hint" style={{ margin: 0 }}>
+                Nenhum material cadastrado. Crie em “Filtros”.
+              </p>
+            ) : (
+              <div className="cat-fields">
+                {/* Material principal (aparece no card) */}
+                <div>
+                  <p className="char-group-label">Material principal</p>
+                  <select
+                    className="editor-select"
+                    value={primaryMaterialId}
+                    onChange={(e) => setPrimaryMaterialId(e.target.value)}
+                  >
+                    <option value="">— Nenhum —</option>
+                    {materialOptions.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Materiais secundários (filtram, não aparecem no card) */}
+                <div>
+                  <p className="char-group-label">Materiais secundários</p>
+                  {materialOptions.filter((m) => m.id !== primaryMaterialId).length === 0 ? (
+                    <p className="field-hint" style={{ margin: 0 }}>—</p>
+                  ) : (
+                    <div className="category-checklist">
+                      {materialOptions
+                        .filter((m) => m.id !== primaryMaterialId)
+                        .map((m) => (
+                          <label key={m.id} className="category-check">
+                            <input
+                              type="checkbox"
+                              checked={secondaryMaterialIds.includes(m.id)}
+                              onChange={() => toggleSecondaryMaterial(m.id)}
+                            />
+                            <span>{m.name}</span>
+                          </label>
+                        ))}
+                    </div>
+                  )}
+                </div>
+
               </div>
             )}
           </div>

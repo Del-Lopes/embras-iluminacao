@@ -14,7 +14,7 @@
 // ================================================================
 
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
-import { r2Client, R2_BUCKET, r2PublicUrl, deleteR2Objects, deleteR2Prefix } from '@/lib/storage/r2-client'
+import { r2Client, R2_BUCKET, r2PublicUrl, deleteR2Objects, deleteR2Prefix, isFolderMarker } from '@/lib/storage/r2-client'
 import { PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { randomUUID } from 'node:crypto'
@@ -154,7 +154,10 @@ export const getProductUploadUrl = async (
     input.group ??
     (input.kind === 'model' ? 'model' : input.kind === 'document' ? 'catalog' : 'product')
   const base = GROUP_BASE[group]
-  const folder = sanitizeFolder(input.folder ?? '')
+  // O catálogo é um arquivo único do site, não uma coleção por item: ele grava
+  // direto na pasta raiz, sem subpasta. Os demais grupos têm uma subpasta por
+  // produto/projeto, e por isso continuam exigindo o folder.
+  const folder = group === 'catalog' ? '' : sanitizeFolder(input.folder ?? '')
 
   // 3. Validate MIME (server-authoritative)
   const ext = mimeMap[input.contentType]
@@ -180,7 +183,7 @@ export const getProductUploadUrl = async (
 
   // 5. Server-generated key — never client-controlled.
   //    Ex.: produtos/luminaria-led/<uuid>.jpg | modelos_3d/luminaria-led/<uuid>.glb
-  const key = `${base}/${folder}/${randomUUID()}.${ext}`
+  const key = folder ? `${base}/${folder}/${randomUUID()}.${ext}` : `${base}/${randomUUID()}.${ext}`
 
   // 6. Pin Content-Type + Content-Length into the signed request so the
   //    eventual PUT cannot upload a different type or oversize payload.
@@ -337,6 +340,10 @@ export const listR2Objects = async (prefix = ''): Promise<ListR2Result> => {
       }
       for (const o of res.Contents ?? []) {
         if (!o.Key || o.Key === safePrefix || o.Key.endsWith('/')) continue
+        // O marcador de pasta é um objeto de zero byte que só existe para o
+        // prefixo aparecer no R2. Listá-lo mostraria um arquivo fantasma em
+        // toda pasta e permitiria excluí-lo, o que faria a pasta sumir.
+        if (isFolderMarker(o.Key)) continue
         files.push({
           key: o.Key,
           size: o.Size ?? 0,

@@ -66,10 +66,15 @@ export default async function BlogPage({ searchParams }: { searchParams: SearchP
     )
     .eq('status', 'published')
 
+  // O id entra como desempate por data: há posts publicados no mesmo instante,
+  // e sem ele o Postgres pode devolvê-los em ordem diferente a cada consulta,
+  // fazendo um post pular de página. A navegação entre posts vizinhos usa a
+  // mesma chave composta.
   if (sort === 'az') query = query.order('title', { ascending: true })
   else if (sort === 'za') query = query.order('title', { ascending: false })
-  else if (sort === 'antigos') query = query.order('published_at', { ascending: true })
-  else query = query.order('published_at', { ascending: false })
+  else if (sort === 'antigos')
+    query = query.order('published_at', { ascending: true }).order('id', { ascending: true })
+  else query = query.order('published_at', { ascending: false }).order('id', { ascending: false })
 
   query = query.range(from, to)
 

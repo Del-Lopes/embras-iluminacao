@@ -45,7 +45,6 @@ export const CatalogUploader = ({ initialUrl, initialFilename }: Props) => {
       const result = await getProductUploadUrl({
         kind: 'document',
         group: 'catalog',
-        folder: 'pdf',
         contentType: file.type,
         contentLength: file.size,
       })

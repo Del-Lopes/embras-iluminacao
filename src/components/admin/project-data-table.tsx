@@ -192,7 +192,9 @@ export const ProjectDataTable = ({ projects, total, page, pageCount, searchParam
                 )}
                 <span className="post-slug-cell">
                   /projetos/{project.slug}
-                  {project.is_featured ? ' · ★ destaque' : ''}
+                  {project.is_featured
+                    ? ` · ★ Destaque (Posição ${project.home_position ?? '—'})`
+                    : ''}
                 </span>
               </TableCell>
               <TableCell>

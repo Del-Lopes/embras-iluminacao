@@ -98,7 +98,7 @@ export default function Footer() {
 				    e sumir junto com a entrada do laranja. */}
 				<div className="max-w-site mx-auto w-full px-6 md:px-8 lg:px-12">
 					<div className="py-6 md:py-8 flex items-center justify-between gap-8 border-b border-(--color-border) group-hover:border-transparent transition-colors duration-500">
-					<span className="font-(family-name:--font-libre) font-medium text-white text-5xl sm:text-7xl lg:text-[110px] leading-none tracking-tight">
+					<span className="font-(family-name:--font-libre) font-medium text-white text-[38px] sm:text-[64px] lg:text-[100px] leading-none tracking-tight">
 						Entre em contato
 					</span>
 					{/* Seta em SVG, e não caractere: o traço fino e o tamanho grande
@@ -111,7 +111,7 @@ export default function Footer() {
 						strokeWidth="1.2"
 						strokeLinecap="round"
 						strokeLinejoin="round"
-						className="shrink-0 w-16 h-16 md:w-28 md:h-28 lg:w-40 lg:h-40 text-white transition-transform duration-500 group-hover:translate-x-2 group-hover:-translate-y-2"
+						className="shrink-0 w-16 h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 text-white transition-transform duration-500 group-hover:translate-x-2 group-hover:-translate-y-2"
 					>
 						<path d="M7 17L17 7M17 7H8M17 7v9" />
 					</svg>

@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
 import { ProductEditor } from '@/components/admin/product-editor'
+import { listProductSpecLabels } from '@/server/product-spec-label.actions'
+import { listProductSpecValues } from '@/server/product-spec-value.actions'
 import { flattenCategoryTree } from '@/lib/utils/category-tree'
 import type { GalleryImage } from '@/components/admin/product-image-gallery'
 import type { Product, ProductCategory, ProductCharacteristic } from '@/lib/db/schema'
@@ -51,22 +53,23 @@ export default async function EditProductPage({ params }: Props) {
 
   const categories = flattenCategoryTree((catData ?? []) as ProductCategory[])
   const characteristics = (charData ?? []) as ProductCharacteristic[]
+  const [specLabels, specValues] = await Promise.all([
+    listProductSpecLabels(),
+    listProductSpecValues(),
+  ])
 
   // Categorias: separa principal x secundárias.
   const catMap = (mapData ?? []) as { category_id: string; is_primary: boolean }[]
   const productPrimaryCategoryId = catMap.find((m) => m.is_primary)?.category_id ?? null
   const productSecondaryCategoryIds = catMap.filter((m) => !m.is_primary).map((m) => m.category_id)
 
-  // Características: separa material principal x secundários x soquetes (pelo tipo).
+  // Características: separa o material principal dos secundários (pelo tipo).
   const typeById = new Map(characteristics.map((c) => [c.id, c.type]))
   const charMap = (charMapData ?? []) as { characteristic_id: string; is_primary: boolean }[]
   const materialMap = charMap.filter((m) => typeById.get(m.characteristic_id) === 'material')
   const productPrimaryMaterialId = materialMap.find((m) => m.is_primary)?.characteristic_id ?? null
   const productSecondaryMaterialIds = materialMap
     .filter((m) => !m.is_primary)
-    .map((m) => m.characteristic_id)
-  const productSoqueteIds = charMap
-    .filter((m) => typeById.get(m.characteristic_id) === 'soquete')
     .map((m) => m.characteristic_id)
 
   const productImages: GalleryImage[] = (imgData ?? []).map((i) => ({
@@ -85,12 +88,13 @@ export default async function EditProductPage({ params }: Props) {
       <ProductEditor
         categories={categories}
         characteristics={characteristics}
+        specLabels={specLabels}
+        specValues={specValues}
         product={product as Product}
         productPrimaryCategoryId={productPrimaryCategoryId}
         productSecondaryCategoryIds={productSecondaryCategoryIds}
         productPrimaryMaterialId={productPrimaryMaterialId}
         productSecondaryMaterialIds={productSecondaryMaterialIds}
-        productSoqueteIds={productSoqueteIds}
         productImages={productImages}
       />
     </div>

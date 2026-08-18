@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, FileText, Sparkles, Tag, LogOut, Zap, ShoppingBag, Bot, Settings, HardDrive, ScrollText, PackagePlus, SlidersHorizontal, Users, FolderPlus, FolderKanban, FileDown, Inbox } from 'lucide-react'
+import { ChevronDown, LayoutDashboard, FileText, Sparkles, Tag, LogOut, Zap, ShoppingBag, Settings, HardDrive, ScrollText, PackagePlus, SlidersHorizontal, Users, FolderPlus, FolderKanban, FileDown, Inbox, ListChecks } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { logoutAction } from '@/server/auth.actions'
 import { AreaSwitcher } from '@/components/admin/area-switcher'
@@ -21,6 +21,8 @@ type NavItem = {
   href: string
   icon: React.ComponentType<{ size?: number; strokeWidth?: number }>
   exact?: boolean
+  // Pinta o item na cor de destaque, para a ação principal de um grupo.
+  accent?: boolean
 }
 
 const MAIN_NAV: NavItem[] = [
@@ -50,23 +52,32 @@ const USERS_NAV: NavItem[] = [
   { label: 'Usuários', href: '/admin/users', icon: Users },
 ]
 
-// ---- Produtos area nav (isolated from blog) — Projetos vive aqui dentro ----
-const PRODUCT_MAIN_NAV: NavItem[] = [
+// ---- Área Produtos (isolada do blog) ----
+// Quatro grupos por assunto, em vez da divisão anterior por tipo de ação
+// (listagens de um lado, criação de outro): assim cada entidade fica com a
+// listagem e o "novo" lado a lado, e o que não pertence a nenhuma das duas
+// cai em Outros.
+const PRODUCT_NAV: NavItem[] = [
   { label: 'Dashboard', href: '/admin/products', icon: LayoutDashboard, exact: true },
-  { label: 'Projetos', href: '/admin/projects', icon: FolderKanban },
+  // accent: é a ação mais frequente da área e ganha destaque de cor.
+  { label: 'Novo Produto', href: '/admin/products/new', icon: PackagePlus, accent: true },
   { label: 'Categorias', href: '/admin/products/product-categories', icon: Tag },
-  { label: 'Especificações', href: '/admin/products/characteristics', icon: SlidersHorizontal },
-  { label: 'Leads', href: '/admin/leads', icon: Inbox },
-  { label: 'Catálogo (PDF)', href: '/admin/catalog', icon: FileDown },
-]
-
-const PRODUCT_CREATE_NAV: NavItem[] = [
-  { label: 'Novo Produto', href: '/admin/products/new', icon: PackagePlus },
-  { label: 'Novo Projeto', href: '/admin/projects/new', icon: FolderPlus },
+  { label: 'Filtros', href: '/admin/products/characteristics', icon: SlidersHorizontal },
+  { label: 'Informações Técnicas', href: '/admin/products/specifications', icon: ListChecks },
 ]
 
 const PRODUCT_STORAGE_NAV: NavItem[] = [
   { label: 'Arquivos (R2)', href: '/admin/products/storage', icon: HardDrive },
+]
+
+const PROJECTS_NAV: NavItem[] = [
+  { label: 'Projetos', href: '/admin/projects', icon: FolderKanban, exact: true },
+  { label: 'Novo Projeto', href: '/admin/projects/new', icon: FolderPlus, accent: true },
+]
+
+const OTHERS_NAV: NavItem[] = [
+  { label: 'Leads', href: '/admin/leads', icon: Inbox, accent: true },
+  { label: 'Catálogo (PDF)', href: '/admin/catalog', icon: FileDown },
 ]
 
 const ROLE_LABEL: Record<UserRole, string> = {
@@ -78,6 +89,30 @@ const ROLE_LABEL: Record<UserRole, string> = {
 export const Sidebar = ({ userName, userEmail, userRole }: SidebarProps) => {
   const pathname = usePathname()
   const [accountOpen, setAccountOpen] = useState(false)
+
+  // Indicador de que a lista continua abaixo do corte. Sem ele, um item
+  // parcialmente visível no pé da área rolável passa por item cortado por
+  // acaso, e não por "tem mais coisa aqui".
+  const navRef = useRef<HTMLElement>(null)
+  const [hasMore, setHasMore] = useState(false)
+
+  const updateHasMore = useCallback(() => {
+    const el = navRef.current
+    if (!el) return
+    // 1px de tolerância: alturas fracionárias impedem o scrollTop de alcançar
+    // exatamente o limite.
+    setHasMore(el.scrollHeight - el.clientHeight - el.scrollTop > 1)
+  }, [])
+
+  useEffect(() => {
+    updateHasMore()
+    const el = navRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(updateHasMore)
+    ro.observe(el)
+    return () => ro.disconnect()
+    // pathname entra na lista porque a navegação muda de tamanho ao trocar de área.
+  }, [updateHasMore, pathname])
   // Projetos, Catálogo e Leads vivem dentro da área Site (ex-Produtos), então
   // /admin/projects, /admin/catalog e /admin/leads também ativam 'products'.
   const area: 'blog' | 'products' =
@@ -93,13 +128,17 @@ export const Sidebar = ({ userName, userEmail, userRole }: SidebarProps) => {
   // levaria a um redirect.
   const isAdmin = userRole === 'admin'
 
-  const renderLink = ({ label, href, icon: Icon, exact }: NavItem) => {
+  const renderLink = ({ label, href, icon: Icon, exact, accent }: NavItem) => {
     const isActive = exact ? pathname === href : pathname.startsWith(href)
     return (
       <Link
         key={href}
         href={href}
-        className={cn('sidebar-link', isActive && 'sidebar-link--active')}
+        className={cn(
+          'sidebar-link',
+          accent && 'sidebar-link--accent',
+          isActive && 'sidebar-link--active'
+        )}
       >
         <Icon size={16} strokeWidth={1.5} />
         <span>{label}</span>
@@ -119,19 +158,22 @@ export const Sidebar = ({ userName, userEmail, userRole }: SidebarProps) => {
       <AreaSwitcher area={area} />
 
       {/* Navigation — isolated per area */}
-      <nav className="sidebar-nav">
+      <nav className="sidebar-nav" ref={navRef} onScroll={updateHasMore}>
         {area === 'products' ? (
           <>
-            {PRODUCT_MAIN_NAV.map(renderLink)}
+            <span className="sidebar-section-label">Produtos</span>
+            {PRODUCT_NAV.map(renderLink)}
 
-            <div className="sidebar-divider" />
+            <span className="sidebar-section-label">Projetos</span>
+            {PROJECTS_NAV.map(renderLink)}
 
-            <span className="sidebar-section-label">Criação</span>
-            {PRODUCT_CREATE_NAV.map(renderLink)}
+            <span className="sidebar-section-label">Outros</span>
+            {OTHERS_NAV.map(renderLink)}
 
+            {/* Storage por último: é ferramenta de manutenção, não fluxo de
+                trabalho, e só admin enxerga. */}
             {isAdmin && (
               <>
-                <div className="sidebar-divider" />
                 <span className="sidebar-section-label">Storage</span>
                 {PRODUCT_STORAGE_NAV.map(renderLink)}
               </>
@@ -141,36 +183,36 @@ export const Sidebar = ({ userName, userEmail, userRole }: SidebarProps) => {
           <>
             {MAIN_NAV.map(renderLink)}
 
-            <div className="sidebar-divider" />
-
             <span className="sidebar-section-label">Criação</span>
             {CREATE_NAV.map(renderLink)}
 
             {isAdmin && (
               <>
-                <div className="sidebar-divider" />
                 <span className="sidebar-section-label">Storage</span>
                 {STORAGE_NAV.map(renderLink)}
 
-                <div className="sidebar-divider" />
                 <span className="sidebar-section-label">Logs</span>
                 {LOGS_NAV.map(renderLink)}
 
-                <div className="sidebar-divider" />
-                <span className="sidebar-section-label">
-                  <Bot size={13} strokeWidth={1.5} className="inline-block mr-1 opacity-70" />
-                  Automação
-                </span>
+                <span className="sidebar-section-label">Automação</span>
                 {AUTOMATION_NAV.map(renderLink)}
 
-                <div className="sidebar-divider" />
-                <span className="sidebar-section-label">Acesso</span>
-                {USERS_NAV.map(renderLink)}
               </>
             )}
           </>
         )}
       </nav>
+
+      {hasMore && (
+        <div className="sidebar-more" aria-hidden="true">
+          <ChevronDown size={16} strokeWidth={1.5} />
+        </div>
+      )}
+
+      {/* Acesso fica no pé da barra, logo acima do usuário: é configuração de
+          quem entra no painel, não uma das áreas de trabalho. Vale para as
+          duas áreas, e não só para o blog, onde estava antes. */}
+      {isAdmin && <div className="sidebar-access">{USERS_NAV.map(renderLink)}</div>}
 
       {/* User + Logout */}
       <div className="sidebar-footer">

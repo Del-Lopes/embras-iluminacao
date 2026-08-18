@@ -12,36 +12,52 @@ type CaseCard = {
 	title: string
 	location: string
 	image: string
-	// slug != null → o card leva à página do projeto (/projetos/[slug]).
-	slug: string | null
+	slug: string
 }
 
-// Projetos-destaque de fallback (usados enquanto não há projetos cadastrados no
-// admin marcados como destaque). São 5 porque o grid tem 5 posições: um card
-// grande à esquerda ocupando as duas linhas, e quatro menores à direita.
-const FALLBACK_CASES: CaseCard[] = [
-	{ title: 'Mansão Alpha', location: 'São Paulo', image: '/images/case-1.png', slug: null },
-	{ title: 'Fazenda Aurora', location: 'Minas Gerais', image: '/images/hero.png', slug: null },
-	{ title: 'Apartamento Garden', location: 'Rio de Janeiro', image: '/images/case-1.png', slug: null },
-	{ title: 'Residência Moderna', location: 'Curitiba', image: '/images/hero.png', slug: null },
-	{ title: 'Cobertura Vista', location: 'Florianópolis', image: '/images/case-1.png', slug: null },
-]
+// Cada posição do grid é colocada explicitamente (a partir de lg, onde as três
+// colunas existem). Sem isso o grid preencheria por linha, e uma posição vazia
+// empurraria as seguintes para o lugar errado: faltando o card do centro-topo,
+// o da direita subiria para o buraco. Abaixo de lg as classes não valem e os
+// cards fluem na ordem do DOM, que é a numeração do admin.
+//
+// `direction` é a borda de onde a peça entra na animação, escolhida pela borda
+// mais próxima do destino final.
+const SLOT_LAYOUT = [
+	{ area: 'lg:col-start-1 lg:row-start-1 lg:row-span-2', direction: 'left' },
+	{ area: 'lg:col-start-2 lg:row-start-1', direction: 'top' },
+	{ area: 'lg:col-start-2 lg:row-start-2', direction: 'bottom' },
+	{ area: 'lg:col-start-3 lg:row-start-1', direction: 'right' },
+	{ area: 'lg:col-start-3 lg:row-start-2', direction: 'right' },
+] as const
 
 type Props = {
-	featured?: ProjectCardData[]
+	// Uma entrada por posição do grid, já na ordem do admin (1 a 5). null numa
+	// posição significa que não havia projeto publicado para preenchê-la.
+	slots?: (ProjectCardData | null)[]
 	recent?: ProjectCardData[]
 }
 
-export default function SuccessCases({ featured = [], recent = [] }: Props) {
-	// Grid principal: destaques vindos do admin (is_featured), completados com os
-	// fallbacks até fechar as 5 posições do layout.
-	const featuredCases: CaseCard[] = featured.map((p) => ({
-		title: p.name,
-		location: p.location ?? '',
-		image: p.cover_image || '/images/case-1.png',
-		slug: p.slug,
-	}))
-	const cases: CaseCard[] = [...featuredCases, ...FALLBACK_CASES].slice(0, 5)
+export default function SuccessCases({ slots = [], recent = [] }: Props) {
+	// Só projetos cadastrados: uma posição sem projeto fica vazia mesmo, em vez
+	// de exibir um card de exemplo que não existe no admin nem leva a lugar
+	// nenhum.
+	const cases = slots
+		.slice(0, SLOT_LAYOUT.length)
+		.map((p, i) =>
+			p
+				? {
+						card: {
+							title: p.name,
+							location: p.location ?? '',
+							image: p.cover_image || '/images/case-1.png',
+							slug: p.slug,
+						} satisfies CaseCard,
+						layout: SLOT_LAYOUT[i],
+					}
+				: null
+		)
+		.filter((entry): entry is NonNullable<typeof entry> => !!entry)
 
 	return (
 		<section
@@ -69,80 +85,67 @@ export default function SuccessCases({ featured = [], recent = [] }: Props) {
 			    o primeiro card ocupando a coluna larga inteira. Em telas menores
 			    vira 2 colunas e, no celular, uma só.
 
-			    A antiga coreografia (linhas em cruz varrendo o grid + selo
-			    central) saiu por completo; a entrada agora é o GridReveal. */}
-			{/* Direções na ordem do grid — cada peça entra pela borda mais
-			    próxima da sua posição final:
-			      1 (coluna larga, à esquerda) ← esquerda
-			      2 (topo, centro)             ← cima
-			      3 (topo, direita)            ← direita
-			      4 (base, centro)             ← baixo
-			      5 (base, direita)            ← direita
-			    O overflow-hidden da <section> impede que o deslocamento inicial
-			    gere barra de rolagem horizontal. */}
-			<GridReveal
-				directions={['left', 'top', 'right', 'bottom', 'right']}
-				className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr] lg:grid-rows-2 gap-4 lg:h-160"
-			>
-				{cases.map((item, index) => {
-					const inner = (
-						<>
-							<Image
-								src={item.image}
-								alt={item.title}
-								fill
-								sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-								// Dessaturada e apagada em repouso; ganha cor, luz e um
-								// zoom leve no hover. Mesma transição de 1s do original.
-								className="object-cover opacity-50 grayscale contrast-[1.1] transition-all duration-1000 group-hover:opacity-85 group-hover:grayscale-0 group-hover:contrast-100 group-hover:scale-[1.04]"
-							/>
+			    Cada peça entra pela borda mais próxima do destino (ver
+			    SLOT_LAYOUT). O overflow-hidden da <section> impede que o
+			    deslocamento inicial gere barra de rolagem horizontal. */}
+			{cases.length > 0 && (
+				<GridReveal
+					directions={cases.map((entry) => entry.layout.direction)}
+					className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr] lg:grid-rows-2 gap-4 lg:h-160"
+				>
+					{cases.map(({ card: item, layout }, index) => {
+						const inner = (
+							<>
+								<Image
+									src={item.image}
+									alt={item.title}
+									fill
+									sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+									// Dessaturada e apagada em repouso; ganha cor, luz e um
+									// zoom leve no hover. Mesma transição de 1s do original.
+									className="object-cover opacity-50 grayscale contrast-[1.1] transition-all duration-1000 group-hover:opacity-85 group-hover:grayscale-0 group-hover:contrast-100 group-hover:scale-[1.04]"
+								/>
 
-							{/* Véu escuro fixo: garante contraste do texto sobre
-							    qualquer foto, clara ou escura. */}
-							<div className="absolute inset-0 bg-linear-to-t from-[#050505]/85 via-[#050505]/10 to-[#050505]/50 pointer-events-none" />
+								{/* Véu escuro fixo: garante contraste do texto sobre
+								    qualquer foto, clara ou escura. */}
+								<div className="absolute inset-0 bg-linear-to-t from-[#050505]/85 via-[#050505]/10 to-[#050505]/50 pointer-events-none" />
 
-							{/* Faixa de luz que varre o card no hover. */}
-							<div className="absolute inset-0 bg-linear-to-br from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
+								{/* Faixa de luz que varre o card no hover. */}
+								<div className="absolute inset-0 bg-linear-to-br from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
 
-							{/* transform-gpu mantém este bloco SEMPRE na própria camada
-							    de composição. Sem ele, as animações de transform da
-							    imagem e da faixa de luz (1000ms) promovem o conteúdo
-							    do card a uma camada temporária durante o hover: ali o
-							    texto troca de antialiasing subpixel para escala de
-							    cinza, o que aparenta mudança de peso, e volta ao
-							    normal quando a camada é descartada. Com a camada
-							    fixa, o modo de renderização nunca alterna. */}
-							<div className="absolute left-6 right-6 bottom-6 z-10 flex flex-col gap-1.5 pointer-events-none transform-gpu">
-								{item.location && (
-									<span className="text-[11px] uppercase tracking-[0.25em] text-(--color-highlight)">
-										{item.location}
+								{/* transform-gpu mantém este bloco SEMPRE na própria camada
+								    de composição. Sem ele, as animações de transform da
+								    imagem e da faixa de luz (1000ms) promovem o conteúdo
+								    do card a uma camada temporária durante o hover: ali o
+								    texto troca de antialiasing subpixel para escala de
+								    cinza, o que aparenta mudança de peso, e volta ao
+								    normal quando a camada é descartada. Com a camada
+								    fixa, o modo de renderização nunca alterna. */}
+								<div className="absolute left-6 right-6 bottom-6 z-10 flex flex-col gap-1.5 pointer-events-none transform-gpu">
+									{item.location && (
+										<span className="text-[11px] uppercase tracking-[0.25em] text-(--color-highlight)">
+											{item.location}
+										</span>
+									)}
+									{/* Libre Franklin: a fonte da home, e não a da landing
+									    /postes, de onde veio só o layout. */}
+									<span className="font-(family-name:--font-libre) font-medium text-lg lg:text-[22px] leading-tight tracking-tight text-white">
+										{item.title}
 									</span>
-								)}
-								{/* Libre Franklin: a fonte da home, e não a da landing
-								    /postes, de onde veio só o layout. */}
-								<span className="font-(family-name:--font-libre) font-medium text-lg lg:text-[22px] leading-tight tracking-tight text-white">
-									{item.title}
-								</span>
-							</div>
-						</>
-					)
+								</div>
+							</>
+						)
 
-					// O primeiro card ocupa as duas linhas da coluna larga.
-					const cardClass = `group relative overflow-hidden bg-[#0f0f0f] border border-white/10 min-h-[260px] lg:min-h-0 ${
-						index === 0 ? 'lg:row-span-2' : ''
-					}`
+						const cardClass = `group relative overflow-hidden bg-[#0f0f0f] border border-white/10 min-h-[260px] lg:min-h-0 ${layout.area}`
 
-					return item.slug ? (
-						<Link key={`${item.title}-${index}`} href={`/projetos/${item.slug}`} className={cardClass}>
-							{inner}
-						</Link>
-					) : (
-						<div key={`${item.title}-${index}`} className={cardClass}>
-							{inner}
-						</div>
-					)
-				})}
-			</GridReveal>
+						return (
+							<Link key={`${item.title}-${index}`} href={`/projetos/${item.slug}`} className={cardClass}>
+								{inner}
+							</Link>
+						)
+					})}
+				</GridReveal>
+			)}
 
 			{/* Botão "Ver mais projetos" → listagem paginada */}
 			<div className="mt-12.5 md:mt-16 flex justify-center">

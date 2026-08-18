@@ -30,9 +30,7 @@ export function ProductSpecs({ product, characteristics = [] }: Props) {
 
   // Materiais em uma linha única (principal + secundários, mesma lista).
   const materiais = namesOf('material')
-  const soquete = namesOf('soquete')
   if (materiais) rows.push({ label: materiais.includes(',') ? 'Materiais' : 'Material', value: materiais })
-  if (soquete) rows.push({ label: 'Tipo de soquete', value: soquete })
 
   return (
     <section className="product-specs">

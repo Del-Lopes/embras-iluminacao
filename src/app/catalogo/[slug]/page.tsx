@@ -10,6 +10,8 @@ import { RelatedProducts } from '@/components/catalog/RelatedProducts'
 import { ProductModelViewer } from '@/components/catalog/ProductModelViewer'
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
 import { LEAD_FILE_LABEL } from '@/lib/leads'
+import { findAdjacentSlugs } from '@/lib/utils/adjacent'
+import { AdjacentNav } from '@/components/common/AdjacentNav'
 import type { Product, ProductCharacteristic } from '@/lib/db/schema'
 import type { ProductCardData } from '@/components/catalog/ProductCard'
 
@@ -132,22 +134,37 @@ export default async function ProductDetailPage({ params }: Props) {
     whatsapp: `https://wa.me/?text=${encodedTitle}%20${encodedUrl}`,
   }
 
+  // Vizinhos na ordem padrão da listagem (/catalogo): mais recentes primeiro.
+  const { data: orderData } = await supabase
+    .from('products')
+    .select('slug')
+    .eq('status', 'published')
+    .order('published_at', { ascending: false })
+  const { prev, next } = findAdjacentSlugs(
+    (orderData ?? []).map((r) => r.slug as string),
+    product.slug
+  )
+
   const hasDescription = !!product.description && product.description.replace(/<[^>]*>/g, '').trim().length > 0
 
-  // ---- Aba "Informações Técnicas": specs base + linhas flexíveis (tech_specs) ----
+  // ---- Aba "Informações Técnicas" ----
+  // Duas tabelas separadas: uma só de dimensões, outra com o restante. São
+  // grandezas de natureza diferente (medida física do objeto contra
+  // característica técnica), e no layout lado a lado misturá-las obrigaria o
+  // leitor a garimpar as medidas no meio das especificações.
+  const dimensionRows: SpecRow[] = []
+  if (product.height_cm != null) dimensionRows.push({ label: 'Altura', value: `${product.height_cm} cm` })
+  if (product.width_cm != null) dimensionRows.push({ label: 'Largura', value: `${product.width_cm} cm` })
+  if (product.depth_cm != null) dimensionRows.push({ label: 'Profundidade', value: `${product.depth_cm} cm` })
+  if (product.weight_kg != null) dimensionRows.push({ label: 'Peso', value: `${product.weight_kg} kg` })
+
   const ENV_LABEL: Record<string, string> = { interno: 'Área interna', externo: 'Área externa' }
-  const baseRows: SpecRow[] = [
+  const techRows: SpecRow[] = [
     { label: 'Área de uso', value: ENV_LABEL[product.environment] ?? product.environment },
   ]
-  if (product.height_cm != null) baseRows.push({ label: 'Altura', value: `${product.height_cm} cm` })
-  if (product.width_cm != null) baseRows.push({ label: 'Largura', value: `${product.width_cm} cm` })
-  if (product.depth_cm != null) baseRows.push({ label: 'Profundidade', value: `${product.depth_cm} cm` })
-  if (product.weight_kg != null) baseRows.push({ label: 'Peso', value: `${product.weight_kg} kg` })
   const materiais = characteristics.filter((c) => c.type === 'material').map((c) => c.name).join(', ')
-  const soquete = characteristics.filter((c) => c.type === 'soquete').map((c) => c.name).join(', ')
-  if (materiais) baseRows.push({ label: materiais.includes(',') ? 'Materiais' : 'Material', value: materiais })
-  if (soquete) baseRows.push({ label: 'Tipo de soquete', value: soquete })
-  const techRows: SpecRow[] = [...baseRows, ...((product.tech_specs ?? []) as SpecRow[])]
+  if (materiais) techRows.push({ label: materiais.includes(',') ? 'Materiais' : 'Material', value: materiais })
+  techRows.push(...((product.tech_specs ?? []) as SpecRow[]))
 
   // ---- Aba "Arquivos para download": 3 slots ----
   const files: ProductTabFile[] = []
@@ -163,6 +180,10 @@ export default async function ProductDetailPage({ params }: Props) {
       <Header variant="solid" />
 
       <article className="product-detail">
+        {/* Navegação entre produtos: container próprio acima do conteúdo, para
+            não empurrar a galeria e desalinhá-la do texto ao lado. */}
+        <AdjacentNav prevHref={prev ? `/catalogo/${prev}` : null} nextHref={next ? `/catalogo/${next}` : null} />
+
         <div className="product-detail-top">
           {/* Gallery */}
           <ProductGallery
@@ -224,7 +245,7 @@ export default async function ProductDetailPage({ params }: Props) {
             productId={product.id}
             productName={product.name}
             techRows={techRows}
-            features={product.features ?? []}
+            dimensionRows={dimensionRows}
             applications={product.applications}
             files={files}
           />

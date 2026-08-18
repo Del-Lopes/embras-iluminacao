@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
-import { getProjects } from '@/server/project.actions'
+import { getProjects, getProjectLocations } from '@/server/project.actions'
 import { ProjectTableToolbar } from '@/components/admin/project-table-toolbar'
 import { ProjectDataTable } from '@/components/admin/project-data-table'
 import type { ProjectStatus } from '@/lib/db/schema'
@@ -17,6 +17,10 @@ type SearchParams = Promise<{
   q?: string
   sort?: string
   dir?: string
+  location?: string
+  from?: string
+  to?: string
+  featured?: string
 }>
 
 export default async function ProjectsDashboardPage({
@@ -30,6 +34,10 @@ export default async function ProjectsDashboardPage({
   const q = params.q ?? ''
   const sort = params.sort ?? ''
   const dir = params.dir ?? ''
+  const location = params.location ?? ''
+  const from = params.from ?? ''
+  const to = params.to ?? ''
+  const featured = params.featured ?? ''
 
   const supabase = await createSupabaseServerClient()
 
@@ -38,11 +46,15 @@ export default async function ProjectsDashboardPage({
     { count: publishedProjects },
     { count: draftProjects },
     projectsResult,
+    locations,
   ] = await Promise.all([
     supabase.from('projects').select('*', { count: 'exact', head: true }),
     supabase.from('projects').select('*', { count: 'exact', head: true }).eq('status', 'published'),
     supabase.from('projects').select('*', { count: 'exact', head: true }).eq('status', 'draft'),
-    getProjects({ page, status, q, sort, dir }),
+    getProjects({ page, status, q, sort, dir, location, from, to, featured }),
+    // Opções do filtro de local: sempre a lista completa, e não só a dos
+    // projetos filtrados, senão escolher um local esvaziaria o próprio select.
+    getProjectLocations(),
   ])
 
   // Preserva filtros + sort para os links de paginação / ordenação.
@@ -51,6 +63,10 @@ export default async function ProjectsDashboardPage({
   if (params.q) rawParams.q = params.q
   if (params.sort) rawParams.sort = params.sort
   if (params.dir) rawParams.dir = params.dir
+  if (params.location) rawParams.location = params.location
+  if (params.from) rawParams.from = params.from
+  if (params.to) rawParams.to = params.to
+  if (params.featured) rawParams.featured = params.featured
 
   return (
     <div className="dashboard-page">
@@ -81,7 +97,15 @@ export default async function ProjectsDashboardPage({
         </div>
       </div>
 
-      <ProjectTableToolbar currentStatus={status} currentQ={q} />
+      <ProjectTableToolbar
+        currentStatus={status}
+        currentQ={q}
+        currentLocation={location}
+        currentFrom={from}
+        currentTo={to}
+        currentFeatured={featured}
+        locations={locations}
+      />
 
       <ProjectDataTable
         projects={projectsResult.projects}

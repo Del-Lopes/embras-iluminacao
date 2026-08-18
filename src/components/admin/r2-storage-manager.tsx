@@ -14,7 +14,10 @@ import { useConfirm } from '@/components/ui/confirm-dialog'
 const PAGE_SIZE = 100
 
 // Pastas-base do sistema — não podem ser excluídas pelo gerenciador.
-const PROTECTED_FOLDERS = new Set(['modelos_3d/', 'produtos/'])
+// Pastas-base do sistema: existem sempre e não podem ser excluídas. A mesma
+// lista está em deleteR2Folder (upload.actions.ts), que é quem de fato barra;
+// aqui ela só evita oferecer um botão que o servidor vai recusar.
+const PROTECTED_FOLDERS = new Set(['modelos_3d/', 'produtos/', 'projetos/', 'catalogo/'])
 
 const isImageKey = (key: string) => /\.(jpe?g|png|webp|gif|avif)$/i.test(key)
 

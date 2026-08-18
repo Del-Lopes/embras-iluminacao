@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
 import { ProductEditor } from '@/components/admin/product-editor'
+import { listProductSpecLabels } from '@/server/product-spec-label.actions'
+import { listProductSpecValues } from '@/server/product-spec-value.actions'
 import { flattenCategoryTree } from '@/lib/utils/category-tree'
 import type { ProductCategory, ProductCharacteristic } from '@/lib/db/schema'
 
@@ -28,6 +30,10 @@ export default async function NewProductPage() {
 
   const categories = flattenCategoryTree((data ?? []) as ProductCategory[])
   const characteristics = (charData ?? []) as ProductCharacteristic[]
+  const [specLabels, specValues] = await Promise.all([
+    listProductSpecLabels(),
+    listProductSpecValues(),
+  ])
 
   return (
     <div className="editor-page">
@@ -37,7 +43,12 @@ export default async function NewProductPage() {
         <p className="dashboard-subtitle">Cadastre um item do catálogo de amostra</p>
       </div>
 
-      <ProductEditor categories={categories} characteristics={characteristics} />
+      <ProductEditor
+        categories={categories}
+        characteristics={characteristics}
+        specLabels={specLabels}
+        specValues={specValues}
+      />
     </div>
   )
 }

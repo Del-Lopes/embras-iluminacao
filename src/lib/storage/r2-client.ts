@@ -14,7 +14,7 @@
 // ============================================================
 
 import 'server-only'
-import { S3Client, DeleteObjectsCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
+import { S3Client, DeleteObjectsCommand, ListObjectsV2Command, PutObjectCommand } from '@aws-sdk/client-s3'
 
 const ACCOUNT_ID = process.env.R2_ACCOUNT_ID
 const ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID
@@ -119,4 +119,28 @@ export const deleteR2Prefix = async (prefix: string): Promise<number> => {
   if (!keys.length) return 0
   await deleteR2Objects(keys)
   return keys.length
+}
+
+// Nome do objeto vazio que materializa uma pasta. O R2 (como o S3) não tem
+// pastas de verdade: um prefixo só "existe" enquanto houver algum objeto
+// abaixo dele. Sem o marcador, uma pasta recém-criada e ainda sem arquivos
+// simplesmente não aparece no navegador de arquivos, e a pasta raiz some
+// inteira quando o último arquivo é apagado.
+export const FOLDER_MARKER = '.keep'
+
+export const isFolderMarker = (key: string) => key.endsWith('/' + FOLDER_MARKER)
+
+// Cria a pasta (idempotente): grava um objeto de zero byte no marcador. Se já
+// existir, o PUT apenas o sobrescreve pelo mesmo conteúdo vazio.
+export const ensureR2Folder = async (prefix: string): Promise<void> => {
+	const clean = prefix.replace(/^\/+/, '')
+	if (!clean || !clean.endsWith('/')) return
+	await r2Client.send(
+		new PutObjectCommand({
+			Bucket: R2_BUCKET,
+			Key: clean + FOLDER_MARKER,
+			Body: '',
+			ContentType: 'application/x-directory',
+		})
+	)
 }

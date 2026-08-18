@@ -10,6 +10,7 @@
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { toTitleCase } from '@/lib/utils/title-case'
 
 const PRODUCT_CATEGORIES_PATH = '/admin/products/product-categories'
 
@@ -46,7 +47,10 @@ export const createProductCategoryAction = async (
     return { error: parsed.error.issues[0].message }
   }
 
-  const { name, description, parent_id } = parsed.data
+  // toTitleCase: a lista é vista lado a lado no admin e no catálogo, então a
+  // capitalização entra padronizada em vez de depender de quem digitou.
+  const name = toTitleCase(parsed.data.name)
+  const { description, parent_id } = parsed.data
   const slug = slugify(name)
 
   if (!slug) return { error: 'Nome inválido para gerar o slug' }

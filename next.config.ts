@@ -50,7 +50,16 @@ const securityHeaders = [
       // injects inline scripts for hydration. 'wasm-unsafe-eval' allows the
       // <model-viewer> WebAssembly decoders (Draco/meshopt) WITHOUT permitting
       // general eval(). In production, consider nonce-based CSP via middleware.
-      "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
+      //
+      // 'unsafe-eval' SÓ em desenvolvimento: o webpack em modo dev compila os
+      // bundles com eval() para gerar source maps, e sem isso o CSP bloqueia o
+      // script, o React não hidrata e a página fica sem interatividade nenhuma
+      // (botões e drawers mortos). O Turbopack não usa eval, então o problema
+      // só aparece com `next dev --webpack`.
+      // A build de produção nunca passa por aqui: NODE_ENV é 'production'.
+      `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${
+        process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""
+      }`,
       "style-src 'self' 'unsafe-inline'",
       `img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com ${r2PublicOrigin}`,
       "font-src 'self' https://fonts.gstatic.com",

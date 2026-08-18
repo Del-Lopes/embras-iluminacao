@@ -2,7 +2,7 @@
 
 // ================================================================
 // product-characteristic.actions.ts
-// CRUD das características de produto (Materiais e Tipo de Soquete).
+// CRUD das características de produto (hoje só Materiais).
 // Espelha product-category.actions.ts: slug único (por tipo), escrita
 // gated por RLS (admin/editor).
 // ================================================================
@@ -11,6 +11,7 @@ import { createSupabaseServerClient } from '@/lib/db/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import type { ProductCharacteristicType } from '@/lib/db/schema'
+import { toTitleCase } from '@/lib/utils/title-case'
 
 const CHARACTERISTICS_PATH = '/admin/products/characteristics'
 
@@ -22,7 +23,7 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
 
-const TYPES = ['material', 'soquete'] as const
+const TYPES = ['material'] as const
 
 // ================================================================
 // createProductCharacteristicAction
@@ -45,7 +46,10 @@ export const createProductCharacteristicAction = async (
     return { error: parsed.error.issues[0].message }
   }
 
-  const { name, type } = parsed.data
+  // toTitleCase: a lista aparece como filtro no catálogo, então a
+  // capitalização entra padronizada em vez de depender de quem digitou.
+  const { type } = parsed.data
+  const name = toTitleCase(parsed.data.name)
   const slug = slugify(name)
   if (!slug) return { error: 'Valor inválido para gerar o slug' }
 
