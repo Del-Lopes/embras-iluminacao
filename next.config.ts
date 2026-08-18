@@ -40,7 +40,12 @@ const securityHeaders = [
   },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+    // camera e xr-spatial-tracking liberados para a PRÓPRIA origem: o AR do
+    // <model-viewer> por WebXR (Android/Chrome) precisa dos dois, e com
+    // camera=() a sessão nem chega a ser pedida. Continuam negados para
+    // iframes de terceiros, que é o que o vazio garantia.
+    value:
+      "camera=(self), microphone=(), geolocation=(), interest-cohort=(), xr-spatial-tracking=(self)",
   },
   {
     key: "Content-Security-Policy",
