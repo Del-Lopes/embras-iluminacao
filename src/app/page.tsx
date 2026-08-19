@@ -1,4 +1,4 @@
-import HeroProductsWrapper from '@/sections/HeroProductsWrapper'
+import HeroSlider from '@/sections/HeroSlider'
 import CompanyStats from '@/sections/CompanyStats'
 import ProductLines, { type ProductLine } from '@/sections/ProductLines'
 import SuccessCases from '@/sections/SuccessCases'
@@ -10,6 +10,7 @@ import TestimonialsBackdrop from '@/sections/TestimonialsBackdrop'
 import Footer from '@/components/layout/Footer'
 import Header from '@/components/layout/Header'
 import { getHomeProjects, getRecentProjects } from '@/server/project.actions'
+import { getHeroSlides } from '@/server/hero.actions'
 
 // A seção de produtos passou a exibir CATEGORIAS estáticas com link para o
 // catálogo, em vez do carrossel de produtos. Com isso as duas consultas que
@@ -23,6 +24,10 @@ const AREAS: ProductLine[] = [
 export default async function Home() {
   // O grid da home vem resolvido em posições; os cards menores excluem quem já
   // apareceu lá em cima, e por isso dependem do primeiro resultado.
+  // Slides do hero: o par projeto + produto vem de src/config/hero-slides.ts,
+  // e aqui só as imagens e o link são resolvidos no banco.
+  const heroSlides = await getHeroSlides()
+
   const homeSlots = await getHomeProjects()
   const recentProjects = await getRecentProjects(
     homeSlots.filter((p): p is NonNullable<typeof p> => !!p).map((p) => p.id)
@@ -36,7 +41,7 @@ export default async function Home() {
           posicionamento absoluto do header no topo da página. */}
       <Header variant="overlay" />
       <div id="project-preview">
-        <HeroProductsWrapper />
+        <HeroSlider slides={heroSlides} />
         <CompanyStats />
         <ProductLines lines={AREAS} defaultActive="externo" />
         <SuccessCases slots={homeSlots} recent={recentProjects} />

@@ -246,11 +246,11 @@ export default function Header({
 				className={cn(
 					'w-full z-50',
 					overlay
-						// Home: sobre o hero. Fundo black/20 só no mobile (< lg) — teste;
-						// no desktop segue transparente.
-						// Home: sobre o hero. Fundo black/20 só no mobile (< lg) — teste;
-							// no desktop segue transparente.
-							? 'absolute top-0 left-0 bg-black/10 lg:bg-transparent'
+						// Home: sobre o hero, transparente em qualquer largura. O véu
+						// preto que existia abaixo de lg saiu: o slider já tem a foto
+						// escurecida por trás do menu, e a faixa aparecia como um
+						// degrau de cor no topo.
+						? 'absolute top-0 left-0 bg-transparent'
 						: 'relative bg-(--color-bg) border-b border-(--color-border)'
 				)}
 			>

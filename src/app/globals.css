@@ -7147,3 +7147,434 @@ html:not(.light) .wwa-card {
 
 
 
+
+/* ================================================================
+   HERO SLIDER (home)
+   Um slide por vez: foto de projeto à esquerda, produto à direita.
+   A troca move os PAINÉIS inteiros, e os textos, por morarem dentro
+   deles, viajam junto. Ver src/sections/HeroSlider.tsx.
+   ================================================================ */
+.hero-slider {
+	position: relative;
+	width: 100%;
+	/* dvh: no celular o vh ignora a barra do navegador e o slide nasce mais
+	   alto do que a tela, empurrando o conteúdo seguinte para fora do lugar. */
+	height: 100vh;
+	height: 100dvh;
+	/* Os painéis encolhem e deslizam para fora da moldura na transição: sem o
+	   corte aqui eles apareceriam por cima da seção de baixo. */
+	overflow: hidden;
+	background-color: #14110f;
+}
+
+.hero-slide {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	/* Estado inicial antes de o GSAP assumir: só o primeiro à vista. Sem isto,
+	   o intervalo entre o HTML chegar e o script rodar mostra os três
+	   empilhados, e quem fica por cima é o último. */
+	opacity: 0;
+	visibility: hidden;
+}
+
+.hero-slide:first-of-type {
+	opacity: 1;
+	visibility: visible;
+}
+
+/* Degradê do slide: tela inteira, atrás das duas colunas. Ele é o elemento
+   que sobe na transição, e por cobrir tudo é ele quem engole o slide anterior,
+   inclusive a coluna da direita, que por isso não tem fundo próprio. */
+.hero-bg {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	will-change: transform;
+}
+
+.hero-panel {
+	position: relative;
+	z-index: 1;
+	overflow: hidden;
+	/* O navegador mantém o painel na própria camada durante a troca, em vez de
+	   promover e descartar a cada slide. */
+	will-change: clip-path;
+}
+
+.hero-panel-img {
+	object-fit: cover;
+	/* O corte puxa para o alto do quadro. A coluna é quase quadrada na prática
+	   (metade da largura por uma altura de janela, não de tela), e as fotos são
+	   verticais, então o cover corta cerca de 20% da altura. Centralizado, ele
+	   tirava metade disso do topo e comia as peças, que é justamente o que
+	   precisa aparecer; embaixo sobra só piso. */
+	object-position: 50% 25%;
+}
+
+/* Véu sobre a foto: as fotos de projeto variam demais para o texto branco
+   apostar que vai cair numa área escura. */
+.hero-panel-veil {
+	position: absolute;
+	inset: 0;
+	/* Base uniforme: as fotos variam demais para o texto branco apostar no
+	   acaso de cair numa área escura. */
+	background-color: rgba(0, 0, 0, 0.16);
+	background-image:
+		/* Mancha suave atrás do título. O degradê vertical sozinho deixava o
+		   meio da foto como a parte MAIS clara, que é justamente onde o texto
+		   fica; esta camada inverte isso sem escurecer a cena inteira. */
+		radial-gradient(
+			ellipse 85% 50% at 50% 45%,
+			rgba(0, 0, 0, 0.24) 0%,
+			rgba(0, 0, 0, 0) 72%
+		),
+		linear-gradient(
+			to bottom,
+			rgba(0, 0, 0, 0.3) 0%,
+			rgba(0, 0, 0, 0.1) 45%,
+			rgba(0, 0, 0, 0.35) 100%
+		);
+}
+
+.hero-left-content,
+.hero-right-content {
+	position: relative;
+	z-index: 2;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	padding: 0 24px;
+}
+
+.hero-right-content {
+	gap: 28px;
+	padding: 0 40px;
+}
+
+/* Máscara da entrada: o conteúdo começa deslocado e sobe de dentro dela, então
+   nada aparece antes da hora nem transborda para o slide vizinho. */
+.hero-mask {
+	overflow: hidden;
+	max-width: 100%;
+}
+
+/* A moldura de vidro é interna à peça, então a máscara não precisa mais de
+   folga em volta: ela recorta exatamente na borda do cartão. */
+
+.hero-headline {
+	font-family: var(--font-heading);
+	font-weight: 500;
+	text-transform: uppercase;
+	color: #ffffff;
+	font-size: clamp(44px, 6.5vw, 120px);
+	line-height: 1;
+	letter-spacing: -0.02em;
+	margin: 0;
+	/* O acento sobe acima da altura das maiúsculas, e com line-height 1 ele
+	   ficava fora da caixa da linha, cortado pela máscara de entrada, que tem
+	   overflow hidden. A folga vai em em para acompanhar o tamanho da fonte em
+	   qualquer tela. */
+	padding-top: 0.14em;
+}
+
+.hero-tagline {
+	font-family: var(--font-body);
+	text-transform: uppercase;
+	color: rgba(255, 255, 255, 0.72);
+	font-size: 13px;
+	letter-spacing: 0.32em;
+	margin: 18px 0 0;
+}
+
+/* Moldura de vidro do produto. O padding É a espessura da moldura: a foto fica
+   por cima, recuada, e o vidro aparece em volta dela.
+
+   Só a propriedade padrão do backdrop-filter, sem o prefixo escrito à mão: o
+   compilador emite o -webkit- sozinho, e escrever os dois faz o segundo
+   SUBSTITUIR o primeiro na saída, matando o desfoque. */
+.hero-glass {
+	position: relative;
+	width: min(30vw, 340px);
+	height: min(52vh, 500px);
+	padding: 14px;
+	background-color: rgba(255, 255, 255, 0.12);
+	backdrop-filter: blur(10px);
+	border: 1px solid rgba(255, 255, 255, 0.3);
+	/* Sem sombra externa: ela ficaria cortada pela máscara de entrada, que
+	   recorta na borda do cartão. O relevo vem das sombras internas. */
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.5),
+		inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+		inset 0 0 10px 5px rgba(255, 255, 255, 0.5);
+	overflow: hidden;
+}
+
+/* Fio de luz correndo pela borda de cima. */
+.hero-glass::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 1px;
+	background-image: linear-gradient(
+		90deg,
+		transparent,
+		rgba(255, 255, 255, 0.8),
+		transparent
+	);
+}
+
+/* E pela borda esquerda, dando o volume do vidro. */
+.hero-glass::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 1px;
+	height: 100%;
+	background-image: linear-gradient(
+		180deg,
+		rgba(255, 255, 255, 0.8),
+		transparent,
+		rgba(255, 255, 255, 0.3)
+	);
+}
+
+/* A foto, por cima do vidro e dos fios de luz. */
+.hero-glass-photo {
+	position: relative;
+	z-index: 1;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+}
+
+.hero-glass-img {
+	object-fit: cover;
+}
+
+.hero-description {
+	font-family: var(--font-body);
+	font-size: 16px;
+	line-height: 1.6;
+	color: rgba(255, 255, 255, 0.92);
+	max-width: 42ch;
+	margin: 0;
+}
+
+/* Botão em cápsula, no desenho da referência: contorno claro que se preenche
+   no hover. */
+.hero-cta {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 220px;
+	padding: 16px 42px;
+	border: 1px solid rgba(255, 255, 255, 0.45);
+	font-family: var(--font-body);
+	font-size: 14px;
+	font-weight: 600;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: #ffffff;
+	transition:
+		background-color 0.3s ease,
+		border-color 0.3s ease,
+		color 0.3s ease;
+}
+
+.hero-cta:hover {
+	background-color: #ffffff;
+	border-color: #ffffff;
+	color: #14110f;
+}
+
+/* Setas: ficam fora dos slides, presas ao slider, senão viajariam junto com o
+   painel na transição. */
+.hero-nav {
+	position: absolute;
+	/* Centralizado na coluna da direita, e não colado na borda: 75% da largura
+	   da tela é o meio da metade direita. */
+	left: 75%;
+	transform: translateX(-50%);
+	bottom: 24px;
+	z-index: 10;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.hero-nav-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	border: none;
+	background: none;
+	color: rgba(255, 255, 255, 0.85);
+	cursor: pointer;
+	transition: color 0.2s ease;
+}
+
+.hero-nav-btn:hover {
+	color: #ffffff;
+}
+
+/* O ícone é um chevron só: quem define o sentido é a rotação. */
+.hero-nav-btn--next svg {
+	transform: rotate(180deg);
+}
+
+/* Divisória entre as duas setas, como na referência. */
+.hero-nav-btn--next {
+	border-left: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Empilhado: a foto do projeto em cima, o produto embaixo. O movimento da
+   transição continua vertical, então a coreografia é a mesma.
+
+   A condição inclui o tablet EM PÉ: com 768px de largura, duas colunas dariam
+   384px cada, estreitas demais para o título e para o cartão. Deitado ele
+   continua no formato de duas colunas, que é onde a altura fica curta. */
+@media (max-width: 900px), (max-width: 1024px) and (orientation: portrait) {
+	.hero-slide {
+		grid-template-columns: 1fr;
+		grid-template-rows: 52% 48%;
+	}
+
+	/* A coluna de baixo deixa de recortar para o cartão do produto poder subir
+	   e cruzar a emenda com a foto. Ela vem depois no documento, então pinta
+	   por cima sem precisar de z-index. */
+	.hero-panel--right {
+		overflow: visible;
+	}
+
+	/* Título na parte de cima da foto: a metade de baixo fica coberta pelo
+	   cartão que sobe. */
+	.hero-left-content {
+		justify-content: flex-start;
+		padding-top: 18vh;
+	}
+
+	.hero-right-content {
+		justify-content: flex-start;
+		gap: 16px;
+		padding: 0 24px;
+	}
+
+	/* Dois terços do cartão ficam acima da emenda, como na referência. O valor
+	   é em vh para acompanhar a altura do próprio cartão, também em vh. */
+	.hero-mask--product {
+		margin-top: -20vh;
+	}
+
+	.hero-glass {
+		width: min(52vw, 210px);
+		height: 30vh;
+		padding: 10px;
+	}
+
+	.hero-headline {
+		font-size: clamp(34px, 9vw, 52px);
+	}
+
+	.hero-tagline {
+		font-size: 11px;
+		letter-spacing: 0.24em;
+		margin-top: 12px;
+	}
+
+	.hero-description {
+		font-size: 14px;
+		line-height: 1.5;
+		max-width: 34ch;
+	}
+
+	.hero-cta {
+		min-width: 0;
+		padding: 13px 30px;
+		font-size: 12px;
+	}
+
+	/* Empilhado, a coluna direita ocupa a largura toda, então o meio dela é o
+	   meio da tela. */
+	.hero-nav {
+		left: 50%;
+		bottom: 16px;
+	}
+
+	.hero-nav-btn {
+		width: 36px;
+		height: 36px;
+	}
+}
+
+/* Anel de progresso do slide, no canto direito. O traço se fecha no mesmo
+   tempo que o slide fica na tela, e ao completar a volta dispara a troca.
+   Ver src/sections/HeroSlider.tsx. */
+.hero-progress {
+	position: absolute;
+	right: 28px;
+	bottom: 28px;
+	z-index: 10;
+	width: 34px;
+	height: 34px;
+}
+
+.hero-progress svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+	/* O traço de um círculo SVG começa às 3 horas; girando o desenho, ele passa
+	   a começar no topo, que é onde o olho espera um contador. */
+	transform: rotate(-90deg);
+}
+
+.hero-progress-track,
+.hero-progress-fill {
+	fill: none;
+	stroke-width: 3.5;
+}
+
+.hero-progress-track {
+	stroke: rgba(255, 255, 255, 0.28);
+}
+
+.hero-progress-fill {
+	stroke: #ffffff;
+	stroke-linecap: round;
+	/* Com pathLength="100" no elemento, o perímetro passa a valer 100 seja qual
+	   for o raio: o traço anda de 100 (vazio) a 0 (volta completa). */
+	stroke-dasharray: 100;
+	stroke-dashoffset: 100;
+}
+
+@media (max-width: 900px), (max-width: 1024px) and (orientation: portrait) {
+	.hero-progress {
+		right: 14px;
+		bottom: 18px;
+		width: 28px;
+		height: 28px;
+	}
+}
+
+/* Botão sem link, enquanto os produtos não existem no catálogo: mantém o
+   desenho, perde o comportamento. Sem cursor de mão e sem troca no hover, que
+   sugeririam um clique que não leva a lugar nenhum. */
+.hero-cta--static {
+	cursor: default;
+}
+
+.hero-cta--static:hover {
+	background-color: transparent;
+	border-color: rgba(255, 255, 255, 0.45);
+	color: #ffffff;
+}
