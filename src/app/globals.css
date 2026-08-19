@@ -4734,7 +4734,11 @@ tr[data-selected='true'] td {
 
 /* Links dentro do corpo do texto. Sem esta regra eles saíam no azul
    sublinhado do navegador, que no tema escuro fica ilegível sobre o fundo. */
-.blog-content a {
+/* Só os links do TEXTO, que saem do editor sem classe nenhuma. Um link com
+   classe é um componente com desenho próprio (o ButtonLink, por exemplo), e a
+   regra abaixo pintava o rótulo dele de azul sobre o fundo azul do botão,
+   deixando o texto invisível na página quem-somos. */
+.blog-content a:not([class]) {
 	color: var(--color-brand-blue);
 	text-decoration: underline;
 	text-underline-offset: 3px;
@@ -4746,7 +4750,7 @@ tr[data-selected='true'] td {
 	overflow-wrap: anywhere;
 }
 
-.blog-content a:hover {
+.blog-content a:not([class]):hover {
 	color: var(--color-highlight);
 	text-decoration-color: var(--color-highlight);
 }
