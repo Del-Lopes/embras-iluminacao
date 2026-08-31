@@ -7,11 +7,20 @@ import { ProjectCard } from '@/components/projects/ProjectCard'
 import { ProjectsSidebar } from '@/components/projects/ProjectsSidebar'
 import { ProjectsControls } from '@/components/projects/ProjectsControls'
 import { getPublishedProjects, getProjectLocations } from '@/server/project.actions'
+import { absoluteUrl } from '@/config/seo'
 
 export const metadata: Metadata = {
-  title: 'Projetos',
+  title: 'Projetos de Iluminação Realizados',
   description:
-    'Portfólio de projetos Embras — intervenções de iluminação que valorizam a arquitetura.',
+    'Projetos de iluminação com produtos Embras: condomínios, áreas externas, fachadas e ambientes comerciais em todo o Brasil. Veja onde nossos postes e luminárias LED foram instalados.',
+  alternates: { canonical: absoluteUrl('/projetos') },
+  openGraph: {
+    title: 'Projetos de Iluminação Realizados | Embras Iluminação',
+    description:
+      'Onde a luz encontra a arquitetura: projetos executados com postes e luminárias LED de fabricação própria.',
+    url: absoluteUrl('/projetos'),
+    type: 'website',
+  },
 }
 
 const PAGE_SIZE = 9
@@ -88,7 +97,14 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Sea
           />
         </Suspense>
 
-        <section className="blog-grid-section">
+        <section className="blog-grid-section" aria-labelledby="lista-projetos">
+          {/* Título da lista, só para leitor de tela. Os cards são <h3>, e sem
+              um <h2> entre eles e o <h1> da página o nível pulava um degrau:
+              quem navega por títulos perde a noção de onde a lista começa. */}
+          <h2 id="lista-projetos" className="sr-only">
+            Projetos publicados
+          </h2>
+
           <div className="catalog-toolbar">
             <Suspense fallback={<div className="catalog-controls" />}>
               <ProjectsControls total={total} currentSort={sort} />

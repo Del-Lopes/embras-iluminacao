@@ -12,11 +12,35 @@ import Header from '@/components/layout/Header'
 import CustomCursor from '@/components/common/CustomCursor'
 import { getHomeProjects, getRecentProjects } from '@/server/project.actions'
 import { getHeroSlides } from '@/server/hero.actions'
+import { OrganizationSchema } from '@/components/seo/StructuredData'
+import { socialLinks } from '@/config/navigation'
+import { defaultSEO, siteUrl } from '@/config/seo'
+import type { Metadata } from 'next'
+
+// A home é a única página cujo título NÃO usa o template "%s | Embras
+// Iluminação": ela já começa pela marca, e o sufixo repetiria o nome duas
+// vezes no mesmo resultado de busca.
+export const metadata: Metadata = {
+	title: { absolute: defaultSEO.title },
+	description: defaultSEO.description,
+	// Canonical própria. O layout deixou de declarar uma para todas.
+	alternates: { canonical: siteUrl },
+	openGraph: { ...defaultSEO.openGraph, url: siteUrl },
+}
 
 // A seção de produtos passou a exibir CATEGORIAS estáticas com link para o
 // catálogo, em vez do carrossel de produtos. Com isso as duas consultas que
 // buscavam 8 produtos por área saíram da home — os ids abaixo são os valores
 // aceitos pelo catálogo em ?environment=.
+// A home passa a ser gerada e revalidada por tempo, em vez de renderizada a
+// cada visita. Com as leituras públicas sem cookies (ver supabase-public.ts),
+// nada aqui depende de quem está pedindo a página.
+//
+// Cinco minutos é o atraso máximo de uma edição no painel APENAS se o
+// revalidatePath falhar: salvar um banner ou um projeto já invalida a home na
+// hora. O número é o piso de segurança, não o tempo de espera normal.
+export const revalidate = 300
+
 const AREAS: ProductLine[] = [
   { id: 'interno', label: 'Área Interna' },
   { id: 'externo', label: 'Área Externa' },
@@ -46,6 +70,17 @@ export default async function Home() {
       <CustomCursor />
 
       <Header variant="overlay" />
+
+      <OrganizationSchema sameAs={socialLinks.map((s) => s.href)} />
+
+      {/* A home não tinha NENHUM h1: o título do slider é h2, porque muda a
+          cada slide e não pode ser o título da página. Este h1 fixo diz o que
+          a empresa é, para quem lê com leitor de tela e para o buscador, sem
+          aparecer na tela. */}
+      <h1 className="sr-only">
+        Embras Iluminação: fabricante de postes e luminárias LED em Embu-Guaçu, São Paulo
+      </h1>
+
       <div id="project-preview">
         <HeroSlider slides={heroSlides} />
         <CompanyStats />

@@ -66,7 +66,7 @@ export const R2FileUpload = ({ value, filename = '', onChange, group = 'product'
       }
       const put = await fetch(result.uploadUrl, {
         method: 'PUT',
-        headers: { 'Content-Type': result.contentType },
+        headers: { 'Content-Type': result.contentType, 'Cache-Control': result.cacheControl },
         body: file,
       })
       if (!put.ok) {

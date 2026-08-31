@@ -56,7 +56,7 @@ export const R2ModelUpload = ({ value, onChange, filename = '', folder = '' }: P
       }
       const put = await fetch(result.uploadUrl, {
         method: 'PUT',
-        headers: { 'Content-Type': result.contentType },
+        headers: { 'Content-Type': result.contentType, 'Cache-Control': result.cacheControl },
         body: file,
       })
       if (!put.ok) {

@@ -72,7 +72,7 @@ export const R2Upload = ({ value, onChange, group = 'product', folder = '' }: Pr
       // 3. PUT straight to R2 — Content-Type must match the signed value
       const put = await fetch(result.uploadUrl, {
         method: 'PUT',
-        headers: { 'Content-Type': result.contentType },
+        headers: { 'Content-Type': result.contentType, 'Cache-Control': result.cacheControl },
         body: file,
       })
 

@@ -7,6 +7,8 @@ import { EditorJsContent } from '@/components/blog/EditorJsContent'
 import { BlogRelatedCarousel } from '@/components/blog/BlogRelatedCarousel'
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
 import type { PostCardData } from '@/components/blog/PostCard'
+import { absoluteUrl, pageTitle } from '@/config/seo'
+import { ArticleSchema, BreadcrumbSchema } from '@/components/seo/StructuredData'
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -34,7 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = await createSupabaseServerClient()
   const { data } = await supabase
     .from('posts')
-    .select('title, seo_title, seo_description, cover_image')
+    .select('title, seo_title, seo_description, cover_image, published_at, updated_at')
     .eq('slug', slug)
     .eq('status', 'published')
     .single()
@@ -44,14 +46,29 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     seo_title: string | null
     seo_description: string | null
     cover_image: string | null
+    published_at: string | null
+    updated_at: string | null
   } | null
 
-  if (!post) return { title: 'Post não encontrado' }
+  // noindex no 404: sem isso o Google gasta rastreio em páginas de erro e
+  // pode até indexá-las com o título "Post não encontrado".
+  if (!post) return { title: 'Post não encontrado', robots: { index: false, follow: false } }
+
+  const url = absoluteUrl(`/blog/${slug}`)
 
   return {
-    title: post.seo_title ?? post.title,
+    title: pageTitle(post.seo_title ?? post.title),
     description: post.seo_description ?? undefined,
+    alternates: { canonical: url },
     openGraph: {
+      title: post.seo_title ?? post.title,
+      description: post.seo_description ?? undefined,
+      url,
+      // 'article', e não o 'website' herdado do layout: o tipo diz ao
+      // buscador e às redes que isto é um texto datado, com autor e assunto.
+      type: 'article',
+      publishedTime: post.published_at ?? undefined,
+      modifiedTime: post.updated_at ?? post.published_at ?? undefined,
       images: post.cover_image ? [post.cover_image] : [],
     },
   }
@@ -98,7 +115,7 @@ export default async function BlogPostPage({ params }: Props) {
   const relatedPosts = (relatedData ?? []) as unknown as PostCardData[]
 
   // Share links (server-side computed — no client JS needed)
-  const pageUrl = `https://embras.com.br/blog/${post.slug}`
+  const pageUrl = absoluteUrl(`/blog/${post.slug}`)
   const encodedUrl = encodeURIComponent(pageUrl)
   const encodedTitle = encodeURIComponent(post.title)
 
@@ -112,6 +129,25 @@ export default async function BlogPostPage({ params }: Props) {
   return (
     <main className="min-h-screen bg-(--color-bg)">
       <Header variant="solid" />
+
+      {/* Descreve o texto para o buscador: data, autor, imagem e quem publica.
+          É o que permite ao post aparecer como artigo, e não como página solta. */}
+      <ArticleSchema
+        title={post.seo_title ?? post.title}
+        description={post.seo_description}
+        slug={post.slug}
+        image={post.cover_image}
+        publishedAt={publishedDate}
+        updatedAt={publishedDate}
+        authorName={author}
+      />
+      <BreadcrumbSchema
+        items={[
+          { name: 'Início', path: '/' },
+          { name: 'Blog', path: '/blog' },
+          { name: post.title, path: `/blog/${post.slug}` },
+        ]}
+      />
 
       <article>
         {/* ── Cover image ── */}

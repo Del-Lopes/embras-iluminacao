@@ -52,6 +52,12 @@ const MAX_DOC_BYTES = 50 * 1024 * 1024 // 50 MB — PDF/ZIP
 
 const PRESIGN_TTL_SECONDS = 60
 
+// Um ano, imutável. Vale para todo objeto enviado pelo painel, porque a chave
+// é sempre um UUID novo: nenhum arquivo é sobrescrito no lugar.
+// Sem export: um arquivo 'use server' só pode exportar funções assíncronas.
+// Quem precisa do valor é o cliente, e ele o recebe no retorno da ação.
+const UPLOAD_CACHE_CONTROL = 'public, max-age=31536000, immutable'
+
 // Pastas que o gerenciador de Storage não mostra e que ele não pode excluir:
 // guardam arquivos usados diretamente por páginas do site (o vídeo
 // institucional, por exemplo), e não conteúdo gerenciado pelo painel.
@@ -85,7 +91,15 @@ export type GetUploadUrlInput = {
 
 export type GetUploadUrlResult =
   | { error: string }
-  | { uploadUrl: string; publicUrl: string; key: string; contentType: string }
+  | {
+      uploadUrl: string
+      publicUrl: string
+      key: string
+      contentType: string
+      // O cliente precisa repetir este valor no cabeçalho do PUT: ele entra na
+      // assinatura, e um PUT sem ele é recusado pelo R2.
+      cacheControl: string
+    }
 
 // ----------------------------------------------------------------
 // Auth gate — reused shape from admin.actions.ts
@@ -186,18 +200,28 @@ export const getProductUploadUrl = async (
 
   // 6. Pin Content-Type + Content-Length into the signed request so the
   //    eventual PUT cannot upload a different type or oversize payload.
+  //
+  //    O Cache-Control vai junto e fica gravado no objeto: as chaves são UUID,
+  //    então o conteúdo de uma nunca muda, e sem este cabeçalho o CDN entregava
+  //    as imagens sem instrução de cache, fazendo o navegador renegociar cada
+  //    foto a cada visita. Trocar a imagem gera outra chave, e por isso o
+  //    'immutable' é seguro.
   const command = new PutObjectCommand({
     Bucket: R2_BUCKET,
     Key: key,
     ContentType: input.contentType,
     ContentLength: input.contentLength,
+    CacheControl: UPLOAD_CACHE_CONTROL,
   })
 
   try {
     const uploadUrl = await getSignedUrl(r2Client, command, {
       expiresIn: PRESIGN_TTL_SECONDS,
       // Sign these headers so they're enforced, not advisory.
-      signableHeaders: new Set(['content-type', 'content-length']),
+      // cache-control entra na assinatura: o navegador PRECISA mandar o
+      // mesmo valor no PUT, senão o R2 recusa. Quem envia é o cliente, com a
+      // constante devolvida abaixo.
+      signableHeaders: new Set(['content-type', 'content-length', 'cache-control']),
     })
 
     return {
@@ -205,6 +229,7 @@ export const getProductUploadUrl = async (
       publicUrl: r2PublicUrl(key),
       key,
       contentType: input.contentType,
+      cacheControl: UPLOAD_CACHE_CONTROL,
     }
   } catch (err) {
     console.error('[getProductUploadUrl]', (err as Error).message)

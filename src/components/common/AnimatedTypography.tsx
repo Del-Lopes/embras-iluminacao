@@ -11,6 +11,13 @@ function createMaskedLines(el: HTMLElement): {
 	const split = new SplitText(el, {
 		type: 'lines',
 		linesClass: 'split-line',
+		// Por padrão o SplitText põe aria-label no elemento e aria-hidden nos
+		// pedaços. Em <p> e <h2> o aria-label é PROIBIDO (esses papéis não
+		// aceitam nome acessível), então o rótulo era ignorado e sobrava um
+		// elemento inteiro escondido do leitor de tela. Dividido por linhas as
+		// palavras continuam na ordem, e o texto é lido normalmente sem nada
+		// disso.
+		aria: 'none',
 	})
 
 	const inners: HTMLElement[] = []
@@ -218,7 +225,11 @@ export const AnimatedPill: React.FC<AnimatedPillProps> = ({
 					.getPropertyValue('--color-eyebrow-flash')
 					.trim() || '#ffffff'
 
-			const split = new SplitText(textRef.current, { type: 'chars' })
+			// Aqui a divisão é por CARACTERE, e cada letra vira um inline-block:
+			// alguns leitores de tela passam a soletrar. Por isso o texto
+			// animado sai da árvore de acessibilidade e a leitura fica por
+			// conta da cópia invisível no JSX, que é texto corrido.
+			const split = new SplitText(textRef.current, { type: 'chars', aria: 'none' })
 
 			const tl = gsap.timeline({
 				scrollTrigger: {
@@ -274,7 +285,10 @@ export const AnimatedPill: React.FC<AnimatedPillProps> = ({
 					WebkitMaskPosition: 'center',
 				}}
 			/>
-			<span ref={textRef} className="block relative">
+			{/* Cópia só para leitor de tela: o texto visível é soletrável depois
+			    da divisão, e esta linha é que carrega o conteúdo de verdade. */}
+			<span className="sr-only">{children}</span>
+			<span ref={textRef} aria-hidden className="block relative">
 				{children}
 			</span>
 		</div>

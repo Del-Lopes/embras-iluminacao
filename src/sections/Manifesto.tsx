@@ -166,8 +166,12 @@ export default function Manifesto() {
 			// mantém a quebra de linha correta. Sem ele cada caractere vira uma
 			// caixa independente e o texto quebra no meio das palavras.
 			const splits = gsap.utils
+				// aria: none — o SplitText marca o <p> com aria-label, atributo
+				// PROIBIDO nesse elemento (paragraph não aceita nome acessível), e
+				// ainda esconde os pedaços do leitor de tela. Dividido por palavras
+				// o texto continua na ordem e é lido normalmente.
 				.toArray<HTMLElement>('.manifesto-p')
-				.map((p) => new SplitText(p, { type: 'words,chars', charsClass: 'char' }))
+				.map((p) => new SplitText(p, { type: 'words,chars', charsClass: 'char', aria: 'none' }))
 			// inline-block permite o transform; os chars começam invisíveis, um
 			// pouco abaixo e desfocados — entram subindo e ganhando foco.
 			gsap.set('.char', {

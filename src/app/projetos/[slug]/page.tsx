@@ -10,6 +10,8 @@ import { findAdjacentSlugs } from '@/lib/utils/adjacent'
 import { AdjacentNav } from '@/components/common/AdjacentNav'
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
 import type { Project } from '@/lib/db/schema'
+import { absoluteUrl } from '@/config/seo'
+import { BreadcrumbSchema } from '@/components/seo/StructuredData'
 
 type Props = { params: Promise<{ slug: string }> }
 
@@ -26,14 +28,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .eq('status', 'published')
     .single()
 
-  if (!data) return { title: 'Projeto não encontrado' }
+  if (!data) return { title: 'Projeto não encontrado', robots: { index: false, follow: false } }
+
+  const url = absoluteUrl(`/projetos/${slug}`)
+  const titulo = `${data.name} | Projeto de Iluminação`
+  // O texto vem do editor rico: sem tirar as tags, a meta description sairia
+  // como "<p>Uma resid…" e gastaria os 160 caracteres com marcação.
+  const descricao =
+    stripTags(data.description)?.slice(0, 160) ||
+    `Projeto de iluminação executado com produtos Embras: ${data.name}.`
 
   return {
-    title: data.name,
-    // O texto vem do editor rico: sem tirar as tags, a meta description sairia
-    // como "<p>Uma resid…" e gastaria os 160 caracteres com marcação.
-    description: stripTags(data.description)?.slice(0, 160) || undefined,
-    openGraph: { images: data.cover_image ? [data.cover_image] : [] },
+    title: titulo,
+    description: descricao,
+    alternates: { canonical: url },
+    openGraph: {
+      title: titulo,
+      description: descricao,
+      url,
+      type: 'article',
+      images: data.cover_image ? [data.cover_image] : [],
+    },
   }
 }
 
@@ -77,6 +92,14 @@ export default async function ProjectDetailPage({ params }: Props) {
     // própria (128px). A classe extra evita mexer no padding do catálogo.
     <main className="product-detail-page project-detail-page min-h-screen bg-(--color-bg)">
       <Header variant="solid" />
+
+      <BreadcrumbSchema
+        items={[
+          { name: 'Início', path: '/' },
+          { name: 'Projetos', path: '/projetos' },
+          { name: project.name, path: `/projetos/${project.slug}` },
+        ]}
+      />
 
       <article className="product-detail">
         {/* Navegação entre projetos: container próprio acima do conteúdo, para

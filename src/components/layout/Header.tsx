@@ -258,10 +258,17 @@ export default function Header({
 			</header>
 
 			{/* Barra fixa de vidro. Fora de vista ela some do fluxo de foco e não
-			    intercepta cliques (pointer-events pelo CSS). */}
+			    intercepta cliques (pointer-events pelo CSS).
+
+			    inert junto do aria-hidden: sozinho, o aria-hidden escondia a
+			    barra do leitor de tela mas deixava os links dela alcançáveis
+			    por Tab, então quem navega por teclado passava por itens que,
+			    para quem ouve, não existem. O inert tira o foco e os eventos de
+			    uma vez. */}
 			<div
 				className={cn('site-header-sticky', stuck && !collapsed && 'is-visible')}
 				aria-hidden={!stuck || collapsed}
+				inert={!stuck || collapsed}
 				// Com o ponteiro sobre a barra ela nunca se recolhe: quem está
 				// prestes a clicar num item não pode vê-lo sumir.
 				onMouseEnter={() => {

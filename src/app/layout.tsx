@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Inter, Outfit, Playfair_Display, Libre_Franklin } from 'next/font/google'
+import { Inter, Libre_Franklin } from 'next/font/google'
 import './globals.css'
 import SmoothScroll from '@/lib/lenis/SmoothScroll'
 import ThemeProvider from '@/components/common/ThemeProvider'
@@ -10,19 +10,10 @@ const inter = Inter({
 	subsets: ['latin'],
 })
 
-const outfit = Outfit({
-	variable: '--font-outfit',
-	subsets: ['latin'],
-})
-
-// Teste de fonte para o wordmark EMBRAS (hero). Serif de alto contraste.
-const playfair = Playfair_Display({
-	variable: '--font-playfair',
-	subsets: ['latin'],
-})
-
-// TESTE: títulos da home. Grotesca clássica, mesma família usada pela
-// Dantalux — ar mais institucional que a Outfit, que é geométrica.
+// Duas famílias, e não quatro. A Outfit e a Playfair entraram como teste no
+// hero antigo, que saiu do ar quando o slider chegou, e continuavam sendo
+// baixadas em toda visita: eram 70 KB de woff2 disputando banda com a imagem
+// do hero, que é o elemento de LCP.
 const libreFranklin = Libre_Franklin({
 	variable: '--font-libre',
 	subsets: ['latin'],
@@ -37,7 +28,22 @@ export const metadata: Metadata = {
 	description: defaultSEO.description,
 	openGraph: defaultSEO.openGraph,
 	twitter: defaultSEO.twitter,
-	alternates: { canonical: siteUrl },
+
+	// Verificação do Search Console e do Bing. A propriedade só existe se a
+	// variável estiver definida: uma meta de verificação vazia no HTML não
+	// verifica nada e ainda confunde quem for depurar.
+	verification: {
+		google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+		other: process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
+			? { 'msvalidate.01': process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION }
+			: undefined,
+	},
+
+	// SEM alternates.canonical aqui. Metadata do layout é HERDADA por todas as
+	// páginas, então esta linha fazia /catalogo, /blog, /projetos e todo post
+	// declararem que a versão boa deles era a HOME. Para o Google isso é o
+	// mesmo que pedir para não indexar nenhuma outra página do site. Cada
+	// página declara a própria canonical, e a da home está em app/page.tsx.
 }
 
 export default function RootLayout({
@@ -56,7 +62,7 @@ export default function RootLayout({
 		// Efeito: todo font-family que lesse esses tokens caía na fonte herdada.
 		<html
 			lang="pt-BR"
-			className={`${inter.variable} ${outfit.variable} ${playfair.variable} ${libreFranklin.variable}`}
+			className={`${inter.variable} ${libreFranklin.variable}`}
 			suppressHydrationWarning
 		>
 			<head>

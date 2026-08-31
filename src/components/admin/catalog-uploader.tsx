@@ -54,7 +54,7 @@ export const CatalogUploader = ({ initialUrl, initialFilename }: Props) => {
       }
       const put = await fetch(result.uploadUrl, {
         method: 'PUT',
-        headers: { 'Content-Type': result.contentType },
+        headers: { 'Content-Type': result.contentType, 'Cache-Control': result.cacheControl },
         body: file,
       })
       if (!put.ok) {

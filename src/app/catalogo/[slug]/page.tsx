@@ -14,6 +14,8 @@ import { findAdjacentSlugs } from '@/lib/utils/adjacent'
 import { AdjacentNav } from '@/components/common/AdjacentNav'
 import type { Product, ProductCharacteristic } from '@/lib/db/schema'
 import type { ProductCardData } from '@/components/catalog/ProductCard'
+import { absoluteUrl, pageTitle } from '@/config/seo'
+import { BreadcrumbSchema, ProductSchema } from '@/components/seo/StructuredData'
 
 type Props = { params: Promise<{ slug: string }> }
 
@@ -29,12 +31,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .eq('status', 'published')
     .single()
 
-  if (!data) return { title: 'Produto não encontrado' }
+  if (!data) return { title: 'Produto não encontrado', robots: { index: false, follow: false } }
+
+  const url = absoluteUrl(`/catalogo/${slug}`)
+  // Sem seo_title cadastrado, o nome do produto sozinho ("Poste Girafa") não
+  // diz o que a peça é para quem nunca ouviu falar dela. O complemento entra
+  // como fallback, e some assim que alguém preencher o campo no painel.
+  const titulo = data.seo_title ?? `${data.name} | Iluminação LED`
 
   return {
-    title: data.seo_title ?? data.name,
+    title: pageTitle(titulo),
     description: data.seo_description ?? undefined,
-    openGraph: { images: data.cover_image ? [data.cover_image] : [] },
+    alternates: { canonical: url },
+    openGraph: {
+      title: titulo,
+      description: data.seo_description ?? undefined,
+      url,
+      type: 'website',
+      images: data.cover_image ? [data.cover_image] : [],
+    },
   }
 }
 
@@ -124,7 +139,7 @@ export default async function ProductDetailPage({ params }: Props) {
   }
 
   // Share links (server-computed)
-  const pageUrl = `https://embras.com.br/catalogo/${product.slug}`
+  const pageUrl = absoluteUrl(`/catalogo/${product.slug}`)
   const encodedUrl = encodeURIComponent(pageUrl)
   const encodedTitle = encodeURIComponent(product.name)
   const shareLinks = {
@@ -178,6 +193,24 @@ export default async function ProductDetailPage({ params }: Props) {
   return (
     <main className="product-detail-page min-h-screen bg-(--color-bg)">
       <Header variant="solid" />
+
+      {/* Sem offers: o catálogo não tem preço nem carrinho, e declarar oferta
+          vazia é marcação inválida aos olhos do Google. */}
+      <ProductSchema
+        name={product.name}
+        description={product.seo_description ?? product.short_description}
+        slug={product.slug}
+        image={product.cover_image}
+        sku={product.sku}
+        material={product.primary_material}
+      />
+      <BreadcrumbSchema
+        items={[
+          { name: 'Início', path: '/' },
+          { name: 'Catálogo', path: '/catalogo' },
+          { name: product.name, path: `/catalogo/${product.slug}` },
+        ]}
+      />
 
       <article className="product-detail">
         {/* Navegação entre produtos: container próprio acima do conteúdo, para

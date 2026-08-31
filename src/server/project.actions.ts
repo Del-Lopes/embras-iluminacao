@@ -11,6 +11,7 @@
 // ================================================================
 
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
+import { createSupabasePublicClient } from '@/lib/db/supabase-public'
 import type { InsertProject, Profile, Project, ProjectStatus } from '@/lib/db/schema'
 import { revalidatePath } from 'next/cache'
 import { PROJECT_DATE_RE } from '@/lib/utils/project-date'
@@ -201,7 +202,9 @@ const HOME_SLOTS = 5
 // suficientes, e null nas posições que não deu para preencher (a seção usa os
 // cards de fallback nesses lugares).
 export const getHomeProjects = async (): Promise<(ProjectCardData | null)[]> => {
-  const supabase = await createSupabaseServerClient()
+  // Cliente sem cookies: esta leitura é pública e alimenta a home, que precisa
+  // ser cacheável. Com o cliente de sessão a página vira dinâmica.
+  const supabase = createSupabasePublicClient()
   const { data, error } = await supabase
     .from('projects')
     .select(`${CARD_SELECT}, created_at`)
@@ -245,7 +248,8 @@ export const getRecentProjects = async (
   excludeIds: string[] = [],
   limit = 8
 ): Promise<ProjectCardData[]> => {
-  const supabase = await createSupabaseServerClient()
+  // Mesmo caso do getHomeProjects: leitura pública, sem sessão.
+  const supabase = createSupabasePublicClient()
   let query = supabase
     .from('projects')
     .select(CARD_SELECT)

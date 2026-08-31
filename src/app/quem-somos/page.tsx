@@ -6,11 +6,22 @@ import { AnimatedHeading, AnimatedPill } from '@/components/common/AnimatedTypog
 import { LazyVideo } from '@/components/common/LazyVideo'
 import { ButtonLink } from '@/components/common/ButtonLink'
 import { RiseIn } from '@/components/common/RiseIn'
+import { absoluteUrl } from '@/config/seo'
 
 export const metadata: Metadata = {
-  title: 'Quem somos',
+  // Página institucional: é ela que responde a busca por "Embras Iluminação"
+  // somada a "fábrica", "empresa" ou "quem é", então a marca vem no título.
+  title: 'Quem Somos: nossa fábrica em Embu-Guaçu',
   description:
-    'A Embras Iluminação é uma indústria brasileira de postes, luminárias LED e soluções de iluminação, com 20 anos de experiência e fabricação própria.',
+    'Indústria de iluminação em Embu-Guaçu (SP), com 2.500 m² de área fabril, 20 anos de mercado e mais de 10 mil clientes atendidos. Conheça a fabricação própria da Embras Iluminação.',
+  alternates: { canonical: absoluteUrl('/quem-somos') },
+  openGraph: {
+    title: 'Quem Somos: a Fábrica da Embras Iluminação',
+    description:
+      'Indústria de iluminação em Embu-Guaçu (SP), com fabricação própria de postes e luminárias LED há 20 anos.',
+    url: absoluteUrl('/quem-somos'),
+    type: 'website',
+  },
 }
 
 const PARAGRAPHS = [

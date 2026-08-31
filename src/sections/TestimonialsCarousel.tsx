@@ -212,7 +212,11 @@ export default function TestimonialsCarousel() {
 					<div className="flex-1 sm:pl-16">
 						{/* Badge */}
 						<div ref={badgeRef} className="mb-8">
-							<span className="inline-flex items-center gap-2 text-xs font-bold font-(family-name:--font-body) text-(--color-highlight) border border-(--color-border) rounded-full px-3 py-1 uppercase tracking-widest">
+							{/* text-(--color-tag-text), e não o laranja da marca: com 12px em
+							    negrito sobre fundo claro ele fica em 3,91:1, abaixo do mínimo
+							    de 4,5:1. O ponto ao lado segue no tom original, porque
+							    preenchimento tem exigência menor. */}
+							<span className="inline-flex items-center gap-2 text-xs font-bold font-(family-name:--font-body) text-(--color-tag-text) border border-(--color-border) rounded-full px-3 py-1 uppercase tracking-widest">
 								<span className="w-1.5 h-1.5 rounded-full bg-(--color-highlight)" />
 								{current.company}
 							</span>
@@ -239,7 +243,7 @@ export default function TestimonialsCarousel() {
 								<div>
 									<p
 										className="font-(family-name:--font-libre) text-base font-medium"
-										style={{ color: 'var(--color-highlight)' }}
+										style={{ color: 'var(--color-tag-text)' }}
 									>
 										{current.author}
 									</p>
@@ -287,7 +291,14 @@ export default function TestimonialsCarousel() {
 				    isso o -bottom-40, que o desce para a faixa do pb da seção em
 				    vez de deixá-lo sobre a linha do autor. Oculto no mobile, onde
 				    ele ficaria sozinho num vão sem conteúdo. */}
-				<div className="hidden lg:block absolute -bottom-40 left-0 right-0 overflow-hidden opacity-[0.06] pointer-events-none">
+				<div
+					// Textura de fundo, não conteúdo: a 6% de opacidade ele existe como
+					// marca d'água. Sem o aria-hidden ele entra na árvore de
+					// acessibilidade, é lido em voz alta e ainda reprova no contraste,
+					// que aqui não faz sentido medir.
+					aria-hidden
+					className="hidden lg:block absolute -bottom-40 left-0 right-0 overflow-hidden opacity-[0.06] pointer-events-none"
+				>
 					<div ref={tickerRef} className="flex whitespace-nowrap font-(family-name:--font-libre) text-6xl font-bold tracking-tight text-(--color-accent)">
 						{[0, 1].map((dup) => (
 							<span key={dup} className="flex shrink-0">

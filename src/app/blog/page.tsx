@@ -9,15 +9,44 @@ import Footer from '@/components/layout/Footer'
 import { PostCard } from '@/components/blog/PostCard'
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
 import type { PostCardData } from '@/components/blog/PostCard'
-
-export const metadata: Metadata = {
-  title: 'Blog',
-  description: 'Conteúdo sobre iluminação, arquitetura, design de interiores e tendências do setor.',
-}
+import { absoluteUrl } from '@/config/seo'
 
 const PAGE_SIZE = 6
 
 type SearchParams = Promise<{ page?: string; q?: string; category?: string; sort?: string }>
+
+// generateMetadata, e não um metadata fixo: com 544 posts a listagem tem
+// dezenas de páginas, e todas apontariam a canonical para /blog. Canonical de
+// página 2 para a 1 é o padrão que faz o Google tratar a 2 como duplicata e
+// parar de dar valor aos links dela — que são justamente os caminhos para os
+// posts mais antigos. Cada página aponta para si mesma.
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: SearchParams
+}): Promise<Metadata> {
+  const params = await searchParams
+  const page = Math.max(1, parseInt(params.page ?? '1', 10))
+  const url = page > 1 ? absoluteUrl(`/blog?page=${page}`) : absoluteUrl('/blog')
+  const sufixo = page > 1 ? ` — Página ${page}` : ''
+
+  return {
+    title: `Blog de Iluminação: Projetos, LED e Arquitetura${sufixo}`,
+    description:
+      'Artigos sobre iluminação LED, projetos luminotécnicos, arquitetura e design de interiores, escritos pela equipe da Embras Iluminação.',
+    alternates: { canonical: url },
+    // A busca e os filtros montam listagens que não são conteúdo próprio: elas
+    // saem do índice, mas o robô continua seguindo os links dali para os posts.
+    robots: params.q || params.category ? { index: false, follow: true } : undefined,
+    openGraph: {
+      title: `Blog de Iluminação: Projetos, LED e Arquitetura${sufixo} | Embras Iluminação`,
+      description:
+        'Artigos sobre iluminação LED, projetos luminotécnicos, arquitetura e design de interiores.',
+      url,
+      type: 'website',
+    },
+  }
+}
 
 export default async function BlogPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams

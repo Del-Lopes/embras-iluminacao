@@ -10,7 +10,9 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Embras · Postes de Aço e Alumínio — Direto da Fábrica',
+  // absolute: o título já traz a marca, e o template do layout raiz a
+  // repetiria no fim da linha.
+  title: { absolute: 'Embras Iluminação · Postes de Aço e Alumínio Direto da Fábrica' },
   description:
     'Fabricamos postes de aço galvanizado e alumínio em escala industrial. Sem intermediário, sem atraso e sem desculpa quando o prazo aperta.',
   robots: { index: false, follow: false },

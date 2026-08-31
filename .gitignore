@@ -78,3 +78,8 @@ next-env.d.ts
 /src/sections/ProductCarousel.tsx
 /src/sections/ProductLineCard.tsx
 /src/sections/TestimonialsSection.tsx
+
+# ferramentas locais — skills de auditoria instaladas na máquina, não fazem
+# parte do site
+/.agents/
+/skills-lock.json

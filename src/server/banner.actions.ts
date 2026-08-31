@@ -10,6 +10,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServerClient } from '@/lib/db/supabase-server'
+import { createSupabasePublicClient } from '@/lib/db/supabase-public'
 import type { HomeBanner } from '@/lib/db/schema'
 
 // Linha do banner já com o que a home precisa do produto: o slug monta o
@@ -27,7 +28,9 @@ const SELECT = '*, product:products(slug, name)'
 // Home: só os ativos, na ordem definida no painel. O created_at desempata,
 // senão dois banners com a mesma posição trocariam de lugar entre recargas.
 export const getHomeBanners = async (): Promise<BannerWithProduct[]> => {
-	const supabase = await createSupabaseServerClient()
+	// Cliente sem cookies: é a leitura da home, que precisa ser cacheável.
+	// O painel continua usando getBanners, com sessão e RLS de escrita.
+	const supabase = createSupabasePublicClient()
 	const { data } = await supabase
 		.from('home_banners')
 		.select(SELECT)

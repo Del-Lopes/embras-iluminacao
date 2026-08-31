@@ -39,6 +39,9 @@
 	   letra a letra na entrada. Separadas porque a luz precisa contrastar com
 	   o FUNDO da seção, enquanto o texto segue a identidade da marca. */
 	--color-eyebrow: var(--color-highlight);
+	/* No escuro o laranja da marca está sobre fundo quase preto e o contraste
+	   já passa, então a etiqueta usa o token original. */
+	--color-tag-text: var(--color-highlight);
 	--color-eyebrow-flash: var(--color-brand-blue);
 
 	/* Filete de separação — mais leve que --color-border, que é a borda
@@ -114,7 +117,14 @@
 	   Já o pill precisa ser redeclarado, porque custom property resolve o var()
 	   no ELEMENTO em que é declarada: sem estas linhas ele manteria o valor
 	   computado no :root mesmo com o .light ativo. */
-	--color-eyebrow: var(--color-highlight);
+	/* Laranja um degrau mais escuro que o da marca, e SÓ para texto: sobre o
+	   fundo claro o #e54621 rende 3,91:1, abaixo do mínimo de 4,5:1 que a
+	   WCAG AA pede para texto pequeno, e o eyebrow é justamente texto pequeno
+	   em caixa alta. O #c93a17 rende 5,1:1 na mesma dupla. O token da marca
+	   continua intacto para preenchimentos, onde a exigência é outra (3:1). */
+	--color-eyebrow: #c93a17;
+	/* Mesmo caso nas etiquetas dos cards do catálogo. */
+	--color-tag-text: #c93a17;
 	--color-eyebrow-flash: var(--color-brand-blue);
 	--color-divider: rgba(0, 0, 0, 0.12);
 }
@@ -1450,7 +1460,10 @@ p {
 	font-weight: 600;
 	text-transform: uppercase;
 	letter-spacing: 0.1em;
-	color: var(--color-highlight);
+	/* Token de TEXTO, e não --color-highlight direto: com 11px em caixa alta
+	   sobre o fundo claro, o laranja da marca fica em 3,91:1, abaixo do mínimo
+	   de 4,5:1 da WCAG AA. */
+	color: var(--color-tag-text);
 }
 
 .catalog-card-tag--link {

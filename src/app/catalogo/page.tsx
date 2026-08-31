@@ -12,11 +12,23 @@ import { createSupabaseServerClient } from '@/lib/db/supabase-server'
 import { getSiteSettings } from '@/server/site-settings.actions'
 import type { ProductCardData } from '@/components/catalog/ProductCard'
 import type { ProductCategory } from '@/lib/db/schema'
+import { absoluteUrl } from '@/config/seo'
 
 export const metadata: Metadata = {
-  title: 'Catálogo',
+  // O título carrega o que a pessoa DIGITA na busca. "Catálogo" sozinho não é
+  // procurado por ninguém; "luminárias LED" e "postes" são a porta de entrada
+  // desta página, e o template do layout acrescenta a marca no fim.
+  title: 'Catálogo de Luminárias LED, Postes e Arandelas',
   description:
-    'Catálogo de amostra Embras — luminárias e soluções de iluminação para áreas internas e externas.',
+    'Catálogo Embras Iluminação: postes, luminárias LED, arandelas, balizadores e embutidos com fabricação própria. Fichas técnicas, arquivos IES e modelos 3D para download.',
+  alternates: { canonical: absoluteUrl('/catalogo') },
+  openGraph: {
+    title: 'Catálogo de Luminárias LED, Postes e Arandelas | Embras Iluminação',
+    description:
+      'Postes, luminárias LED, arandelas e balizadores com fabricação própria, com ficha técnica e arquivos para projeto.',
+    url: absoluteUrl('/catalogo'),
+    type: 'website',
+  },
 }
 
 const PAGE_SIZE = 9
