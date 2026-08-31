@@ -4,6 +4,8 @@ import { useRef } from 'react'
 import { gsap } from '@/lib/gsap'
 import { useGSAP } from '@gsap/react'
 import { cn } from '@/lib/utils/cn'
+import SparklesCore from '@/components/common/SparklesCore'
+import { useTheme } from '@/components/common/ThemeProvider'
 
 type Props = {
   text?: string
@@ -22,6 +24,22 @@ const SLICES = [
 const STAGGER = 0.04
 const SWEEP = 0.7
 
+// Quando o texto termina de assentar: as letras começam em 0.3, duram 0.8 e a
+// última entra STAGGER × 5 depois da primeira. As partículas partem daí, e não
+// de um número solto: mexendo nos tempos acima, a entrada delas acompanha.
+const TEXT_END = 0.3 + 0.8 + STAGGER * 5
+const SPARKLES_FADE = 0.9
+
+// Azul das partículas por tema. Espelha o token --color-beam-blue do
+// globals.css, e existe duplicado aqui porque o tsparticles desenha em canvas:
+// as cores viram propriedade de objeto lida pelo engine, e var() do CSS não
+// chega até lá. Mexeu num, mexa no outro.
+const BEAM_BLUE = { light: '#102a58', dark: '#5b8fe0' } as const
+
+// A densidade é por área de 400×400, então ela multiplica pelo tamanho do
+// campo: num canvas de 1366×440 são cerca de 3,8 áreas.
+const SPARKLES_DENSITY = 85
+
 /**
  * Abertura da seção de números: a palavra entra letra a letra, saindo do
  * desfoque, enquanto três faixas varrem cada caractere.
@@ -33,6 +51,9 @@ const SWEEP = 0.7
  */
 export function ShutterText({ text = 'EMBRAS', className }: Props) {
   const rootRef = useRef<HTMLDivElement>(null)
+  const sparklesRef = useRef<HTMLDivElement>(null)
+  const { theme } = useTheme()
+  const blue = BEAM_BLUE[theme] ?? BEAM_BLUE.light
   const characters = text.split('')
 
   useGSAP(
@@ -83,6 +104,16 @@ export function ShutterText({ text = 'EMBRAS', className }: Props) {
         )
       })
 
+      // Partículas: só depois que a palavra assenta. O fade fica no wrapper, e
+      // não no SparklesCore, porque ele tem uma entrada própria ao carregar o
+      // engine, e as duas brigariam pela mesma opacidade.
+      if (sparklesRef.current) {
+        tl.to(
+          sparklesRef.current,
+          { opacity: 1, duration: SPARKLES_FADE, ease: 'power2.out' },
+          TEXT_END
+        )
+      }
     },
     { scope: rootRef }
   )
@@ -91,7 +122,11 @@ export function ShutterText({ text = 'EMBRAS', className }: Props) {
     <div
       ref={rootRef}
       className={cn(
-        'shutter-text relative flex items-center justify-center w-full overflow-hidden',
+        // Sem recorte: o campo de partículas fica ABAIXO da palavra e mais
+        // largo que o wrapper, então qualquer overflow aqui o comeria. Cada
+        // letra já tem o próprio recorte para as faixas que a varrem, e o
+        // clamp do tamanho impede a palavra de estourar a linha.
+        'shutter-text relative flex items-center justify-center w-full',
         className
       )}
     >
@@ -130,6 +165,48 @@ export function ShutterText({ text = 'EMBRAS', className }: Props) {
             ))}
           </div>
         ))}
+      </div>
+
+      {/* Campo de partículas sob a palavra: 440px de altura, bem além do
+          respiro da seção, então o excedente corre POR TRÁS do conteúdo de
+          baixo. Absoluto para transbordar sem empurrar nada.
+
+          Rompe o wrapper de 1280px da seção: left-1/2 com -translate-x-1/2
+          recentraliza, e w-screen com max-w-site dá min(100vw, 1366px), que é
+          a largura de container do site.
+
+          A máscara vai NO PRÓPRIO campo, e não numa chapa opaca por cima: uma
+          chapa precisaria transbordar junto e apagaria o texto de baixo.
+          Mascarando o campo, some a partícula e não o que está atrás dela.
+
+          -z-10 joga o campo para trás do que vem em fluxo, e depende do
+          isolate na <section> que hospeda o bloco. */}
+      <div
+        ref={sparklesRef}
+        aria-hidden
+        style={{
+          opacity: 0,
+          WebkitMaskImage:
+            'radial-gradient(660px 460px at top, white 15%, transparent 100%)',
+          maskImage: 'radial-gradient(660px 460px at top, white 15%, transparent 100%)',
+        }}
+        className="absolute top-full left-1/2 -translate-x-1/2 w-screen max-w-site h-110 -z-10 pointer-events-none"
+      >
+        <SparklesCore
+          // key no tema força remontagem na troca. O tsparticles guarda as
+          // opções no container ao inicializar, e trocar a cor na prop não
+          // repinta as partículas já em cena.
+          key={theme}
+          minSize={0.8}
+          maxSize={2.2}
+          speed={2}
+          particleDensity={SPARKLES_DENSITY}
+          // Quatro laranjas para três azuis: o tsparticles sorteia com peso
+          // igual entre os itens, então a repetição é o que cria a proporção.
+          // Dá cerca de 43% de azuis.
+          particleColor={['#e54621', '#e54621', '#e54621', '#e54621', blue, blue, blue]}
+          className="w-full h-full"
+        />
       </div>
 
       {/* Cantos: dois filetes em diagonal opostos, marcando o quadro. */}

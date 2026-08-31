@@ -7582,3 +7582,25 @@ html:not(.light) .wwa-card {
 	border-color: rgba(255, 255, 255, 0.45);
 	color: #ffffff;
 }
+
+/* O ponteiro do sistema some na home, onde o cursor customizado assume. Vale
+   só ali, porque é a única página que monta o componente, e só a partir de md
+   com ponteiro fino: abaixo disso o componente não renderiza, e sumir com a
+   seta deixaria quem usa mouse numa janela estreita sem cursor nenhum. */
+@media (min-width: 768px) and (pointer: fine) {
+	.home-palette,
+	.home-palette * {
+		cursor: none;
+	}
+
+	/* Menos o que é clicável: sem a mãozinha, o ponto sozinho não dizia que
+	   ali havia algo para clicar. Vale para links E botões, que é o caso das
+	   abas de área e das setas do slider. O seletor precisa alcançar também os
+	   filhos, senão o texto dentro deles volta a herdar o none da regra acima. */
+	.home-palette a,
+	.home-palette a *,
+	.home-palette button,
+	.home-palette button * {
+		cursor: pointer;
+	}
+}

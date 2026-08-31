@@ -38,7 +38,12 @@ const STATS: Stat[] = [
 
 export default function CompanyStats() {
 	return (
-		<section className="bg-(--color-bg) w-full py-15 md:py-20 lg:py-32">
+		// isolate faz esta seção virar um contexto de empilhamento próprio, e é
+		// isso que permite ao campo de partículas do ShutterText usar z-index
+		// negativo sem sumir. Sem ele o contexto seria a raiz do documento, onde
+		// um z-index negativo é pintado ANTES dos fundos dos elementos em fluxo,
+		// e o bg desta própria seção cobriria as partículas por inteiro.
+		<section className="bg-(--color-bg) w-full py-15 md:py-20 lg:py-32 isolate">
 			{/* Wrapper próprio, FORA do container de 1366px do resto da seção: aqui
 			    o teto é 1280, sem padding lateral no desktop.
 

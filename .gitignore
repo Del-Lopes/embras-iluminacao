@@ -29,14 +29,11 @@
 /tests
 /test-results
 
-# docs
-/PLAN.md
-/RULES.md
-/SPEC.md
-/PENTEST-REPORT.md
+# docs — nenhum markdown sobe, menos o README. Substitui a lista que havia
+# aqui arquivo a arquivo, que exigia lembrar de incluir cada novo.
+*.md
+!README.md
 /white-label
-/R2-SETUP.md
-/CATALOG-PLAN.md
 
 # debug
 npm-debug.log*
@@ -64,3 +61,20 @@ next-env.d.ts
 # ferramentas locais — cache do plugin impeccable (revisão de design),
 # gerado por máquina e sem valor para o repositório
 /.impeccable
+
+# Componentes sem uso. Ficam no disco, porque guardam coreografias que podem
+# voltar, mas não sobem: no repositório eles só somariam código morto para o
+# próximo leitor decidir se pode mexer.
+/src/components/catalog/ProductSpecs.tsx
+/src/components/common/CascadeText.tsx
+/src/components/common/FadeIn.tsx
+/src/components/common/FragmentedReveal.tsx
+/src/components/common/ImageGallery.tsx
+/src/components/common/VaporizeTextCycle.tsx
+/src/lib/ai/article-searcher.ts
+/src/sections/ContactSection.tsx
+/src/sections/HeroProductsWrapper.backup.tsx
+/src/sections/HeroProductsWrapper.tsx
+/src/sections/ProductCarousel.tsx
+/src/sections/ProductLineCard.tsx
+/src/sections/TestimonialsSection.tsx

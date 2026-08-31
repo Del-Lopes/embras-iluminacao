@@ -9,6 +9,7 @@ import TestimonialsCarousel from '@/sections/TestimonialsCarousel'
 import TestimonialsBackdrop from '@/sections/TestimonialsBackdrop'
 import Footer from '@/components/layout/Footer'
 import Header from '@/components/layout/Header'
+import CustomCursor from '@/components/common/CustomCursor'
 import { getHomeProjects, getRecentProjects } from '@/server/project.actions'
 import { getHeroSlides } from '@/server/hero.actions'
 
@@ -39,6 +40,11 @@ export default async function Home() {
     <main className="home-palette relative min-h-screen bg-(--color-bg)">
       {/* Header sobre o hero, transparente. `relative` no main ancora o
           posicionamento absoluto do header no topo da página. */}
+      {/* Cursor customizado. Montado AQUI, e não no layout raiz, porque ele
+          vale só para a home: assim as outras páginas não carregam o script
+          nem precisam de exceção por rota. Abaixo de md ele não renderiza. */}
+      <CustomCursor />
+
       <Header variant="overlay" />
       <div id="project-preview">
         <HeroSlider slides={heroSlides} />
