@@ -59,8 +59,8 @@ const HIDDEN_FOLDERS = new Set(['site/'])
 
 export type UploadKind = 'image' | 'model' | 'document'
 // Destino no R2: 'product' → produtos/, 'model' → modelos_3d/, 'project' → projetos/,
-// 'catalog' → catalogo/
-export type UploadGroup = 'product' | 'model' | 'project' | 'catalog'
+// 'catalog' → catalogo/, 'banner' → banners/
+export type UploadGroup = 'product' | 'model' | 'project' | 'catalog' | 'banner'
 
 // Pasta-base por grupo. Cada item ganha uma subpasta com o nome (slug).
 const GROUP_BASE: Record<UploadGroup, string> = {
@@ -68,6 +68,7 @@ const GROUP_BASE: Record<UploadGroup, string> = {
   model: 'modelos_3d',
   project: 'projetos',
   catalog: 'catalogo',
+  banner: 'banners',
 }
 
 // O segmento de pasta vem do helper do r2-client: é a mesma regra usada pela
@@ -282,6 +283,7 @@ export const deleteR2Folder = async (prefix: string): Promise<DeleteFolderResult
     clean === 'produtos/' ||
     clean === 'projetos/' ||
     clean === 'catalogo/' ||
+    clean === 'banners/' ||
     HIDDEN_FOLDERS.has(clean)
   ) {
     return { error: 'Esta pasta do sistema não pode ser excluída' }

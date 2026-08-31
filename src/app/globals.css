@@ -2734,13 +2734,15 @@ a.product-info-category:hover {
 	color: var(--color-accent);
 }
 
-/* Ação principal de um grupo (Novo Produto, Novo Projeto, Leads): laranja, no
-   mesmo peso dos demais. O ícone acompanha sozinho, porque herda currentColor.
+/* Ação principal de um grupo (Novo Produto, Novo Projeto, Leads). Em repouso
+   ela se distingue pelo PESO, e não pela cor: o laranja em três itens fixos
+   competia com o item selecionado o tempo todo. A cor entra no hover, e o
+   ícone acompanha sozinho, porque herda currentColor. */
+.sidebar-link--accent {
+	font-weight: 700;
+	color: var(--color-accent);
+}
 
-   O :hover também está aqui porque .sidebar-link:hover, definido acima, troca
-   a cor do texto: sem repetir, o laranja se perderia justamente ao passar o
-   mouse. O realce de fundo do hover continua valendo. */
-.sidebar-link--accent,
 .sidebar-link--accent:hover {
 	color: var(--color-highlight);
 }
@@ -7602,5 +7604,362 @@ html:not(.light) .wwa-card {
 	.home-palette button,
 	.home-palette button * {
 		cursor: pointer;
+	}
+}
+
+/* ================================================================
+   BANNERS (admin) — os slides do hero da home
+   ================================================================ */
+.banners-manager {
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+}
+
+.banner-new {
+	align-self: flex-start;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.banner-form-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	margin-bottom: 20px;
+}
+
+/* Duas colunas espelhando o próprio slide: o que está à esquerda no formulário
+   é o que aparece à esquerda na home. */
+.banner-form-cols {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 24px;
+}
+
+.banner-fieldset {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	min-width: 0;
+	margin: 0;
+	padding: 16px;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+}
+
+.banner-fieldset legend {
+	padding: 0 8px;
+	font-size: var(--font-size-xs);
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--color-muted);
+}
+
+/* Empilhado: seletor, amostra da cor e, abaixo dela, o interruptor. Em linha
+   os três disputavam a mesma altura e o rótulo do interruptor puxava a largura
+   do seletor para baixo do necessário. */
+.banner-form-row {
+	display: block;
+	margin-top: 24px;
+}
+
+/* Os dois terminam onde termina a coluna da esquerda do formulário: ela ocupa
+   metade da grade menos meio gap, e repetir essa conta aqui alinha o seletor e
+   a amostra com o bloco de cima em vez de deixá-los soltos na linha.
+
+   A altura automática substitui os 40px fixos do .editor-select: com altura
+   travada e sem line-height, a linha de base sobe e o "g" de "grafite" sai
+   cortado. */
+.banner-form-row select,
+.banner-gradient-preview {
+	width: 100%;
+	max-width: calc(50% - 12px);
+}
+
+.banner-form-row select {
+	height: auto;
+	padding: 11px 12px;
+	line-height: 1.5;
+}
+
+/* Amostra alta o bastante para o degradê ser lido como cor, e não como um
+   filete. */
+.banner-gradient-preview {
+	display: block;
+	height: 52px;
+	border-radius: 4px;
+	border: 1px solid var(--color-border);
+}
+
+/* Abaixo da amostra, em bloco. A um clique de tirar o banner do ar, o alvo não
+   pode ser o menor elemento da tela. */
+.banner-switch {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: fit-content;
+	margin-top: 20px;
+	padding: 12px 16px;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	font-size: var(--font-size-sm);
+	color: var(--color-primary);
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.banner-switch input {
+	width: 18px;
+	height: 18px;
+	accent-color: var(--color-highlight);
+	cursor: pointer;
+}
+
+.banner-form-actions {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 20px;
+}
+
+/* ---------- Seletor de produto ---------- */
+.banner-picker {
+	position: relative;
+}
+
+.banner-picker-trigger {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	width: 100%;
+	padding: 9px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: 6px;
+	background-color: var(--color-surface);
+	color: var(--color-primary);
+	font-size: var(--font-size-sm);
+	text-align: left;
+	cursor: pointer;
+}
+
+.banner-picker-empty {
+	color: var(--color-muted);
+}
+
+/* Painel flutuante: absoluto para a lista não empurrar o formulário a cada
+   abertura, e com z-index acima dos campos vizinhos. */
+.banner-picker-panel {
+	position: absolute;
+	top: calc(100% + 4px);
+	left: 0;
+	right: 0;
+	z-index: 20;
+	border: 1px solid var(--color-border);
+	border-radius: 6px;
+	background-color: var(--color-surface);
+	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+	overflow: hidden;
+}
+
+.banner-picker-search {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 12px;
+	border-bottom: 1px solid var(--color-border);
+	color: var(--color-muted);
+}
+
+.banner-picker-search input {
+	flex: 1;
+	min-width: 0;
+	border: none;
+	background: none;
+	outline: none;
+	color: var(--color-primary);
+	font-size: var(--font-size-sm);
+}
+
+.banner-picker-list {
+	max-height: 260px;
+	overflow-y: auto;
+	margin: 0;
+	padding: 4px;
+	list-style: none;
+}
+
+.banner-picker-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	width: 100%;
+	padding: 8px 10px;
+	border: none;
+	border-radius: 4px;
+	background: none;
+	color: var(--color-primary);
+	font-size: var(--font-size-sm);
+	text-align: left;
+	cursor: pointer;
+}
+
+.banner-picker-item:hover {
+	background-color: rgba(0, 0, 0, 0.04);
+}
+
+.banner-picker-item small {
+	display: block;
+	font-size: var(--font-size-xs);
+	color: var(--color-muted);
+}
+
+.banner-picker-none {
+	padding: 14px 10px;
+	font-size: var(--font-size-sm);
+	color: var(--color-muted);
+	text-align: center;
+}
+
+/* ---------- Lista de banners ---------- */
+.banner-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.banner-row {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 12px 16px;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	background-color: var(--color-surface);
+}
+
+/* Fora do ar: apagado, mas ainda legível. O olho precisa distinguir a linha
+   sem precisar procurar o ícone do olho. */
+.banner-row--off {
+	opacity: 0.55;
+}
+
+.banner-order {
+	width: 22px;
+	font-size: var(--font-size-sm);
+	font-weight: 700;
+	color: var(--color-muted);
+	text-align: center;
+}
+
+/* As duas fotos sobre o degradê do próprio banner: a linha da lista mostra em
+   miniatura a mesma combinação que vai ao ar. */
+.banner-thumbs {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-shrink: 0;
+	padding: 6px;
+	border-radius: 6px;
+}
+
+.banner-thumb {
+	width: 46px;
+	height: 46px;
+	object-fit: cover;
+	border-radius: 4px;
+	display: block;
+}
+
+.banner-thumb--product {
+	width: 34px;
+}
+
+.banner-info {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+	flex: 1;
+}
+
+.banner-info strong {
+	font-size: var(--font-size-sm);
+	color: var(--color-accent);
+}
+
+.banner-info small {
+	font-size: var(--font-size-xs);
+	color: var(--color-muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.banner-info-link {
+	color: var(--color-brand-blue);
+}
+
+.banner-actions {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	flex-shrink: 0;
+}
+
+.btn-ghost {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	padding: 0;
+	border: none;
+	border-radius: 6px;
+	background: none;
+	color: var(--color-muted);
+	cursor: pointer;
+	transition:
+		background-color var(--transition-fast),
+		color var(--transition-fast);
+}
+
+.btn-ghost:hover:not(:disabled) {
+	background-color: rgba(0, 0, 0, 0.05);
+	color: var(--color-accent);
+}
+
+.btn-ghost:disabled {
+	opacity: 0.3;
+	cursor: default;
+}
+
+.btn-ghost--danger:hover:not(:disabled) {
+	color: #dc2626;
+}
+
+.dashboard-empty {
+	padding: 24px;
+	border: 1px dashed var(--color-border);
+	border-radius: 8px;
+	font-size: var(--font-size-sm);
+	color: var(--color-muted);
+	text-align: center;
+}
+
+@media (max-width: 900px) {
+	.banner-form-cols {
+		grid-template-columns: 1fr;
+	}
+
+	.banner-row {
+		flex-wrap: wrap;
 	}
 }

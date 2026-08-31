@@ -430,6 +430,41 @@ export type SiteSettings = {
 export type UpdateSiteSettings = Partial<Pick<SiteSettings, 'catalog_url' | 'catalog_filename'>>
 
 // ----------------------------------------------------------------
+// HOME BANNERS — os slides do hero da página inicial
+// ----------------------------------------------------------------
+export type HomeBanner = {
+  id: string
+  sort_order: number
+  is_active: boolean
+  // Coluna da esquerda
+  project_image: string
+  headline: string
+  tagline: string | null
+  // Coluna da direita
+  product_image: string
+  description: string | null
+  cta_label: string
+  // Destino do botão. Por id, e não slug: renomear o produto não quebra o link.
+  product_id: string | null
+  // Chave do degradê; o CSS vive em src/config/banner-gradients.ts.
+  gradient: string
+  author_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type InsertHomeBanner = Omit<
+  HomeBanner,
+  'id' | 'created_at' | 'updated_at' | 'sort_order' | 'is_active' | 'cta_label'
+> & {
+  sort_order?: number
+  is_active?: boolean
+  cta_label?: string
+}
+
+export type UpdateHomeBanner = Partial<InsertHomeBanner>
+
+// ----------------------------------------------------------------
 // LEADS — capturados no popup de download de arquivos do produto
 // ----------------------------------------------------------------
 export type LeadFileType = 'datasheet' | 'ies' | 'certificates'
@@ -552,6 +587,12 @@ export type Database = {
         Row: Project
         Insert: InsertProject
         Update: UpdateProject
+        Relationships: []
+      }
+      home_banners: {
+        Row: HomeBanner
+        Insert: InsertHomeBanner
+        Update: UpdateHomeBanner
         Relationships: []
       }
       project_images: {

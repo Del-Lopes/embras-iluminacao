@@ -24,7 +24,7 @@ type Props = {
   onChange: (url: string) => void
   // Destino no R2: 'product' → produtos/<folder>, 'model' → modelos_3d/<folder>,
   // 'project' → projetos/<folder>
-  group?: 'product' | 'model' | 'project'
+  group?: 'product' | 'model' | 'project' | 'banner'
   // Subpasta (nome do item). Vazio = upload bloqueado até nomear o item.
   folder?: string
 }

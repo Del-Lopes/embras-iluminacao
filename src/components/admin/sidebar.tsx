@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ChevronDown, LayoutDashboard, FileText, Sparkles, Tag, LogOut, Zap, ShoppingBag, Settings, HardDrive, ScrollText, PackagePlus, SlidersHorizontal, Users, FolderPlus, FolderKanban, FileDown, Inbox, ListChecks } from 'lucide-react'
+import { ChevronDown, LayoutDashboard, FileText, Sparkles, Tag, LogOut, Zap, ShoppingBag, Settings, HardDrive, ScrollText, PackagePlus, SlidersHorizontal, Users, FolderPlus, FileDown, Inbox, ListChecks, GalleryHorizontalEnd, LayoutList } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { logoutAction } from '@/server/auth.actions'
 import { AreaSwitcher } from '@/components/admin/area-switcher'
@@ -58,7 +58,11 @@ const USERS_NAV: NavItem[] = [
 // listagem e o "novo" lado a lado, e o que não pertence a nenhuma das duas
 // cai em Outros.
 const PRODUCT_NAV: NavItem[] = [
-  { label: 'Dashboard', href: '/admin/products', icon: LayoutDashboard, exact: true },
+  // 'Ver Produtos', e não 'Dashboard': o item abre a LISTAGEM, e o rótulo
+  // anterior prometia um painel de indicadores que não existe. O mesmo ícone
+  // de lista vale para as duas áreas, já que as duas telas são a mesma coisa
+  // com conteúdo diferente.
+  { label: 'Ver Produtos', href: '/admin/products', icon: LayoutList, exact: true },
   // accent: é a ação mais frequente da área e ganha destaque de cor.
   { label: 'Novo Produto', href: '/admin/products/new', icon: PackagePlus, accent: true },
   { label: 'Categorias', href: '/admin/products/product-categories', icon: Tag },
@@ -71,8 +75,12 @@ const PRODUCT_STORAGE_NAV: NavItem[] = [
 ]
 
 const PROJECTS_NAV: NavItem[] = [
-  { label: 'Projetos', href: '/admin/projects', icon: FolderKanban, exact: true },
+  { label: 'Ver Projetos', href: '/admin/projects', icon: LayoutList, exact: true },
   { label: 'Novo Projeto', href: '/admin/projects/new', icon: FolderPlus, accent: true },
+]
+
+const BANNERS_NAV: NavItem[] = [
+  { label: 'Configurar', href: '/admin/banners', icon: GalleryHorizontalEnd },
 ]
 
 const OTHERS_NAV: NavItem[] = [
@@ -113,12 +121,13 @@ export const Sidebar = ({ userName, userEmail, userRole }: SidebarProps) => {
     return () => ro.disconnect()
     // pathname entra na lista porque a navegação muda de tamanho ao trocar de área.
   }, [updateHasMore, pathname])
-  // Projetos, Catálogo e Leads vivem dentro da área Site (ex-Produtos), então
-  // /admin/projects, /admin/catalog e /admin/leads também ativam 'products'.
+  // Projetos, Catálogo, Banners e Leads vivem dentro da área Site
+  // (ex-Produtos), então essas rotas também ativam 'products'.
   const area: 'blog' | 'products' =
     pathname.startsWith('/admin/products') ||
     pathname.startsWith('/admin/projects') ||
     pathname.startsWith('/admin/catalog') ||
+    pathname.startsWith('/admin/banners') ||
     pathname.startsWith('/admin/leads')
       ? 'products'
       : 'blog'
@@ -166,6 +175,9 @@ export const Sidebar = ({ userName, userEmail, userRole }: SidebarProps) => {
 
             <span className="sidebar-section-label">Projetos</span>
             {PROJECTS_NAV.map(renderLink)}
+
+            <span className="sidebar-section-label">Banners</span>
+            {BANNERS_NAV.map(renderLink)}
 
             <span className="sidebar-section-label">Outros</span>
             {OTHERS_NAV.map(renderLink)}
